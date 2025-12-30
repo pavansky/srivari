@@ -9,7 +9,7 @@ interface WhatsappButtonProps {
 }
 
 const WhatsappButton: React.FC<WhatsappButtonProps> = ({ productName, price, variant = 'primary' }) => {
-    const phoneNumber = "919876543210"; // Placeholder
+    const phoneNumber = "919739988771"; // Updated user number
 
     const handleClick = () => {
         let message = "Namaste Srivari's, I am interested in your sarees.";
