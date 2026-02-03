@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import WAButton from "@/components/WAButton";
+// Force rebuild
 import { products } from "@/data/products";
 import { Filter } from "lucide-react";
 
