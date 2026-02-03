@@ -37,21 +37,22 @@ export default function CartPage() {
 
         const phoneNumber = "919739988771";
 
-        let message = "नमस्ते Srivari! 🌸\n";
+        // Using Unicode escape sequences to ensure emojis render correctly everywhere
+        let message = "Namaste Srivari! \uD83C\uDF38\n"; // 🌸
         message += "I would like to place an order.\n\n";
 
         message += "*Customer Details:*\n";
-        message += `👤 Name: ${userDetails.name}\n`;
-        message += `📱 Phone: ${userDetails.phone}\n`;
-        if (userDetails.email) message += `📧 Email: ${userDetails.email}\n`;
-        if (userDetails.address) message += `📍 Address: ${userDetails.address}\n`;
+        message += "\uD83D\uDC64 Name: " + userDetails.name + "\n"; // 👤
+        message += "\uD83D\uDCF1 Phone: " + userDetails.phone + "\n"; // 📱
+        if (userDetails.email) message += "\uD83D\uDCE7 Email: " + userDetails.email + "\n"; // 📧
+        if (userDetails.address) message += "\uD83D\uDCCD Address: " + userDetails.address + "\n"; // 📍
 
         message += "\n*Order Summary:*\n";
         cart.forEach((item, index) => {
-            message += `${index + 1}. ${item.name} - ₹${item.price.toLocaleString('en-IN')}\n`;
+            message += `${index + 1}. ${item.name} - \u20B9${item.price.toLocaleString('en-IN')}\n`; // ₹ symbol
         });
 
-        message += `\n*💰 Total Amount: ₹${calculateTotal().toLocaleString('en-IN')}*`;
+        message += `\n*\uD83D\uDCB0 Total Amount: \u20B9${calculateTotal().toLocaleString('en-IN')}*`; // 💰
         message += "\n\nPlease confirm availability/shipping involved.";
 
         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;

@@ -2,48 +2,57 @@
 
 const Footer = () => {
   return (
-    <footer className="editorial-footer">
-      <div className="container footer-grid">
-        <div className="footer-col footer-brand">
-          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-secondary)' }}>SRIVARI'S</h2>
-          <p>
+    <footer className="bg-obsidian text-marble py-16 border-t border-gold/20 mt-auto">
+      <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+        {/* Brand Column */}
+        <div className="space-y-6">
+          <h2 className="text-3xl font-heading text-gold tracking-wide">SRIVARI'S</h2>
+          <p className="text-sm opacity-80 leading-relaxed">
             Weaving legacy into every thread. Authentic Kanjivaram and Banarasi silks for the modern royalty.
           </p>
         </div>
 
-        <div className="footer-col">
-          <h4>Collections</h4>
-          <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
-            <li><a href="#">Kanjivaram Silk</a></li>
-            <li><a href="#">Banarasi Silk</a></li>
-            <li><a href="#">Mysore Silk</a></li>
-            <li><a href="#">Tussar Georgette</a></li>
+        {/* Collections */}
+        <div className="space-y-6">
+          <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Collections</h4>
+          <ul className="space-y-3 text-sm opacity-80">
+            <li><a href="/shop?category=kanjivaram" className="hover:text-gold transition-colors">Kanjivaram Silk</a></li>
+            <li><a href="/shop?category=banarasi" className="hover:text-gold transition-colors">Banarasi Silk</a></li>
+            <li><a href="/shop?category=mysore" className="hover:text-gold transition-colors">Mysore Silk</a></li>
+            <li><a href="/shop?category=tussar" className="hover:text-gold transition-colors">Tussar Georgette</a></li>
           </ul>
         </div>
 
-        <div className="footer-col">
-          <h4>Support</h4>
-          <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
-            <li><a href="#">Order Tracking</a></li>
-            <li><a href="#">Shipping Policy</a></li>
-            <li><a href="#">Returns & Exchange</a></li>
-            <li><a href="#">Contact Us</a></li>
+        {/* Support */}
+        <div className="space-y-6">
+          <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Support</h4>
+          <ul className="space-y-3 text-sm opacity-80">
+            <li><a href="/order-tracking" className="hover:text-gold transition-colors">Order Tracking</a></li>
+            <li><a href="/shipping-policy" className="hover:text-gold transition-colors">Shipping Policy</a></li>
+            <li><a href="/returns" className="hover:text-gold transition-colors">Returns & Exchange</a></li>
+            <li><a href="/contact" className="hover:text-gold transition-colors">Contact Us</a></li>
           </ul>
         </div>
 
-        <div className="footer-col">
-          <h4>Newsletter</h4>
-          <p style={{ marginBottom: '1rem', color: '#888', fontSize: '0.9rem' }}>Subscribe for exclusive drops and heritage stories.</p>
-          <form onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Your Email Address" className="newsletter-input" />
-            <button type="submit" className="cta-button" style={{ padding: '0.8rem 2rem', fontSize: '0.8rem', marginTop: '1rem' }}>
+        {/* Newsletter */}
+        <div className="space-y-6">
+          <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Newsletter</h4>
+          <p className="text-sm opacity-80">Subscribe for exclusive drops and heritage stories.</p>
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
+            <input
+              type="email"
+              placeholder="Your Email Address"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-gold/50 transition-colors rounded-sm"
+            />
+            <button type="submit" className="w-full py-3 bg-gold text-obsidian font-bold tracking-widest uppercase hover:bg-white transition-colors">
               Subscribe
             </button>
           </form>
         </div>
       </div>
 
-      <div className="container copyright">
+      {/* Copyright */}
+      <div className="container mx-auto px-6 mt-16 pt-8 border-t border-white/10 text-center text-xs opacity-40 uppercase tracking-widest">
         <p>&copy; {new Date().getFullYear()} Srivari's Saree Store. All rights reserved.</p>
       </div>
     </footer>
