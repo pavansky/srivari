@@ -18,8 +18,10 @@ export default function AdminDashboard() {
 
     // Form State
     const [isEditing, setIsEditing] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState<Partial<Product>>({
-        name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false
+        name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false,
+        priceCps: 0, shipping: 0
     });
 
     // Order Modal State
@@ -67,7 +69,7 @@ export default function AdminDashboard() {
 
     // --- Product Logic ---
     const resetForm = () => {
-        setFormData({ name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false });
+        setFormData({ name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false, priceCps: 0, shipping: 0 });
         setIsEditing(null);
     };
 
@@ -83,6 +85,18 @@ export default function AdminDashboard() {
 
     const handleDeleteProduct = (id: string) => {
         if (confirm('Delete this product?')) setProducts(products.filter(p => p.id !== id));
+    };
+
+    const filteredProducts = products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const calculateMargin = (selling: number, cost: number = 0, shipping: number = 0) => {
+        const totalCost = cost + shipping;
+        const profit = selling - totalCost;
+        const margin = selling > 0 ? (profit / selling) * 100 : 0;
+        return { profit, margin };
     };
 
     // --- Order Logic ---
@@ -179,17 +193,35 @@ export default function AdminDashboard() {
                             <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <input type="text" placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input type="number" placeholder="Price (₹)" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
-                                        <input type="number" placeholder="Stock" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
+
+                                    {/* Pricing & Stock Grid */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="text-xs text-marble/60 block mb-1">Selling Price (₹)</label>
+                                            <input type="number" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-marble/60 block mb-1">Cost Price (₹)</label>
+                                            <input type="number" value={formData.priceCps || ''} onChange={e => setFormData({ ...formData, priceCps: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" placeholder="0" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-marble/60 block mb-1">Shipping (₹)</label>
+                                            <input type="number" value={formData.shipping || ''} onChange={e => setFormData({ ...formData, shipping: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" placeholder="0" />
+                                        </div>
                                     </div>
-                                    <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none">
-                                        <option value="" className="bg-obsidian">Select Category</option>
-                                        <option value="Silk" className="bg-obsidian">Silk</option>
-                                        <option value="Banarasi" className="bg-obsidian">Banarasi</option>
-                                        <option value="Cotton" className="bg-obsidian">Cotton</option>
-                                        <option value="Mysore Silk" className="bg-obsidian">Mysore Silk</option>
-                                    </select>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="Stock" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
+                                        <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none">
+                                            <option value="" className="bg-obsidian">Select Category</option>
+                                            <option value="Silk" className="bg-obsidian">Silk</option>
+                                            <option value="Banarasi" className="bg-obsidian">Banarasi</option>
+                                            <option value="Cotton" className="bg-obsidian">Cotton</option>
+                                            <option value="Mysore Silk" className="bg-obsidian">Mysore Silk</option>
+                                        </select>
+                                    </div>
+
+                                    {/* ... Featured ... */}
                                     <div className="flex items-center gap-3 p-3 bg-white/5 rounded border border-white/10">
                                         <input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} className="w-5 h-5 accent-gold" id="featured" />
                                         <label htmlFor="featured" className="cursor-pointer select-none">Mark as Featured Product</label>
@@ -197,6 +229,7 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="space-y-4">
                                     <textarea placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={4} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
+                                    {/* ... Images ... */}
                                     <div className="space-y-2">
                                         <label className="text-sm text-marble/60">Images (First is cover)</label>
                                         {formData.images?.map((img, idx) => (
@@ -206,6 +239,11 @@ export default function AdminDashboard() {
                                         ))}
                                         <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })} className="text-xs text-gold hover:underline">+ Add Another URL</button>
                                     </div>
+
+                                    {/* ... Video ... */}
+                                    <div>
+                                        <input type="text" value={formData.video || ''} onChange={e => setFormData({ ...formData, video: e.target.value })} placeholder="Video Link (YouTube)" className="w-full bg-white/5 border border-white/10 p-2 rounded text-sm text-marble focus:border-gold outline-none" />
+                                    </div>
                                 </div>
                                 <div className="md:col-span-2 flex justify-end gap-4">
                                     {isEditing && <button type="button" onClick={resetForm} className="px-6 py-3 rounded text-marble/60 hover:text-white flex items-center gap-2"><X size={20} /> Cancel</button>}
@@ -214,23 +252,61 @@ export default function AdminDashboard() {
                             </form>
                         </div>
 
-                        {/* List */}
+                        {/* Inventory List with Search & Metrics */}
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <h2 className="text-2xl font-serif text-gold">Inventory ({filteredProducts.length})</h2>
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="bg-white/5 border border-white/10 p-2 rounded text-white focus:border-gold outline-none w-full md:w-64"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 gap-4">
-                            {products.map((product) => (
-                                <div key={product.id} className="glass-card p-4 rounded-lg flex flex-col md:flex-row items-center gap-6 border border-white/5 hover:border-gold/30 transition-colors">
-                                    <div className="w-16 h-16 relative rounded overflow-hidden bg-white/5 flex-shrink-0">
-                                        {product.images[0] && <Image src={product.images[0]} alt={product.name} fill className="object-cover" unoptimized />}
+                            {filteredProducts.map((product) => {
+                                const { profit, margin } = calculateMargin(product.price, product.priceCps, product.shipping);
+                                return (
+                                    <div key={product.id} className="glass-card p-4 rounded-lg flex flex-col md:flex-row items-center gap-6 border border-white/5 hover:border-gold/30 transition-colors">
+                                        <div className="w-16 h-16 relative rounded overflow-hidden bg-white/5 flex-shrink-0">
+                                            {product.images[0] && <Image src={product.images[0]} alt={product.name} fill className="object-cover" unoptimized />}
+                                        </div>
+                                        <div className="flex-grow text-center md:text-left grid md:grid-cols-4 gap-4 w-full">
+                                            <div className="md:col-span-1">
+                                                <h3 className="text-lg font-medium text-white">{product.name}</h3>
+                                                <p className="text-sm text-marble/60">{product.category}</p>
+                                            </div>
+
+                                            <div className="flex flex-col justify-center text-sm md:border-l md:border-white/5 md:pl-4">
+                                                <span className="text-marble/60">Selling Price</span>
+                                                <span className="font-bold text-gold">₹{product.price.toLocaleString('en-IN')}</span>
+                                            </div>
+
+                                            <div className="flex flex-col justify-center text-sm md:border-l md:border-white/5 md:pl-4">
+                                                <span className="text-marble/60">Cost Analysis</span>
+                                                <div className="text-xs text-marble/40">
+                                                    CPS: ₹{product.priceCps || 0} + Ship: ₹{product.shipping || 0}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col justify-center text-sm md:border-l md:border-white/5 md:pl-4">
+                                                <span className="text-marble/60">Profit / Margin</span>
+                                                <div className="flex gap-2 items-center">
+                                                    <span className={`${profit > 0 ? 'text-green-400' : 'text-red-400'} font-bold`}>₹{profit.toLocaleString('en-IN')}</span>
+                                                    <span className={`text-xs px-1 rounded border ${margin > 20 ? 'border-green-500/50 text-green-400' : 'border-yellow-500/50 text-yellow-400'}`}>
+                                                        {margin.toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setFormData({ ...product }); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="p-2 bg-white/5 hover:bg-gold/20 text-gold rounded"><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDeleteProduct(product.id)} className="p-2 bg-white/5 hover:bg-red-500/20 text-red-400 rounded"><Trash2 size={18} /></button>
+                                        </div>
                                     </div>
-                                    <div className="flex-grow text-center md:text-left">
-                                        <h3 className="text-lg font-medium text-white">{product.name}</h3>
-                                        <p className="text-sm text-marble/60">₹{product.price.toLocaleString('en-IN')} • Stock: {product.stock}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setFormData({ ...product }); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="p-2 bg-white/5 hover:bg-gold/20 text-gold rounded"><Edit2 size={18} /></button>
-                                        <button onClick={() => handleDeleteProduct(product.id)} className="p-2 bg-white/5 hover:bg-red-500/20 text-red-400 rounded"><Trash2 size={18} /></button>
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )}
