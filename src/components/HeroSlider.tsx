@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import SrivariImage from "./SrivariImage";
 
 const slides = [
     {
@@ -54,12 +55,15 @@ export default function HeroSlider() {
                     className="absolute inset-0"
                 >
                     {/* Background Image */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${slides[current].image})` }}
+                    <SrivariImage
+                        src={slides[current].image}
+                        alt={slides[current].title}
+                        fill
+                        className="object-cover"
+                        priority
                     />
                     {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60 z-10" />
                 </motion.div>
             </AnimatePresence>
 
@@ -118,12 +122,14 @@ export default function HeroSlider() {
                 <button
                     onClick={prevSlide}
                     className="p-3 border border-white/20 rounded-full hover:bg-white/10 hover:border-white transition-colors"
+                    aria-label="Previous slide"
                 >
                     <ChevronLeft className="text-white" size={24} />
                 </button>
                 <button
                     onClick={nextSlide}
                     className="p-3 border border-white/20 rounded-full hover:bg-white/10 hover:border-white transition-colors"
+                    aria-label="Next slide"
                 >
                     <ChevronRight className="text-white" size={24} />
                 </button>

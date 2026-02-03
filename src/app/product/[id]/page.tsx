@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import WAButton from "@/components/WAButton";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
+import SrivariImage from "@/components/SrivariImage";
 import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
 import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
@@ -56,7 +57,7 @@ export default function ProductPage() {
 
         setProduct(found);
         if (found) {
-            const validImage = found.images.find(img => img && img.trim() !== "") || "";
+            const validImage = found.images.find(img => img && img.trim() !== "") || "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1000&auto=format&fit=crop";
             setActiveImage(validImage);
         }
         setIsLoading(false);
@@ -157,12 +158,11 @@ export default function ProductPage() {
                             {/* Main Image - Art Frame Style */}
                             <div className="relative aspect-[3/4] w-full bg-[#f0eee6] overflow-hidden group">
                                 {activeImage && (
-                                    <Image
+                                    <SrivariImage
                                         src={activeImage}
                                         alt={product.name}
                                         fill
                                         className="object-cover transition-transform duration-[1.5s] ease-in-out group-hover:scale-105"
-                                        unoptimized
                                     />
                                 )}
                                 {/* Minimalist Badge */}
@@ -187,7 +187,7 @@ export default function ProductPage() {
                                                 ${activeImage === img ? 'opacity-100 ring-1 ring-[#D4AF37]' : 'opacity-40 hover:opacity-80'}
                                             `}
                                         >
-                                            <Image src={img} alt="Thumbnail" fill className="object-cover" unoptimized />
+                                            <SrivariImage src={img} alt="Thumbnail" fill className="object-cover" />
                                         </button>
                                     ))}
                                 </div>

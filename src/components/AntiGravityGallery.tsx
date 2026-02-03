@@ -3,6 +3,7 @@
 import { useScroll, useTransform, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
+import SrivariImage from "@/components/SrivariImage";
 import Link from "next/link";
 import { products as initialProducts } from "@/data/products";
 
@@ -28,7 +29,7 @@ export default function AntiGravityGallery() {
     const y2 = useTransform(scrollYProgress, [0, 1], [0, -200]); // Moves faster (closer depth)
 
     return (
-        <section ref={containerRef} className="py-32 px-6 min-h-screen bg-obsidian relative">
+        <section id="featured-collections" ref={containerRef} className="py-32 px-6 min-h-screen bg-obsidian relative">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
                     <div>
@@ -52,19 +53,12 @@ export default function AntiGravityGallery() {
                             >
                                 <Link href={`/product/${product.id}`} className="block">
                                     <div className="aspect-[3/4] overflow-hidden rounded-sm bg-gray-900 relative cursor-pointer">
-                                        {displayImage ? (
-                                            <Image
-                                                src={displayImage}
-                                                alt={product.name}
-                                                fill
-                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center text-marble/20 text-4xl font-serif">
-                                                {product.name.charAt(0)}
-                                            </div>
-                                        )}
+                                        <SrivariImage
+                                            src={displayImage}
+                                            alt={product.name}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
 
                                         {/* Floating Price Tag */}
                                         <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 border border-white/20 text-marble">

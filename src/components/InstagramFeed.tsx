@@ -1,7 +1,7 @@
 "use client";
 
 import { Instagram } from "lucide-react";
-import Image from "next/image";
+import SrivariImage from "./SrivariImage";
 
 const instaPosts = [
     {
@@ -61,8 +61,9 @@ export default function InstagramFeed() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="relative group aspect-square overflow-hidden cursor-pointer"
+                            aria-label={`View Instagram post ${post.id}`}
                         >
-                            <Image
+                            <SrivariImage
                                 src={post.image}
                                 alt="Instagram Post"
                                 fill

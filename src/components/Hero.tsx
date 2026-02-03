@@ -55,11 +55,12 @@ export default function Hero() {
                     transition={{ delay: 1.5, duration: 0.8, type: "spring" }}
                     className="mt-8"
                 >
-                    <Link href="/shop">
-                        <MagneticButton className="px-8 py-4 bg-gold text-obsidian font-semibold tracking-widest text-sm uppercase rounded-full hover:bg-white transition-colors">
-                            Explore Collection
-                        </MagneticButton>
-                    </Link>
+                    <button
+                        onClick={() => document.getElementById('featured-collections')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="px-8 py-4 bg-gold text-obsidian font-semibold tracking-widest text-sm uppercase rounded-full hover:bg-white transition-colors"
+                    >
+                        Explore Collection
+                    </button>
                 </motion.div>
             </div>
 
@@ -68,7 +69,8 @@ export default function Hero() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 2.5, duration: 1 }}
-                className="absolute bottom-10 z-20 animate-bounce"
+                className="absolute bottom-10 z-20 animate-bounce cursor-pointer p-4"
+                onClick={() => document.getElementById('featured-collections')?.scrollIntoView({ behavior: 'smooth' })}
             >
                 <ArrowDown className="w-6 h-6 text-gold/80" />
             </motion.div>

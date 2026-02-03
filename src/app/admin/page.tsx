@@ -6,9 +6,11 @@ import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
     Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
-    Sparkles, Wand2, Loader2, Upload
+    Sparkles, Wand2, Loader2, Upload, LogOut
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import SrivariImage from '@/components/SrivariImage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Reusable Glass Components ---
@@ -206,7 +208,9 @@ export default function AdminDashboard() {
     );
 
     // --- Stats Calculation ---
-    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const totalRevenue = orders
+        .filter(o => o.status !== 'Cancelled')
+        .reduce((sum, o) => sum + o.totalAmount, 0);
     const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Shipped').length;
     const stockValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
 
@@ -248,6 +252,10 @@ export default function AdminDashboard() {
                 <nav className="flex gap-2">
                     <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inventory' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Inventory</button>
                     <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'orders' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Orders</button>
+                    <div className="h-6 w-px bg-white/10 mx-2"></div>
+                    <Link href="/" className="px-4 py-2 rounded-lg text-sm font-medium text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2">
+                        <LogOut size={16} /> Exit
+                    </Link>
                 </nav>
             </header>
 
@@ -477,7 +485,12 @@ export default function AdminDashboard() {
                                             >
                                                 <GlassCard className="p-4 flex items-center gap-6 group hover:border-[#D4AF37]/50 transition-all">
                                                     <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-white/5">
-                                                        {product.images[0] && <Image src={product.images[0]} alt={product.name} fill className="object-cover" unoptimized />}
+                                                        <SrivariImage
+                                                            src={product.images.find(img => img && img.trim() !== "") || ""}
+                                                            alt={product.name}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
                                                     </div>
 
                                                     <div className="flex-1 grid grid-cols-4 gap-4 items-center">
@@ -542,15 +555,49 @@ export default function AdminDashboard() {
                                         <div className="text-right">
                                             <p className="text-2xl font-bold text-white">₹{order.totalAmount.toLocaleString()}</p>
                                             <select
+                                                aria-label="Order Status"
                                                 value={order.status}
                                                 onChange={(e) => {
-                                                    const updated = orders.map(o => o.id === order.id ? { ...o, status: e.target.value as any } : o);
+                                                    const newStatus = e.target.value as any;
+                                                    const oldStatus = order.status;
+
+                                                    // Handle Stock Adjustment
+                                                    if (newStatus === 'Cancelled' && oldStatus !== 'Cancelled') {
+                                                        // Restore stock
+                                                        const updatedProducts = [...products];
+                                                        order.items.forEach(item => {
+                                                            const productIndex = updatedProducts.findIndex(p => p.id === item.productId);
+                                                            if (productIndex !== -1) {
+                                                                updatedProducts[productIndex] = {
+                                                                    ...updatedProducts[productIndex],
+                                                                    stock: updatedProducts[productIndex].stock + item.quantity
+                                                                };
+                                                            }
+                                                        });
+                                                        setProducts(updatedProducts);
+                                                    } else if (oldStatus === 'Cancelled' && newStatus !== 'Cancelled') {
+                                                        // Re-deduct stock if un-cancelled
+                                                        const updatedProducts = [...products];
+                                                        order.items.forEach(item => {
+                                                            const productIndex = updatedProducts.findIndex(p => p.id === item.productId);
+                                                            if (productIndex !== -1) {
+                                                                updatedProducts[productIndex] = {
+                                                                    ...updatedProducts[productIndex],
+                                                                    stock: updatedProducts[productIndex].stock - item.quantity
+                                                                };
+                                                            }
+                                                        });
+                                                        setProducts(updatedProducts);
+                                                    }
+
+                                                    const updated = orders.map(o => o.id === order.id ? { ...o, status: newStatus } : o);
                                                     setOrders(updated);
                                                 }}
                                                 className={`mt-2 text-xs py-1 px-3 rounded-full border bg-transparent outline-none cursor-pointer ${order.status === 'Delivered' ? 'border-green-500 text-green-400' :
                                                     order.status === 'Cancelled' ? 'border-red-500 text-red-400' :
                                                         'border-yellow-500 text-yellow-400'
                                                     }`}
+                                                target-lint-error-id="742e5f25-c39d-448b-9783-f9a379281bb6"
                                             >
                                                 <option className="bg-neutral-900" value="Pending">Pending</option>
                                                 <option className="bg-neutral-900" value="Shipped">Shipped</option>
@@ -642,6 +689,7 @@ export default function AdminDashboard() {
                                             <input
                                                 type="file"
                                                 accept="image/*"
+                                                aria-label="Upload Reference Image"
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file) {
@@ -650,6 +698,7 @@ export default function AdminDashboard() {
                                                     }
                                                 }}
                                                 className="absolute inset-0 opacity-0 cursor-pointer"
+                                                target-lint-error-id="ac502c70-f23e-4f1e-8f46-d61fc22882fa"
                                             />
                                             {studioPreview ? (
                                                 <div className="relative h-32 w-full rounded-lg overflow-hidden">

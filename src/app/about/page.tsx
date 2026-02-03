@@ -2,6 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SrivariImage from '@/components/SrivariImage';
 
 export default function AboutPage() {
     return (
@@ -11,10 +12,12 @@ export default function AboutPage() {
             {/* Hero Section */}
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-obsidian text-marble">
                 <div className="absolute inset-0 opacity-40">
-                    <img
+                    <SrivariImage
                         src="https://images.unsplash.com/photo-1576487248805-cf45f6bcc67f?q=80&w=1920&auto=format&fit=crop"
                         alt="Weaving Loom"
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        priority
                     />
                 </div>
                 <div className="container relative z-10 text-center px-4">

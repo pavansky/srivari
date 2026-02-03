@@ -63,7 +63,7 @@ export default function ContactPage() {
                                 </div>
                             </a>
 
-                            <a href="https://www.google.com/maps/search/?api=1&query=123+Heritage+Lane+Indiranagar+Bangalore" target="_blank" rel="noopener noreferrer" className="block group">
+                            <a href="https://www.google.com/maps/search/?api=1&query=36+Balaji+Layout+Subramayapura+Bangalore+560061" target="_blank" rel="noopener noreferrer" className="block group">
                                 <div className="flex items-start gap-4 p-6 bg-white border border-[#D4AF37]/20 rounded-sm shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[#D4AF37] hover:-translate-y-1">
                                     <div className="p-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full group-hover:bg-[#D4AF37] group-hover:text-[#1A1A1A] transition-colors">
                                         <MapPin size={24} />
@@ -71,8 +71,8 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="text-xl font-bold mb-1 font-[family-name:var(--font-playfair)] text-[#1A1A1A]">Boutique</h3>
                                         <p className="text-[#595959] font-[family-name:var(--font-montserrat)] group-hover:text-[#D4AF37] transition-colors">
-                                            123, Heritage Lane, Indiranagar<br />
-                                            Bangalore, Karnataka - 560038
+                                            36, Balaji Layout, Subramayapura<br />
+                                            Bangalore, Karnataka - 560061
                                         </p>
                                     </div>
                                 </div>

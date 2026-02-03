@@ -13,8 +13,11 @@ export default function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
 
+    // Hide Navbar on Admin Dashboard
+    if (pathname.startsWith("/admin")) return null;
+
     // Check if we are on a page that needs a contrasting header (like product details)
-    const isLightPage = pathname.startsWith("/product/");
+    const isLightPage = pathname.startsWith("/product/") || pathname === "/cart";
 
     return (
         <motion.nav

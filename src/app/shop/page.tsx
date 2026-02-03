@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import WAButton from "@/components/WAButton";
+import GlassSearch from "@/components/GlassSearch";
 // Force rebuild
 import { products } from "@/data/products";
 import { Filter } from "lucide-react";
@@ -23,6 +24,9 @@ function ShopContent() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [productsData, setProductsData] = useState(products);
     const [categories, setCategories] = useState(initialCategories);
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
 
     useEffect(() => {
         const storedProducts = localStorage.getItem('srivari_products');
@@ -42,18 +46,35 @@ function ShopContent() {
         }
     }, []);
 
-    // Filter Logic
+    // Extract unique trending hashtags
+    const trendingTags = Array.from(new Set(productsData.flatMap(p => p.hashtags || []))).slice(0, 5);
+
+    // Advanced Filter Logic
     const filteredProducts = productsData.filter((product) => {
+        // 1. Category Filter
         const categoryMatch = selectedCategory === "All" || product.category.toLowerCase().includes(selectedCategory.toLowerCase());
+
+        // 2. Color/Attribute Filter (Legacy)
         const colorMatch = selectedColor === "All" || product.name.toLowerCase().includes(selectedColor.toLowerCase()) || product.description.toLowerCase().includes(selectedColor.toLowerCase());
 
+        // 3. Price Filter
         let priceMatch = true;
         if (selectedPrice === "Under ₹5,000") priceMatch = product.price < 5000;
         else if (selectedPrice === "₹5,000 - ₹15,000") priceMatch = product.price >= 5000 && product.price <= 15000;
         else if (selectedPrice === "₹15,000 - ₹25,000") priceMatch = product.price > 15000 && product.price <= 25000;
         else if (selectedPrice === "Above ₹25,000") priceMatch = product.price > 25000;
 
-        return categoryMatch && colorMatch && priceMatch;
+        // 4. Search Query (Name, Description, Hashtags)
+        const q = searchQuery.toLowerCase();
+        const searchMatch = !q ||
+            product.name.toLowerCase().includes(q) ||
+            product.description.toLowerCase().includes(q) ||
+            product.hashtags?.some(tag => tag.toLowerCase().includes(q));
+
+        // 5. Hashtag Filter
+        const hashtagMatch = !activeHashtag || product.hashtags?.includes(activeHashtag);
+
+        return categoryMatch && colorMatch && priceMatch && searchMatch && hashtagMatch;
     });
 
     return (
@@ -69,7 +90,17 @@ function ShopContent() {
                 </p>
             </div>
 
-            <div className="container mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
+            {/* Advanced Search Section */}
+            <div className="-mt-8 relative z-20">
+                <GlassSearch
+                    onSearch={setSearchQuery}
+                    onHashtagSelect={setActiveHashtag}
+                    activeHashtag={activeHashtag}
+                    trendingTags={trendingTags}
+                />
+            </div>
+
+            <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-8">
 
                 {/* Mobile Filter Toggle */}
                 <button

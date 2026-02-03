@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import SrivariImage from "./SrivariImage";
 import Link from "next/link";
 import { Eye, ShoppingBag } from "lucide-react";
 import { Product } from "@/types";
@@ -28,17 +29,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     <div className="group relative bg-white border border-[#E5E5E5] hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl">
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
-        {displayImage ? (
-          <Image
-            src={displayImage}
-            alt={product.name}
-            fill
-            className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
-            unoptimized
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs uppercase">No Image</div>
-        )}
+        <SrivariImage
+          src={displayImage}
+          alt={product.name}
+          fill
+          className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+        />
 
         {/* Overlay Actions */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">

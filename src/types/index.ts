@@ -8,6 +8,7 @@ export interface Product {
     category: string;
     stock: number;
     isFeatured: boolean;
+    hashtags?: string[];
     priceCps?: number; // Cost Price from Seller
     shipping?: number; // Shipping cost paid
 }

@@ -13,6 +13,7 @@ export const products: Product[] = [
         category: 'Silk',
         stock: 5,
         isFeatured: true,
+        hashtags: ["#RoyalVibes", "#WeddingEdit", "#PureSilk", "#MaroonMagic"]
     },
     {
         id: '2',
@@ -25,6 +26,7 @@ export const products: Product[] = [
         category: 'Banarasi',
         stock: 3,
         isFeatured: true,
+        hashtags: ["#BanarasiGlow", "#PeacockBlue", "#FestiveReady", "#WeaveArt"]
     },
     {
         id: '3',
@@ -37,6 +39,7 @@ export const products: Product[] = [
         category: 'Mysore Silk',
         stock: 8,
         isFeatured: false,
+        hashtags: ["#LightweightLuxury", "#EmeraldBeauty", "#MysoreSilk", "#DailyElegance"]
     },
     {
         id: '4',
@@ -49,5 +52,6 @@ export const products: Product[] = [
         category: 'Cotton',
         stock: 12,
         isFeatured: false,
+        hashtags: ["#SustainableFashion", "#HandloomLove", "#CottonComfort", "#TempleBorder"]
     }
 ];
