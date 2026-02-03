@@ -6,7 +6,7 @@ import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
     Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
-    Sparkles, Wand2, Loader2
+    Sparkles, Wand2, Loader2, Upload
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,6 +61,12 @@ export default function AdminDashboard() {
         customerName: '', customerPhone: '', customerEmail: '', productId: '', quantity: 1
     });
 
+    // AI Studio State
+    const [studioTab, setStudioTab] = useState<'text' | 'image'>('text');
+    const [studioStyle, setStudioStyle] = useState('Editorial');
+    const [studioImage, setStudioImage] = useState<File | null>(null);
+    const [studioPreview, setStudioPreview] = useState<string | null>(null); // For uploaded file preview
+
     // AI State
     const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -73,32 +79,60 @@ export default function AdminDashboard() {
         if (!formData.name) return alert("Please enter a product name first!");
         setIsGeneratingDesc(true);
 
-        // Simulate API delay
-        await new Promise(r => setTimeout(r, 1500));
-
-        const adjectives = ["exquisite", "handcrafted", "timeless", "luxurious", "ethereal", "majestic"];
-        const occasions = ["celebrations", "weddings", "festive gatherings", "grand events"];
-        const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomOcc = occasions[Math.floor(Math.random() * occasions.length)];
-
-        const desc = `Step into a world of elegance with the ${formData.name}. This ${randomAdj} ${formData.category || 'masterpiece'} is woven with precision, embodying the rich heritage of Srivari craftsmanship. \n\nFeaturing a delicate texture and a vibrant hue, it is the perfect choice for ${randomOcc}. Draping strictly in comfort without compromising on style, this is more than just attire—it's a statement.`;
-
-        setFormData(prev => ({ ...prev, description: desc }));
-        setIsGeneratingDesc(false);
+        try {
+            const res = await fetch('/api/admin/ai-description', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.name,
+                    category: formData.category,
+                    additionalDetails: formData.description // pass existing text as context
+                })
+            });
+            const data = await res.json();
+            if (data.description) {
+                setFormData(prev => ({ ...prev, description: data.description }));
+            } else if (data.error) {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error connecting to AI service.");
+        } finally {
+            setIsGeneratingDesc(false);
+        }
     };
 
-    const handleGenerateImage = async () => {
-        if (!imagePrompt) return alert("Describe the image you want!");
+    const handleGenerateStudioImage = async () => {
+        if (!imagePrompt && !studioImage) return alert("Please explain what you want or upload an image!");
         setIsGeneratingImage(true);
-        await new Promise(r => setTimeout(r, 2000));
-        // Mock: Return a random high-quality unsplash image
-        const mockImages = [
-            "https://images.unsplash.com/photo-1610030469983-98ddb4fa9e63?q=80&w=1200",
-            "https://images.unsplash.com/photo-1583391726454-608e543c0c00?q=80&w=1200",
-            "https://images.unsplash.com/photo-1596462502278-27bfdd403ea6?q=80&w=1200"
-        ];
-        setGeneratedPreview(mockImages[Math.floor(Math.random() * mockImages.length)]);
-        setIsGeneratingImage(false);
+
+        try {
+            const formData = new FormData();
+            formData.append('prompt', imagePrompt);
+            formData.append('style', studioStyle);
+            if (studioImage) formData.append('image', studioImage);
+
+            const res = await fetch('/api/admin/ai-studio-generate', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.imageData) {
+                // Construct base64 string
+                const prefix = data.mimeType === 'image/png' ? 'data:image/png;base64,' : 'data:image/jpeg;base64,';
+                setGeneratedPreview(`${prefix}${data.imageData}`);
+            } else if (data.error) {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to connect to AI service.");
+        } finally {
+            setIsGeneratingImage(false);
+        }
     };
 
     // --- Load/Save Data ---
@@ -277,12 +311,47 @@ export default function AdminDashboard() {
                                     {/* Images */}
                                     <div className="space-y-3">
                                         <label className="text-xs text-[#D4AF37] uppercase tracking-wider">Visual Assets</label>
+
+                                        {/* URL Inputs */}
                                         {formData.images?.map((img, idx) => (
                                             <div key={idx} className="flex gap-2">
                                                 <GlassInput value={img} onChange={e => { const n = [...(formData.images ?? [])]; n[idx] = e.target.value; setFormData({ ...formData, images: n }) }} placeholder="Image URL" />
                                             </div>
                                         ))}
-                                        <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })} className="text-xs text-[#D4AF37] hover:underline">+ Add URL</button>
+
+                                        <div className="flex gap-2 text-xs">
+                                            <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })} className="text-[#D4AF37] hover:underline">+ Add URL</button>
+                                            <span className="text-white/20">|</span>
+                                            <label className="text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-1">
+                                                <Upload size={12} /> Upload File
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+
+                                                        const data = new FormData();
+                                                        data.append('file', file);
+
+                                                        try {
+                                                            const res = await fetch('/api/upload', { method: 'POST', body: data });
+                                                            const json = await res.json();
+                                                            if (json.url) {
+                                                                setFormData(prev => ({ ...prev, images: [...(prev.images || []), json.url] }));
+                                                            } else {
+                                                                alert('Upload failed');
+                                                            }
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                            alert('Upload error');
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+
                                         <button
                                             type="button"
                                             onClick={() => setIsImageModalOpen(true)}
@@ -532,81 +601,128 @@ export default function AdminDashboard() {
 
             {/* AI Image Studio Modal */}
             {isImageModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-                    <GlassCard className="max-w-2xl w-full p-8 border-[#D4AF37]/50 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                            <Sparkles size={200} />
-                        </div>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+                    <GlassCard className="max-w-5xl w-full p-0 border-[#D4AF37]/50 relative overflow-hidden flex flex-col md:flex-row h-[80vh]">
 
-                        <div className="flex justify-between items-center mb-8 relative z-10">
-                            <div>
-                                <h3 className="text-2xl text-[#D4AF37] font-serif flex items-center gap-2">
-                                    <Wand2 className="animate-pulse" /> AI Image Studio
+                        {/* Left: Controls */}
+                        <div className="w-full md:w-1/3 p-6 border-r border-white/10 overflow-y-auto space-y-6 bg-black/40">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl text-[#D4AF37] font-serif flex items-center gap-2">
+                                    <Wand2 className="animate-pulse" /> AI Studio
                                 </h3>
-                                <p className="text-white/40 text-sm">Generate or enhance product visuals instantly.</p>
+                                <button onClick={() => setIsImageModalOpen(false)} className="md:hidden"><X className="text-white/50" /></button>
                             </div>
-                            <button onClick={() => { setIsImageModalOpen(false); setGeneratedPreview(null); setImagePrompt(""); }}><X className="text-white/50 hover:text-white" /></button>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                            {/* Input Side */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs text-white/40 mb-2 block">Prompt / Style</label>
-                                    <textarea
-                                        placeholder="e.g., Silk saree on a marble table, cinematic lighting, gold accents..."
-                                        rows={4}
-                                        value={imagePrompt}
-                                        onChange={e => setImagePrompt(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 p-3 rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none resize-none"
-                                    />
-                                </div>
-                                <div className="flex gap-2">
-                                    {['Studio Lighting', 'Outdoors', 'Close-up'].map(style => (
-                                        <button key={style} onClick={() => setImagePrompt(p => p + (p ? ", " : "") + style)} className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-xs border border-white/10 text-white/60">
-                                            + {style}
+                            {/* Mode Support */}
+                            <div className="flex p-1 bg-white/5 rounded-lg">
+                                <button onClick={() => setStudioTab('text')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${studioTab === 'text' ? 'bg-[#D4AF37] text-black' : 'text-white/50 hover:text-white'}`}>Text to Image</button>
+                                <button onClick={() => setStudioTab('image')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${studioTab === 'image' ? 'bg-[#D4AF37] text-black' : 'text-white/50 hover:text-white'}`}>Image Remix</button>
+                            </div>
+
+                            {/* Image Upload (Remix Mode) */}
+                            <AnimatePresence>
+                                {studioTab === 'image' && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2">
+                                        <label className="text-xs text-white/40 uppercase">Reference Image</label>
+                                        <div className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center transition-colors hover:border-[#D4AF37]/50 relative group">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setStudioImage(file);
+                                                        setStudioPreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                            {studioPreview ? (
+                                                <div className="relative h-32 w-full rounded-lg overflow-hidden">
+                                                    <Image src={studioPreview} alt="Preview" fill className="object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="py-4">
+                                                    <Upload className="mx-auto mb-2 text-white/30 group-hover:text-[#D4AF37]" size={24} />
+                                                    <p className="text-xs text-white/50">Upload Sketch or Photo</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Prompt Input */}
+                            <div className="space-y-2">
+                                <label className="text-xs text-white/40 uppercase">Vision Prompt</label>
+                                <textarea
+                                    placeholder={studioTab === 'text' ? "Describe your masterpiece..." : "Describe how to change this image..."}
+                                    rows={4}
+                                    value={imagePrompt}
+                                    onChange={e => setImagePrompt(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-white text-sm focus:border-[#D4AF37] outline-none resize-none placeholder:text-white/20"
+                                />
+                            </div>
+
+                            {/* Style Presets */}
+                            <div className="space-y-3">
+                                <label className="text-xs text-white/40 uppercase">Style Presets</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['Editorial', 'Flat Lay', 'Texture Macro', 'Ghost Mannequin'].map(style => (
+                                        <button
+                                            key={style}
+                                            onClick={() => setStudioStyle(style)}
+                                            className={`p-3 rounded-xl text-xs text-left transition-all border ${studioStyle === style ? 'bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]' : 'bg-white/5 border-transparent text-white/60 hover:bg-white/10'}`}
+                                        >
+                                            {style}
                                         </button>
                                     ))}
                                 </div>
-                                <button
-                                    onClick={handleGenerateImage}
-                                    disabled={isGeneratingImage || !imagePrompt}
-                                    className="w-full bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold py-3 rounded-lg hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
-                                >
-                                    {isGeneratingImage ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                                    {isGeneratingImage ? 'Generating...' : 'Generate Art'}
-                                </button>
                             </div>
 
-                            {/* Preview Side */}
-                            <div className="bg-black/40 rounded-xl border border-white/10 flex items-center justify-center min-h-[300px] relative">
-                                {generatedPreview ? (
-                                    <>
-                                        <Image src={generatedPreview} alt="Generated" fill className="object-cover rounded-xl" />
-                                        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setFormData(prev => ({ ...prev, images: [generatedPreview!, ...(prev.images || [])] }));
-                                                    setIsImageModalOpen(false);
-                                                    setGeneratedPreview(null);
-                                                    setImagePrompt("");
-                                                }}
-                                                className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded shadow-lg transition-colors"
-                                            >
-                                                Use This
-                                            </button>
-                                            <button onClick={() => setGeneratedPreview(null)} className="px-4 py-2 bg-black/50 hover:bg-black/70 text-white rounded backdrop-blur-md">
-                                                Discard
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-center text-white/20">
-                                        <ImageIcon size={48} className="mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">Preview will appear here</p>
+                            <button
+                                onClick={handleGenerateStudioImage}
+                                disabled={isGeneratingImage || (!imagePrompt && !studioImage)}
+                                className="w-full bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold py-4 rounded-xl hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 mt-auto"
+                            >
+                                {isGeneratingImage ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                                {isGeneratingImage ? 'Creating Magic...' : 'Generate Studio Shot'}
+                            </button>
+                        </div>
+
+                        {/* Right: Preview Canvas */}
+                        <div className="flex-1 bg-[#0a0a0a] relative flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+                            <button onClick={() => setIsImageModalOpen(false)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-white hover:text-black transition-colors z-50"><X size={20} /></button>
+
+                            {generatedPreview ? (
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-2xl aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/50 group">
+                                    <Image src={generatedPreview} alt="Generated" fill className="object-contain" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-6 gap-4">
+                                        <button
+                                            onClick={() => {
+                                                setFormData(prev => ({ ...prev, images: [generatedPreview!, ...(prev.images || [])] }));
+                                                setIsImageModalOpen(false);
+                                            }}
+                                            className="bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105"
+                                        >
+                                            Use as Product Image
+                                        </button>
+                                        <a href={generatedPreview} download="srivari-studio-ai.png" className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-xl border border-white/20 backdrop-blur-md">
+                                            Download
+                                        </a>
                                     </div>
-                                )}
-                            </div>
+                                </motion.div>
+                            ) : (
+                                <div className="text-center space-y-4 opacity-30">
+                                    <div className="w-32 h-32 border-2 border-dashed border-white/30 rounded-full flex items-center justify-center mx-auto">
+                                        <ImageIcon size={48} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xl font-serif text-white">Canvas Empty</h4>
+                                        <p className="text-sm">Configure your settings to generate art.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </GlassCard>
                 </div>
