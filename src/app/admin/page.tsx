@@ -171,10 +171,15 @@ export default function AdminDashboard() {
 
     const handleProductSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Filter out empty image strings
+        const cleanedImages = formData.images?.filter(img => img && img.trim() !== "") || [];
+        const cleanedData = { ...formData, images: cleanedImages };
+
         if (isEditing) {
-            setProducts(products.map(p => p.id === isEditing ? { ...formData, id: isEditing } as Product : p));
+            setProducts(products.map(p => p.id === isEditing ? { ...cleanedData, id: isEditing } as Product : p));
         } else {
-            setProducts([{ ...formData, id: Math.random().toString(36).substr(2, 9) } as Product, ...products]);
+            setProducts([{ ...cleanedData, id: Math.random().toString(36).substr(2, 9) } as Product, ...products]);
         }
         resetForm();
     };

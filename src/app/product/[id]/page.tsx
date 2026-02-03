@@ -53,7 +53,10 @@ export default function ProductPage() {
         }
 
         setProduct(found);
-        if (found) setActiveImage(found.images[0] || "");
+        if (found) {
+            const validImage = found.images.find(img => img && img.trim() !== "") || "";
+            setActiveImage(validImage);
+        }
         setIsLoading(false);
     }, [id]);
 
@@ -140,7 +143,7 @@ export default function ProductPage() {
 
                         {/* Thumbnails (Simulated) */}
                         <div className="flex gap-4 overflow-x-auto pb-2">
-                            {product.images?.map((img, i) => (
+                            {product.images?.filter(img => img && img.trim() !== "").map((img, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setActiveImage(img)}
