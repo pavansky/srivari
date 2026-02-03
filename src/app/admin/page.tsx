@@ -5,7 +5,8 @@ import { Product, Order } from '@/types';
 import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
-    Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown
+    Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
+    Sparkles, Wand2, Loader2
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,6 +60,46 @@ export default function AdminDashboard() {
     const [orderFormData, setOrderFormData] = useState({
         customerName: '', customerPhone: '', customerEmail: '', productId: '', quantity: 1
     });
+
+    // AI State
+    const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [imagePrompt, setImagePrompt] = useState("");
+    const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
+
+    // --- AI Logic (Mock) ---
+    const generateAIDescription = async () => {
+        if (!formData.name) return alert("Please enter a product name first!");
+        setIsGeneratingDesc(true);
+
+        // Simulate API delay
+        await new Promise(r => setTimeout(r, 1500));
+
+        const adjectives = ["exquisite", "handcrafted", "timeless", "luxurious", "ethereal", "majestic"];
+        const occasions = ["celebrations", "weddings", "festive gatherings", "grand events"];
+        const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const randomOcc = occasions[Math.floor(Math.random() * occasions.length)];
+
+        const desc = `Step into a world of elegance with the ${formData.name}. This ${randomAdj} ${formData.category || 'masterpiece'} is woven with precision, embodying the rich heritage of Srivari craftsmanship. \n\nFeaturing a delicate texture and a vibrant hue, it is the perfect choice for ${randomOcc}. Draping strictly in comfort without compromising on style, this is more than just attire—it's a statement.`;
+
+        setFormData(prev => ({ ...prev, description: desc }));
+        setIsGeneratingDesc(false);
+    };
+
+    const handleGenerateImage = async () => {
+        if (!imagePrompt) return alert("Describe the image you want!");
+        setIsGeneratingImage(true);
+        await new Promise(r => setTimeout(r, 2000));
+        // Mock: Return a random high-quality unsplash image
+        const mockImages = [
+            "https://images.unsplash.com/photo-1610030469983-98ddb4fa9e63?q=80&w=1200",
+            "https://images.unsplash.com/photo-1583391726454-608e543c0c00?q=80&w=1200",
+            "https://images.unsplash.com/photo-1596462502278-27bfdd403ea6?q=80&w=1200"
+        ];
+        setGeneratedPreview(mockImages[Math.floor(Math.random() * mockImages.length)]);
+        setIsGeneratingImage(false);
+    };
 
     // --- Load/Save Data ---
     useEffect(() => {
@@ -209,14 +250,28 @@ export default function AdminDashboard() {
                                 <div className="md:col-span-5 space-y-6">
                                     <div className="space-y-4">
                                         <GlassInput placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="text-lg font-medium" />
-                                        <textarea
-                                            placeholder="Description"
-                                            rows={5}
-                                            value={formData.description}
-                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white placeholder-white/30 focus:border-[#D4AF37] outline-none transition-all resize-none"
-                                            required
-                                        />
+                                        <div className="relative">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="text-sm font-medium text-white/60">Description</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={generateAIDescription}
+                                                    disabled={isGeneratingDesc}
+                                                    className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-white transition-colors disabled:opacity-50"
+                                                >
+                                                    {isGeneratingDesc ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                                    {isGeneratingDesc ? 'Writing...' : 'Auto-Write with AI'}
+                                                </button>
+                                            </div>
+                                            <textarea
+                                                placeholder="Enter details or let AI write it for you..."
+                                                rows={5}
+                                                value={formData.description}
+                                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                                className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white placeholder-white/30 focus:border-[#D4AF37] outline-none transition-all resize-none font-sans leading-relaxed"
+                                                required
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Images */}
@@ -228,6 +283,13 @@ export default function AdminDashboard() {
                                             </div>
                                         ))}
                                         <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })} className="text-xs text-[#D4AF37] hover:underline">+ Add URL</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsImageModalOpen(true)}
+                                            className="w-full py-3 mt-2 rounded-lg border border-[#D4AF37]/30 text-[#D4AF37] text-sm flex items-center justify-center gap-2 hover:bg-[#D4AF37]/10 transition-colors"
+                                        >
+                                            <Wand2 size={16} /> Open AI Image Studio
+                                        </button>
                                     </div>
                                 </div>
 
@@ -403,8 +465,8 @@ export default function AdminDashboard() {
                                                     setOrders(updated);
                                                 }}
                                                 className={`mt-2 text-xs py-1 px-3 rounded-full border bg-transparent outline-none cursor-pointer ${order.status === 'Delivered' ? 'border-green-500 text-green-400' :
-                                                        order.status === 'Cancelled' ? 'border-red-500 text-red-400' :
-                                                            'border-yellow-500 text-yellow-400'
+                                                    order.status === 'Cancelled' ? 'border-red-500 text-red-400' :
+                                                        'border-yellow-500 text-yellow-400'
                                                     }`}
                                             >
                                                 <option className="bg-neutral-900" value="Pending">Pending</option>
@@ -453,6 +515,7 @@ export default function AdminDashboard() {
                             setOrders([newOrder, ...orders]);
                             setProducts(products.map(p => p.id === product.id ? { ...p, stock: p.stock - orderFormData.quantity } : p));
                             setIsOrderModalOpen(false);
+                            setOrderFormData({ customerName: '', customerPhone: '', customerEmail: '', productId: '', quantity: 1 });
                         }}>
                             <GlassInput placeholder="Customer Name" required value={orderFormData.customerName} onChange={e => setOrderFormData({ ...orderFormData, customerName: e.target.value })} />
                             <GlassInput placeholder="Phone" required value={orderFormData.customerPhone} onChange={e => setOrderFormData({ ...orderFormData, customerPhone: e.target.value })} />
@@ -463,6 +526,88 @@ export default function AdminDashboard() {
                             <GlassInput type="number" min="1" value={orderFormData.quantity} onChange={e => setOrderFormData({ ...orderFormData, quantity: Number(e.target.value) })} />
                             <button className="w-full bg-[#D4AF37] text-black font-bold py-3 rounded-lg hover:bg-white mt-4">Confirm Order</button>
                         </form>
+                    </GlassCard>
+                </div>
+            )}
+
+            {/* AI Image Studio Modal */}
+            {isImageModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+                    <GlassCard className="max-w-2xl w-full p-8 border-[#D4AF37]/50 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                            <Sparkles size={200} />
+                        </div>
+
+                        <div className="flex justify-between items-center mb-8 relative z-10">
+                            <div>
+                                <h3 className="text-2xl text-[#D4AF37] font-serif flex items-center gap-2">
+                                    <Wand2 className="animate-pulse" /> AI Image Studio
+                                </h3>
+                                <p className="text-white/40 text-sm">Generate or enhance product visuals instantly.</p>
+                            </div>
+                            <button onClick={() => { setIsImageModalOpen(false); setGeneratedPreview(null); setImagePrompt(""); }}><X className="text-white/50 hover:text-white" /></button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                            {/* Input Side */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs text-white/40 mb-2 block">Prompt / Style</label>
+                                    <textarea
+                                        placeholder="e.g., Silk saree on a marble table, cinematic lighting, gold accents..."
+                                        rows={4}
+                                        value={imagePrompt}
+                                        onChange={e => setImagePrompt(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 p-3 rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none resize-none"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    {['Studio Lighting', 'Outdoors', 'Close-up'].map(style => (
+                                        <button key={style} onClick={() => setImagePrompt(p => p + (p ? ", " : "") + style)} className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-xs border border-white/10 text-white/60">
+                                            + {style}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={handleGenerateImage}
+                                    disabled={isGeneratingImage || !imagePrompt}
+                                    className="w-full bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold py-3 rounded-lg hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+                                >
+                                    {isGeneratingImage ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                                    {isGeneratingImage ? 'Generating...' : 'Generate Art'}
+                                </button>
+                            </div>
+
+                            {/* Preview Side */}
+                            <div className="bg-black/40 rounded-xl border border-white/10 flex items-center justify-center min-h-[300px] relative">
+                                {generatedPreview ? (
+                                    <>
+                                        <Image src={generatedPreview} alt="Generated" fill className="object-cover rounded-xl" />
+                                        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setFormData(prev => ({ ...prev, images: [generatedPreview!, ...(prev.images || [])] }));
+                                                    setIsImageModalOpen(false);
+                                                    setGeneratedPreview(null);
+                                                    setImagePrompt("");
+                                                }}
+                                                className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded shadow-lg transition-colors"
+                                            >
+                                                Use This
+                                            </button>
+                                            <button onClick={() => setGeneratedPreview(null)} className="px-4 py-2 bg-black/50 hover:bg-black/70 text-white rounded backdrop-blur-md">
+                                                Discard
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center text-white/20">
+                                        <ImageIcon size={48} className="mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm">Preview will appear here</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </GlassCard>
                 </div>
             )}
