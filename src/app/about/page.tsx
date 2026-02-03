@@ -39,13 +39,19 @@ export default function AboutPage() {
                             Our collections are curated with a discerning eye for authenticity, ensuring that when you drape a Srivari saree, you are embracing a piece of history.
                         </p>
                     </div>
-                    <div className="relative p-4">
-                        <div className="absolute inset-0 border-2 border-gold translate-x-4 translate-y-4 -z-10 rounded-sm"></div>
-                        <img
-                            src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop"
-                            alt="Saree Detail"
-                            className="w-full h-auto shadow-lg rounded-sm"
-                        />
+                    <div className="relative">
+                        {/* Image Container with Vignette/Blend Effect */}
+                        <div className="relative rounded-2xl overflow-hidden">
+                            <img
+                                src="/srivari-legacy.png"
+                                alt="The Srivari Legacy"
+                                className="w-full h-auto object-cover"
+                            />
+                            {/* Inset shadow to blend edges into the #FDFBF7 background */}
+                            <div className="absolute inset-0 shadow-[inset_0_0_100px_40px_#FDFBF7] pointer-events-none"></div>
+                            {/* Additional gradient for smoother integration */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#FDFBF7]/80 via-transparent to-transparent pointer-events-none"></div>
+                        </div>
                     </div>
                 </div>
             </section>
