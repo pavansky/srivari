@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WAButton from "@/components/WAButton";
@@ -11,8 +12,9 @@ import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types";
 
-export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function ProductPage() {
+    const params = useParams();
+    const id = params?.id as string;
     const [isLoading, setIsLoading] = useState(true);
     const [product, setProduct] = useState<Product | undefined>(undefined);
     const [activeImage, setActiveImage] = useState("");
@@ -20,6 +22,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     const { addToCart } = useCart();
 
     useEffect(() => {
+        console.log("Product Page Mounted. URL ID:", id);
+
         // Try to find in localStorage first
         const storedProducts = localStorage.getItem('srivari_products');
         let foundProduct;
@@ -27,7 +31,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         if (storedProducts) {
             try {
                 const products: Product[] = JSON.parse(storedProducts);
+                console.log("Loaded products from localStorage:", products.length);
                 foundProduct = products.find(p => p.id === id);
+                console.log("Found in localStorage?", !!foundProduct);
             } catch (error) {
                 console.error("Failed to parse products from localStorage:", error);
             }
@@ -35,7 +41,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
         // Fallback to initialProducts if not found or no storage
         if (!foundProduct) {
+            console.log("Checking initialProducts (fallback)...");
             foundProduct = initialProducts.find(p => p.id === id);
+            console.log("Found in initialProducts?", !!foundProduct);
         }
 
         setProduct(foundProduct);
