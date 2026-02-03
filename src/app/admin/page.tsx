@@ -1,233 +1,270 @@
 "use client";
 
 import { useState } from 'react';
-import Header from '@/components/Header';
-import { products as initialProducts } from '@/data/products';
 import { Product } from '@/types';
+import { products as initialProducts } from '@/data/products';
+import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video } from 'lucide-react';
+import Image from 'next/image';
 
-export default function AdminPage() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [pin, setPin] = useState('');
+export default function AdminDashboard() {
     const [products, setProducts] = useState<Product[]>(initialProducts);
-    const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState<string | null>(null);
 
-    // New Product Form State
-    const [newProduct, setNewProduct] = useState<Partial<Product>>({
+    // Form State
+    const [formData, setFormData] = useState<Partial<Product>>({
         name: '',
         price: 0,
+        description: '',
         category: '',
-        image: '',
-        description: ''
+        stock: 0,
+        images: [''],
+        video: '',
+        isFeatured: false
     });
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (pin === '1234') {
-            setIsAuthenticated(true);
-        } else {
-            alert('Invalid PIN');
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            price: 0,
+            description: '',
+            category: '',
+            stock: 0,
+            images: [''],
+            video: '',
+            isFeatured: false
+        });
+        setIsEditing(null);
+    };
+
+    const handleEdit = (product: Product) => {
+        setFormData({ ...product });
+        setIsEditing(product.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm('Are you sure you want to delete this product?')) {
+            setProducts(products.filter(p => p.id !== id));
         }
     };
 
-    const handleAddProduct = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const product: Product = {
-            id: (products.length + 1).toString(),
-            name: newProduct.name || 'New Saree',
-            price: newProduct.price || 0,
-            image: newProduct.image || 'https://placehold.co/600x800', // Default placeholder
-            description: newProduct.description || '',
-            category: newProduct.category || 'General',
-            inStock: true
-        };
 
-        setProducts([...products, product]);
-        setIsAdding(false);
-        setNewProduct({ name: '', price: 0, category: '', image: '', description: '' });
-        alert('Product Added! (Note: This is a demo. Data will reset on refresh without a database backend)');
+        if (isEditing) {
+            setProducts(products.map(p => p.id === isEditing ? { ...formData, id: isEditing } as Product : p));
+        } else {
+            const newProduct = {
+                ...formData,
+                id: Math.random().toString(36).substr(2, 9),
+            } as Product;
+            setProducts([newProduct, ...products]);
+        }
+        resetForm();
     };
 
-    if (!isAuthenticated) {
-        return (
-            <main>
-                <Header />
-                <div className="container login-container">
-                    <div className="login-box">
-                        <h2>Admin Access</h2>
-                        <p>Please enter your 4-digit security PIN.</p>
-                        <form onSubmit={handleLogin}>
-                            <input
-                                type="password"
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value)}
-                                placeholder="PIN"
-                                maxLength={4}
-                                className="pin-input"
-                            />
-                            <button type="submit" className="btn-primary" style={{ width: '100%' }}>Login</button>
-                        </form>
-                    </div>
-                </div>
-                <style jsx>{`
-            .login-container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 60vh;
-            }
-            .login-box {
-                background: #fff;
-                padding: 3rem;
-                border-radius: 8px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                text-align: center;
-                max-width: 400px;
-                width: 100%;
-            }
-            .login-box h2 {
-                color: var(--color-primary);
-                margin-bottom: 1rem;
-            }
-            .pin-input {
-                width: 100%;
-                padding: 1rem;
-                margin: 2rem 0;
-                font-size: 1.2rem;
-                text-align: center;
-                letter-spacing: 0.5rem;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-        `}</style>
-            </main>
-        );
-    }
+    const updateImage = (index: number, value: string) => {
+        const newImages = [...(formData.images || [])];
+        newImages[index] = value;
+        setFormData({ ...formData, images: newImages });
+    };
+
+    const addImageField = () => {
+        setFormData({ ...formData, images: [...(formData.images || []), ''] });
+    };
 
     return (
-        <main>
-            <Header />
-            <div className="container dashboard">
-                <div className="dash-header">
-                    <h2>Store Administration</h2>
-                    <button className="btn-primary" onClick={() => setIsAdding(!isAdding)}>
-                        {isAdding ? 'Cancel' : '+ Add New Product'}
-                    </button>
+        <div className="min-h-screen pt-24 px-6 md:px-12 bg-obsidian text-marble">
+            <div className="max-w-6xl mx-auto">
+                <h1 className="text-4xl font-serif text-gold mb-8">Admin Dashboard</h1>
+
+                {/* Product Form */}
+                <div className="glass-card p-8 rounded-lg mb-12 border border-white/10">
+                    <h2 className="text-2xl font-serif text-gold mb-6 flex items-center gap-2">
+                        {isEditing ? <Edit2 size={24} /> : <Plus size={24} />}
+                        {isEditing ? 'Edit Product' : 'Add New Product'}
+                    </h2>
+
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-marble/60 mb-1">Product Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-marble/60 mb-1">Price (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.price}
+                                        onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                                        className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-marble/60 mb-1">Stock</label>
+                                    <input
+                                        type="number"
+                                        value={formData.stock}
+                                        onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                                        className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-marble/60 mb-1">Category</label>
+                                <select
+                                    value={formData.category}
+                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                >
+                                    <option value="" className="bg-obsidian">Select Category</option>
+                                    <option value="Silk" className="bg-obsidian">Silk</option>
+                                    <option value="Banarasi" className="bg-obsidian">Banarasi</option>
+                                    <option value="Cotton" className="bg-obsidian">Cotton</option>
+                                    <option value="Mysore Silk" className="bg-obsidian">Mysore Silk</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3 bg-white/5 rounded border border-white/10">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.isFeatured}
+                                    onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })}
+                                    className="w-5 h-5 accent-gold"
+                                    id="featured"
+                                />
+                                <label htmlFor="featured" className="cursor-pointer select-none">Mark as Featured Product</label>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-marble/60 mb-1">Description</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    rows={4}
+                                    className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-marble/60 mb-1 flex justify-between">
+                                    <span>Images (URL)</span>
+                                    <button type="button" onClick={addImageField} className="text-xs text-gold hover:underline">+ Add Another</button>
+                                </label>
+                                <div className="space-y-2 max-h-32 overflow-y-auto">
+                                    {formData.images?.map((img, idx) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <div className="bg-white/5 p-2 rounded text-marble/50"><ImageIcon size={18} /></div>
+                                            <input
+                                                type="text"
+                                                value={img}
+                                                onChange={e => updateImage(idx, e.target.value)}
+                                                placeholder="https://..."
+                                                className="w-full bg-white/5 border border-white/10 p-2 rounded text-sm text-marble focus:border-gold outline-none"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-marble/60 mb-1">Video (URL) - Optional</label>
+                                <div className="flex gap-2">
+                                    <div className="bg-white/5 p-2 rounded text-marble/50"><Video size={18} /></div>
+                                    <input
+                                        type="text"
+                                        value={formData.video || ''}
+                                        onChange={e => setFormData({ ...formData, video: e.target.value })}
+                                        placeholder="https://..."
+                                        className="w-full bg-white/5 border border-white/10 p-2 rounded text-sm text-marble focus:border-gold outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 flex justify-end gap-4 mt-4">
+                            {isEditing && (
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="px-6 py-3 rounded text-marble/60 hover:text-white flex items-center gap-2"
+                                >
+                                    <X size={20} /> Cancel
+                                </button>
+                            )}
+                            <button
+                                type="submit"
+                                className="bg-gold text-obsidian font-serif font-bold px-8 py-3 rounded hover:bg-white transition-all flex items-center gap-2"
+                            >
+                                <Save size={20} /> {isEditing ? 'Update Product' : 'Add Product'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                {isAdding && (
-                    <div className="add-form">
-                        <h3>Add New Saree</h3>
-                        <form onSubmit={handleAddProduct} className="form-grid">
-                            <input
-                                placeholder="Product Name"
-                                value={newProduct.name}
-                                onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                                required
-                            />
-                            <input
-                                placeholder="Price (INR)"
-                                type="number"
-                                value={newProduct.price || ''}
-                                onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
-                                required
-                            />
-                            <input
-                                placeholder="Category (e.g. Silk, Cotton)"
-                                value={newProduct.category}
-                                onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
-                                required
-                            />
-                            <input
-                                placeholder="Image URL"
-                                value={newProduct.image}
-                                onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
-                            />
-                            <textarea
-                                placeholder="Description"
-                                value={newProduct.description}
-                                onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
-                                rows={3}
-                                style={{ gridColumn: '1 / -1' }}
-                            />
-                            <button type="submit" className="btn-primary" style={{ gridColumn: '1 / -1' }}>Save Product</button>
-                        </form>
-                    </div>
-                )}
+                {/* Inventory List */}
+                <h2 className="text-2xl font-serif text-gold mb-6">Inventory ({products.length})</h2>
+                <div className="grid grid-cols-1 gap-4">
+                    {products.map((product) => (
+                        <div key={product.id} className="glass-card p-4 rounded-lg flex flex-col md:flex-row items-center gap-6 border border-white/5 hover:border-gold/30 transition-colors">
+                            <div className="w-full md:w-20 h-20 relative rounded overflow-hidden bg-white/5 flex-shrink-0">
+                                {product.images[0] && (
+                                    <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                                )}
+                            </div>
 
-                <div className="product-list">
-                    <h3>Current Inventory ({products.length})</h3>
-                    <table className="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>Name</th>
-                                <th>Price</th>
-                                <th>Category</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.map(p => (
-                                <tr key={p.id}>
-                                    <td><img src={p.image} alt="" style={{ height: '50px' }} /></td>
-                                    <td>{p.name}</td>
-                                    <td>₹{p.price}</td>
-                                    <td>{p.category}</td>
-                                    <td><button className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>Edit</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            <div className="flex-grow text-center md:text-left">
+                                <h3 className="text-lg font-medium text-white mb-1">{product.name}</h3>
+                                <p className="text-sm text-marble/60 mb-2">{product.category} • ₹{product.price.toLocaleString('en-IN')}</p>
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    <span className={`text-xs px-2 py-1 rounded border ${product.stock > 0 ? 'border-green-500/50 text-green-400' : 'border-red-500/50 text-red-400'}`}>
+                                        Stock: {product.stock}
+                                    </span>
+                                    {product.isFeatured && (
+                                        <span className="text-xs px-2 py-1 rounded border border-gold/50 text-gold">Featured</span>
+                                    )}
+                                    {product.video && (
+                                        <span className="text-xs px-2 py-1 rounded border border-blue-500/50 text-blue-400">Video</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => handleEdit(product)}
+                                    className="p-2 rounded bg-white/5 hover:bg-gold/20 text-marble hover:text-gold transition-colors"
+                                >
+                                    <Edit2 size={18} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(product.id)}
+                                    className="p-2 rounded bg-white/5 hover:bg-red-500/20 text-marble hover:text-red-400 transition-colors"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+
+                    {products.length === 0 && (
+                        <p className="text-center text-marble/40 py-12">No products found. Add one above.</p>
+                    )}
                 </div>
             </div>
-
-            <style jsx>{`
-        .dashboard {
-            padding: 4rem 1.5rem;
-        }
-        .dash-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-        .dash-header h2 {
-            color: var(--color-primary);
-        }
-        .add-form {
-            background: #f9f9f9;
-            padding: 2rem;
-            border-radius: 8px;
-            margin-bottom: 3rem;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .form-grid input, .form-grid textarea {
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .inventory-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .inventory-table th, .inventory-table td {
-            text-align: left;
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-        .inventory-table th {
-            font-family: var(--font-serif);
-            color: var(--color-primary);
-        }
-      `}</style>
-        </main>
+        </div>
     );
 }

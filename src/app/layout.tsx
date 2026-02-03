@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Montserrat, Rozha_One } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
+import { SocialFloating } from "@/components/SocialFloating";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
+const rozha = Rozha_One({ weight: "400", subsets: ["latin", "devanagari"], variable: "--font-rozha" });
 
 export const metadata: Metadata = {
-    title: "Srivari's | Authentic Luxury Sarees",
-    description: "Experience the elegance of timeless traditions with Srivari's exclusive saree collection in Bangalore.",
+    title: "Srivari's | Royal Silk Sarees",
+    description: "Exclusive collection of Kanjivaram and Banarasi silk sarees.",
 };
 
 export default function RootLayout({
@@ -17,7 +21,11 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body className={`${inter.variable} ${playfair.variable}`}>{children}</body>
+            <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} ${rozha.variable} bg-obsidian text-marble antialiased`}>
+                <Navbar />
+                {children}
+                <SocialFloating />
+            </body>
         </html>
     );
 }

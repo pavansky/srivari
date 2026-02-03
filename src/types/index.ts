@@ -2,10 +2,12 @@ export interface Product {
     id: string;
     name: string;
     price: number;
-    image: string;
+    images: string[];
+    video?: string;
     description: string;
     category: string;
-    inStock: boolean;
+    stock: number;
+    isFeatured: boolean;
 }
 
 export interface Collection {

@@ -1,143 +1,176 @@
-import { products } from '@/data/products';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import WhatsappButton from '@/components/WhatsappButton';
-import Link from 'next/link';
+"use client";
 
-export function generateStaticParams() {
-    return products.map((product) => ({
-        id: product.id,
-    }));
-}
+import { useState } from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import { products } from "@/data/products";
+import Image from "next/image";
+import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
+import Accordion from "@/components/Accordion";
+import Link from "next/link"; // Ensure Link is imported if used (even if not explicitly used in this snippet, good practice)
+// If not used, remove it.
 
 export default function ProductPage({ params }: { params: { id: string } }) {
     const product = products.find((p) => p.id === params.id);
+    const [activeImage, setActiveImage] = useState(product?.image || "");
+    const [selectedSize, setSelectedSize] = useState("Free Size");
 
     if (!product) {
         return (
-            <main>
-                <Header />
-                <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>
-                    <h2>Product Not Found</h2>
-                    <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>Back to Home</Link>
-                </div>
-                <Footer />
-            </main>
+            <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
+                <h1 className="text-3xl font-heading text-[#4A0404]">Product not found</h1>
+            </div>
         );
     }
 
+    // WhatsApp Order Logic
+    const phoneNumber = "919876543210";
+    const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Color: ${product.description.split(' ')[0] || 'Standard'}. Please confirm availability.`;
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
     return (
-        <main>
-            <Header />
+        <main className="bg-[#FDFBF7] min-h-screen">
+            <Navbar />
 
-            <div className="container product-container">
-                <div className="breadcrumb">
-                    <Link href="/">Home</Link> / <Link href="/collections">Collections</Link> / <span>{product.name}</span>
-                </div>
+            <div className="container mx-auto px-4 pt-32 pb-20">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
-                <div className="product-layout">
-                    <div className="product-gallery">
-                        <img src={product.image} alt={product.name} className="main-image" />
-                    </div>
-
-                    <div className="product-details">
-                        <span className="category-tag">{product.category}</span>
-                        <h1 className="product-title">{product.name}</h1>
-                        <p className="price">₹{product.price.toLocaleString('en-IN')}</p>
-
-                        <div className="description">
-                            <p>{product.description}</p>
-                            <p>
-                                <strong>Authenticity Guaranteed:</strong> Hand-picked from the finest weavers.
-                                Comes with Silk Mark certification.
-                            </p>
+                    {/* Image Gallery */}
+                    <div className="space-y-4">
+                        <div className="relative aspect-[3/4] overflow-hidden rounded-sm border border-[#E5E5E5] group">
+                            <Image
+                                src={activeImage || product.image}
+                                alt={product.name}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-125 cursor-zoom-in"
+                            />
+                            <span className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 text-xs uppercase tracking-widest font-bold">
+                                {product.category}
+                            </span>
                         </div>
 
-                        <div className="actions">
-                            <WhatsappButton productName={product.name} price={product.price} />
-                        </div>
-
-                        <div className="fabric-care">
-                            <h4>Fabric Care</h4>
-                            <ul>
-                                <li>Dry Clean Only</li>
-                                <li>Wrap in muslin cloth for storage</li>
-                                <li>Avoid direct sunlight</li>
-                            </ul>
+                        {/* Thumbnails (Simulated) */}
+                        <div className="flex gap-4 overflow-x-auto pb-2">
+                            {[product.image, product.image, product.image].map((img, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setActiveImage(img)}
+                                    className={`relative w-24 h-32 flex-shrink-0 border-2 ${activeImage === img ? 'border-[#4A0404]' : 'border-transparent'} hover:border-[#D4AF37] transition-all`}
+                                >
+                                    <Image src={img} alt="Thumbnail" fill className="object-cover" />
+                                </button>
+                            ))}
                         </div>
                     </div>
+
+                    {/* Product Details */}
+                    <div>
+                        <div className="mb-2 text-[#D4AF37] text-sm font-bold uppercase tracking-widest">
+                            Srivari Royal Collection
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-heading text-[#1A1A1A] mb-4 leading-tight">
+                            {product.name}
+                        </h1>
+                        <p className="text-2xl text-[#4A0404] font-medium mb-6 font-body">
+                            ₹{product.price.toLocaleString('en-IN')}
+                        </p>
+
+                        <div className="prose prose-stone mb-8 text-[#595959]">
+                            <p>{product.description} Handwoven with purity and passion, ensuring a drape that feels like second skin. Perfect for weddings and grand celebrations.</p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                            <a
+                                href={whatsappUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 bg-[#25D366] text-white py-4 px-8 font-bold uppercase tracking-widest hover:bg-[#1DA851] transition-colors text-center flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                            >
+                                <span>Order via WhatsApp</span>
+                            </a>
+                            <button className="flex-1 border border-[#4A0404] text-[#4A0404] py-4 px-8 font-bold uppercase tracking-widest hover:bg-[#4A0404] hover:text-white transition-colors text-center">
+                                Add to Cart
+                            </button>
+                        </div>
+
+                        <div className="flex gap-4 text-[#595959] mb-8">
+                            <button className="flex items-center gap-2 hover:text-[#4A0404] transition-colors"><Heart size={18} /> Add to Wishlist</button>
+                            <button className="flex items-center gap-2 hover:text-[#4A0404] transition-colors"><Share2 size={18} /> Share</button>
+                        </div>
+
+                        {/* Product Accordion */}
+                        <div className="mb-8">
+                            <Accordion
+                                items={[
+                                    {
+                                        title: "Product Specifications",
+                                        content: (
+                                            <ul className="list-disc pl-5">
+                                                <li>Material: Pure Silk</li>
+                                                <li>Zari: High Quality Half-Fine Zari</li>
+                                                <li>Pattern: Traditional Motifs</li>
+                                                <li>Occasion: Wedding / Festival</li>
+                                                <li>Blouse Piece: Included (Unstitched)</li>
+                                            </ul>
+                                        )
+                                    },
+                                    {
+                                        title: "Fabric Care & Storage",
+                                        content: (
+                                            <ul className="list-disc pl-5">
+                                                <li>Dry clean only to maintain the sheen and texture.</li>
+                                                <li>Store in a muslin bag to allow the fabric to breathe.</li>
+                                                <li>Change folds every 3 months to prevent creases from becoming permanent.</li>
+                                                <li>Avoid spraying perfume directly on the zari.</li>
+                                            </ul>
+                                        )
+                                    },
+                                    {
+                                        title: "Shipping & Returns",
+                                        content: (
+                                            <p>
+                                                Free shipping across India. International shipping available at standard rates.
+                                                Returns accepted within 7 days of delivery if the tag is intact and the saree is in original condition.
+                                            </p>
+                                        )
+                                    }
+                                ]}
+                            />
+                        </div>
+
+                        {/* Trust Badges */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-200 pt-8">
+                            <div className="flex items-center gap-3">
+                                <Truck className="text-[#D4AF37]" size={24} />
+                                <div className="text-sm">
+                                    <span className="block font-bold text-[#1A1A1A]">Free Shipping</span>
+                                    <span className="text-gray-500">On orders over ₹5000</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <ShieldCheck className="text-[#D4AF37]" size={24} />
+                                <div className="text-sm">
+                                    <span className="block font-bold text-[#1A1A1A]">Silk Mark Certified</span>
+                                    <span className="text-gray-500">100% Authentic</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Check className="text-[#D4AF37]" size={24} />
+                                <div className="text-sm">
+                                    <span className="block font-bold text-[#1A1A1A]">7-Day Returns</span>
+                                    <span className="text-gray-500">Questions asked</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
             <Footer />
-
-            <style jsx>{`
-        .product-container {
-            padding: 2rem 1.5rem 4rem;
-        }
-        .breadcrumb {
-            margin-bottom: 2rem;
-            color: var(--color-text-muted);
-            font-size: 0.9rem;
-        }
-        .breadcrumb span {
-            color: var(--color-text-main);
-        }
-        .product-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-        }
-        .main-image {
-            width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        .category-tag {
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--color-secondary);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        .product-title {
-            font-size: 2.5rem;
-            margin: 0.5rem 0 1rem;
-            color: var(--color-primary);
-        }
-        .price {
-            font-size: 1.8rem;
-            font-weight: 500;
-            color: var(--color-text-main);
-            margin-bottom: 2rem;
-        }
-        .description {
-            line-height: 1.8;
-            color: var(--color-text-muted);
-            margin-bottom: 2rem;
-        }
-        .description p {
-            margin-bottom: 1rem;
-        }
-        .fabric-care {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #eee;
-        }
-        .fabric-care h4 {
-            margin-bottom: 1rem;
-        }
-        .fabric-care ul {
-            list-style-position: inside;
-            color: var(--color-text-muted);
-        }
-        @media (max-width: 768px) {
-            .product-layout {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-        }
-      `}</style>
+            <WhatsAppButton />
         </main>
     );
 }

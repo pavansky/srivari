@@ -21,27 +21,7 @@ export default function Collections() {
             </div>
             <Footer />
 
-            <style jsx>{`
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-        .section-header h2 {
-            font-size: 2.5rem;
-            color: var(--color-primary);
-            margin-bottom: 1rem;
-        }
-        .section-header p {
-            color: var(--color-text-muted);
-            font-family: var(--font-serif);
-            font-style: italic;
-        }
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-        }
-      `}</style>
+
         </main>
     );
 }

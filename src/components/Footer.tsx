@@ -1,80 +1,51 @@
+"use client";
+
 const Footer = () => {
   return (
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-content">
-          <div className="brand">
-            <h2>SRIVARI'S</h2>
-            <p>Timeless Elegance, Woven Tradition.</p>
-          </div>
-          <div className="links">
-            <h3>Quick Links</h3>
-            <ul>
-              <li><a href="/about">About Us</a></li>
-              <li><a href="/collections">Collections</a></li>
-              <li><a href="/contact">Contact</a></li>
-              <li><a href="/admin">Admin Login</a></li>
-            </ul>
-          </div>
-          <div className="contact">
-            <h3>Visit Us</h3>
-            <p>123, Heritage Lane,<br />Malleswaram, Bangalore - 560003</p>
-            <p>+91 97399 88771</p>
-          </div>
+    <footer className="editorial-footer">
+      <div className="container footer-grid">
+        <div className="footer-col footer-brand">
+          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-secondary)' }}>SRIVARI'S</h2>
+          <p>
+            Weaving legacy into every thread. Authentic Kanjivaram and Banarasi silks for the modern royalty.
+          </p>
         </div>
-        <div className="copyright">
-          <p>&copy; {new Date().getFullYear()} Srivari's Saree Store. All rights reserved.</p>
+
+        <div className="footer-col">
+          <h4>Collections</h4>
+          <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
+            <li><a href="#">Kanjivaram Silk</a></li>
+            <li><a href="#">Banarasi Silk</a></li>
+            <li><a href="#">Mysore Silk</a></li>
+            <li><a href="#">Tussar Georgette</a></li>
+          </ul>
+        </div>
+
+        <div className="footer-col">
+          <h4>Support</h4>
+          <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
+            <li><a href="#">Order Tracking</a></li>
+            <li><a href="#">Shipping Policy</a></li>
+            <li><a href="#">Returns & Exchange</a></li>
+            <li><a href="#">Contact Us</a></li>
+          </ul>
+        </div>
+
+        <div className="footer-col">
+          <h4>Newsletter</h4>
+          <p style={{ marginBottom: '1rem', color: '#888', fontSize: '0.9rem' }}>Subscribe for exclusive drops and heritage stories.</p>
+          <form onSubmit={(e) => e.preventDefault()}>
+            <input type="email" placeholder="Your Email Address" className="newsletter-input" />
+            <button type="submit" className="cta-button" style={{ padding: '0.8rem 2rem', fontSize: '0.8rem', marginTop: '1rem' }}>
+              Subscribe
+            </button>
+          </form>
         </div>
       </div>
-      <style jsx>{`
-          .footer {
-            background-color: #1a1a1a;
-            color: #fff;
-            padding: 4rem 0 2rem;
-            margin-top: 4rem;
-          }
-          .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-          }
-          .brand h2 {
-            font-family: var(--font-serif);
-            color: var(--color-secondary);
-            margin-bottom: 1rem;
-          }
-          .links h3, .contact h3 {
-            font-family: var(--font-serif);
-            color: var(--color-secondary);
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-          }
-          .links ul {
-            list-style: none;
-          }
-          .links li {
-            margin-bottom: 0.5rem;
-          }
-          .links a {
-            color: #ccc;
-            transition: color 0.3s;
-          }
-          .links a:hover {
-            color: var(--color-secondary);
-          }
-          .contact p {
-            color: #ccc;
-            line-height: 1.6;
-          }
-          .copyright {
-            text-align: center;
-            border-top: 1px solid #333;
-            padding-top: 2rem;
-            font-size: 0.8rem;
-            color: #666;
-          }
-        `}</style>
+
+      <div className="container copyright">
+        <p>&copy; {new Date().getFullYear()} Srivari's Saree Store. All rights reserved.</p>
+      </div>
     </footer>
   );
 };
