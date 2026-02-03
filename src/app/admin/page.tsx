@@ -119,7 +119,7 @@ export default function AdminDashboard() {
             }],
             totalAmount: product.price * orderFormData.quantity,
             date: new Date().toISOString(),
-            status: 'Completed'
+            status: 'Pending'
         };
 
         // Decrement Stock
@@ -352,9 +352,26 @@ export default function AdminDashboard() {
                                                 </td>
                                                 <td className="p-4 font-bold text-gold">₹{order.totalAmount.toLocaleString('en-IN')}</td>
                                                 <td className="p-4">
-                                                    <span className="px-2 py-1 rounded text-xs bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1 w-fit">
-                                                        <CheckCircle size={12} /> {order.status}
-                                                    </span>
+                                                    <select
+                                                        value={order.status}
+                                                        onChange={(e) => {
+                                                            const updatedOrders = orders.map(o =>
+                                                                o.id === order.id ? { ...o, status: e.target.value as Order['status'] } : o
+                                                            );
+                                                            setOrders(updatedOrders);
+                                                        }}
+                                                        className={`px-2 py-1 rounded text-xs border cursor-pointer outline-none ${order.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                                            order.status === 'Shipped' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                                order.status === 'Delivered' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                                                    order.status === 'Cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                                        'bg-green-500/10 text-green-400 border-green-500/20'
+                                                            }`}
+                                                    >
+                                                        <option value="Pending" className="bg-[#1a1a1a] text-yellow-400">Pending</option>
+                                                        <option value="Shipped" className="bg-[#1a1a1a] text-blue-400">Shipped</option>
+                                                        <option value="Delivered" className="bg-[#1a1a1a] text-green-400">Delivered</option>
+                                                        <option value="Cancelled" className="bg-[#1a1a1a] text-red-400">Cancelled</option>
+                                                    </select>
                                                 </td>
                                             </tr>
                                         ))}

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { MagneticButton } from "./ui/MagneticButton";
 import { ArrowDown } from "lucide-react";
+import Link from "next/link";
 
 export default function Hero() {
     return (
@@ -54,9 +55,11 @@ export default function Hero() {
                     transition={{ delay: 1.5, duration: 0.8, type: "spring" }}
                     className="mt-8"
                 >
-                    <MagneticButton className="px-8 py-4 bg-gold text-obsidian font-semibold tracking-widest text-sm uppercase rounded-full hover:bg-white transition-colors">
-                        Explore Collection
-                    </MagneticButton>
+                    <Link href="/shop">
+                        <MagneticButton className="px-8 py-4 bg-gold text-obsidian font-semibold tracking-widest text-sm uppercase rounded-full hover:bg-white transition-colors">
+                            Explore Collection
+                        </MagneticButton>
+                    </Link>
                 </motion.div>
             </div>
 

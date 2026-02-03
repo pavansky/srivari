@@ -33,5 +33,5 @@ export interface Order {
     }[];
     totalAmount: number;
     date: string;
-    status: 'Pending' | 'Completed' | 'Cancelled';
+    status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
 }

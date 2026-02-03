@@ -25,8 +25,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         let foundProduct;
 
         if (storedProducts) {
-            const products: Product[] = JSON.parse(storedProducts);
-            foundProduct = products.find(p => p.id === id);
+            try {
+                const products: Product[] = JSON.parse(storedProducts);
+                foundProduct = products.find(p => p.id === id);
+            } catch (error) {
+                console.error("Failed to parse products from localStorage:", error);
+            }
         }
 
         // Fallback to initialProducts if not found or no storage
