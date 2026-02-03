@@ -143,7 +143,7 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
             </div>
 
             <Footer />
-            <WhatsAppButton />
+            <WAButton />
         </main>
     );
 }

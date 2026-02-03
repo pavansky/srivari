@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WAButton from "@/components/WAButton";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
@@ -11,7 +11,9 @@ import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/types";
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const [isLoading, setIsLoading] = useState(true);
     const [product, setProduct] = useState<Product | undefined>(undefined);
     const [activeImage, setActiveImage] = useState("");
     const [selectedSize, setSelectedSize] = useState("Free Size");
@@ -24,17 +26,18 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
         if (storedProducts) {
             const products: Product[] = JSON.parse(storedProducts);
-            foundProduct = products.find(p => p.id === params.id);
+            foundProduct = products.find(p => p.id === id);
         }
 
         // Fallback to initialProducts if not found or no storage
         if (!foundProduct) {
-            foundProduct = initialProducts.find(p => p.id === params.id);
+            foundProduct = initialProducts.find(p => p.id === id);
         }
 
         setProduct(foundProduct);
         if (foundProduct) setActiveImage(foundProduct.images[0] || "");
-    }, [params.id]);
+        setIsLoading(false);
+    }, [id]);
 
     const handleAddToCart = () => {
         if (product) {
@@ -43,10 +46,19 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D4AF37]"></div>
+            </div>
+        );
+    }
+
     if (!product) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
                 <h1 className="text-3xl font-heading text-[#4A0404]">Product not found</h1>
+                <p className="text-[#595959] mt-2">The product you are looking for does not exist or has been removed.</p>
             </div>
         );
     }
@@ -203,7 +215,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             <Footer />
-            <WhatsAppButton />
+            <WAButton />
         </main>
     );
 }

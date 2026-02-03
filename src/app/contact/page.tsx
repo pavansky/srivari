@@ -107,7 +107,7 @@ export default function ContactPage() {
             </section>
 
             <Footer />
-            <WhatsAppButton />
+            <WAButton />
         </main>
     );
 }
