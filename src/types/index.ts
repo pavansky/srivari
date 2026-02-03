@@ -16,3 +16,20 @@ export interface Collection {
     image: string;
     description: string;
 }
+
+export interface Order {
+    id: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    customerAddress?: string;
+    items: {
+        productId: string;
+        productName: string;
+        quantity: number;
+        price: number;
+    }[];
+    totalAmount: number;
+    date: string;
+    status: 'Pending' | 'Completed' | 'Cancelled';
+}
