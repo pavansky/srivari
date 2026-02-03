@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -17,9 +17,17 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
     const [selectedColor, setSelectedColor] = useState("All");
     const [selectedPrice, setSelectedPrice] = useState("All");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [productsData, setProductsData] = useState(products);
+
+    useEffect(() => {
+        const storedProducts = localStorage.getItem('srivari_products');
+        if (storedProducts) {
+            setProductsData(JSON.parse(storedProducts));
+        }
+    }, []);
 
     // Filter Logic
-    const filteredProducts = products.filter((product) => {
+    const filteredProducts = productsData.filter((product) => {
         const categoryMatch = selectedCategory === "All" || product.category.toLowerCase().includes(selectedCategory.toLowerCase());
         const colorMatch = selectedColor === "All" || product.name.toLowerCase().includes(selectedColor.toLowerCase()) || product.description.toLowerCase().includes(selectedColor.toLowerCase());
 

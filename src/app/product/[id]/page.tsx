@@ -1,20 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { products } from "@/data/products";
+import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
 import Accordion from "@/components/Accordion";
-import Link from "next/link"; // Ensure Link is imported if used (even if not explicitly used in this snippet, good practice)
-// If not used, remove it.
+import { useCart } from "@/context/CartContext";
+import { Product } from "@/types";
 
 export default function ProductPage({ params }: { params: { id: string } }) {
-    const product = products.find((p) => p.id === params.id);
-    const [activeImage, setActiveImage] = useState(product?.image || "");
+    const [product, setProduct] = useState<Product | undefined>(undefined);
+    const [activeImage, setActiveImage] = useState("");
     const [selectedSize, setSelectedSize] = useState("Free Size");
+    const { addToCart } = useCart();
+
+    useEffect(() => {
+        // Try to find in localStorage first
+        const storedProducts = localStorage.getItem('srivari_products');
+        let foundProduct;
+
+        if (storedProducts) {
+            const products: Product[] = JSON.parse(storedProducts);
+            foundProduct = products.find(p => p.id === params.id);
+        }
+
+        // Fallback to initialProducts if not found or no storage
+        if (!foundProduct) {
+            foundProduct = initialProducts.find(p => p.id === params.id);
+        }
+
+        setProduct(foundProduct);
+        if (foundProduct) setActiveImage(foundProduct.images[0] || "");
+    }, [params.id]);
+
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart(product);
+            alert("Added to cart!");
+        }
+    };
 
     if (!product) {
         return (
@@ -25,7 +52,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
 
     // WhatsApp Order Logic
-    const phoneNumber = "919876543210";
+    const phoneNumber = "919739988771";
     const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Color: ${product.description.split(' ')[0] || 'Standard'}. Please confirm availability.`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
@@ -39,12 +66,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     {/* Image Gallery */}
                     <div className="space-y-4">
                         <div className="relative aspect-[3/4] overflow-hidden rounded-sm border border-[#E5E5E5] group">
-                            <Image
-                                src={activeImage || product.image}
-                                alt={product.name}
-                                fill
-                                className="object-cover transition-transform duration-700 group-hover:scale-125 cursor-zoom-in"
-                            />
+                            {activeImage && (
+                                <Image
+                                    src={activeImage}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover transition-transform duration-700 group-hover:scale-125 cursor-zoom-in"
+                                    unoptimized
+                                />
+                            )}
                             <span className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 text-xs uppercase tracking-widest font-bold">
                                 {product.category}
                             </span>
@@ -52,13 +82,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
                         {/* Thumbnails (Simulated) */}
                         <div className="flex gap-4 overflow-x-auto pb-2">
-                            {[product.image, product.image, product.image].map((img, i) => (
+                            {product.images?.map((img, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setActiveImage(img)}
                                     className={`relative w-24 h-32 flex-shrink-0 border-2 ${activeImage === img ? 'border-[#4A0404]' : 'border-transparent'} hover:border-[#D4AF37] transition-all`}
                                 >
-                                    <Image src={img} alt="Thumbnail" fill className="object-cover" />
+                                    <Image src={img} alt="Thumbnail" fill className="object-cover" unoptimized />
                                 </button>
                             ))}
                         </div>
@@ -90,7 +120,10 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                             >
                                 <span>Order via WhatsApp</span>
                             </a>
-                            <button className="flex-1 border border-[#4A0404] text-[#4A0404] py-4 px-8 font-bold uppercase tracking-widest hover:bg-[#4A0404] hover:text-white transition-colors text-center">
+                            <button
+                                onClick={handleAddToCart}
+                                className="flex-1 border border-[#4A0404] text-[#4A0404] py-4 px-8 font-bold uppercase tracking-widest hover:bg-[#4A0404] hover:text-white transition-colors text-center"
+                            >
                                 Add to Cart
                             </button>
                         </div>

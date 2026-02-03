@@ -9,7 +9,18 @@ interface ProductCardProps {
   product: Product;
 }
 
+import { useCart } from "@/context/CartContext";
+
 export default function ProductCard({ product }: ProductCardProps) {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation if wrapped
+    e.stopPropagation();
+    addToCart(product);
+    alert("Added to cart!");
+  };
+
   return (
     <div className="group relative bg-white border border-[#E5E5E5] hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl">
       {/* Image Container */}
@@ -19,14 +30,20 @@ export default function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           fill
           className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+          unoptimized
         />
 
         {/* Overlay Actions */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
-          <button className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100 hover:bg-[#D4AF37] hover:text-white">
-            <Eye size={20} />
-          </button>
-          <button className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-200 hover:bg-[#D4AF37] hover:text-white">
+          <Link href={`/product/${product.id}`}>
+            <button className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100 hover:bg-[#D4AF37] hover:text-white">
+              <Eye size={20} />
+            </button>
+          </Link>
+          <button
+            onClick={handleAddToCart}
+            className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-200 hover:bg-[#D4AF37] hover:text-white"
+          >
             <ShoppingBag size={20} />
           </button>
         </div>

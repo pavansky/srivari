@@ -13,23 +13,21 @@ interface AccordionItemProps {
 
 const AccordionItem = ({ title, content, isOpen, onClick }: AccordionItemProps) => {
     return (
-        <div style={{ borderBottom: '1px solid #eee' }}>
+        <div className="border-b border-[#E5E5E5] last:border-none">
             <button
                 onClick={onClick}
-                style={{
-                    width: '100%',
-                    padding: '1.25rem 0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                }}
+                className="w-full py-6 flex justify-between items-center text-left bg-transparent group"
             >
-                <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-main)', fontFamily: 'var(--font-sans)' }}>{title}</span>
-                {isOpen ? <ChevronUp size={20} color="#888" /> : <ChevronDown size={20} color="#888" />}
+                <span className={`text-lg font-serif tracking-wide transition-colors duration-300 ${isOpen ? 'text-[#4A0404]' : 'text-[#1A1A1A] group-hover:text-[#D4AF37]'}`}>
+                    {title}
+                </span>
+                <span className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                    {isOpen ? (
+                        <ChevronUp size={20} className="text-[#D4AF37]" />
+                    ) : (
+                        <ChevronDown size={20} className="text-gray-400 group-hover:text-[#D4AF37]" />
+                    )}
+                </span>
             </button>
             <AnimatePresence>
                 {isOpen && (
@@ -37,10 +35,10 @@ const AccordionItem = ({ title, content, isOpen, onClick }: AccordionItemProps) 
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        style={{ overflow: 'hidden' }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
                     >
-                        <div style={{ paddingBottom: '1.25rem', color: '#666', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                        <div className="pb-6 text-[#595959] text-base leading-relaxed font-sans font-light">
                             {content}
                         </div>
                     </motion.div>
@@ -58,7 +56,7 @@ export default function Accordion({ items }: { items: { title: string, content: 
     };
 
     return (
-        <div style={{ marginTop: '2rem' }}>
+        <div className="mt-8 bg-white p-6 md:p-8 rounded-sm shadow-sm border border-[#F0F0F0]">
             {items.map((item, index) => (
                 <AccordionItem
                     key={index}

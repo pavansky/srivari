@@ -14,6 +14,8 @@ export const metadata: Metadata = {
     description: "Exclusive collection of Kanjivaram and Banarasi silk sarees.",
 };
 
+import { CartProvider } from "@/context/CartContext";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -22,9 +24,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} ${rozha.variable} bg-obsidian text-marble antialiased`}>
-                <Navbar />
-                {children}
-                <SocialFloating />
+                <CartProvider>
+                    <Navbar />
+                    {children}
+                    <SocialFloating />
+                </CartProvider>
             </body>
         </html>
     );

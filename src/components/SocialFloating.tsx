@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 export const SocialFloating = () => {
     return (
         <motion.a
-            href="https://wa.me/919876543210" // Placeholder number
+            href="https://wa.me/919739988771"
             target="_blank"
             rel="noopener noreferrer"
             initial={{ opacity: 0, scale: 0 }}
