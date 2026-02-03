@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WAButton from "@/components/WAButton";
 
 export default function ContactPage() {
     return (
