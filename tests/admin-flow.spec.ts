@@ -78,8 +78,23 @@ test.describe('Admin and Shop Synchronization', () => {
         await expect(page.locator(`text=${TEST_PRODUCT.name}`)).toBeVisible();
 
         // Verify Checkout Button
+        // Verify Checkout Button
         const checkoutBtn = page.getByRole('button', { name: /Checkout via WhatsApp/i });
         await expect(checkoutBtn).toBeVisible();
+        await checkoutBtn.click();
+
+        // 9. Fill Checkout Modal
+        await expect(page.getByText('Checkout Details')).toBeVisible();
+        await page.fill('input[name="name"]', 'Test User');
+        await page.fill('input[name="phone"]', '9999999999');
+
+        // Handle WhatsApp new tab opening
+        const pagePromise = page.context().waitForEvent('page');
+        await page.click('button:has-text("Confirm & Send on WhatsApp")');
+        const newPage = await pagePromise;
+        await newPage.waitForLoadState();
+        console.log(await newPage.url()); // Verify it attempted to open WhatsApp
+        await newPage.close();
 
         // 9. Verify About and Contact Pages
         await page.goto('http://localhost:3001/about');
