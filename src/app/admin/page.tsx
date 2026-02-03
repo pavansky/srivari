@@ -34,6 +34,10 @@ export default function AdminDashboard() {
         quantity: 1
     });
 
+    // Category State
+    const [categories, setCategories] = useState<string[]>(["Silk", "Banarasi", "Cotton", "Mysore Silk", "Tussar"]);
+    const [newCategory, setNewCategory] = useState("");
+
     // Load Data
     useEffect(() => {
         const auth = sessionStorage.getItem('srivari_admin_auth');
@@ -46,6 +50,9 @@ export default function AdminDashboard() {
         const storedOrders = localStorage.getItem('srivari_orders');
         if (storedOrders) setOrders(JSON.parse(storedOrders));
 
+        const storedCategories = localStorage.getItem('srivari_categories');
+        if (storedCategories) setCategories(JSON.parse(storedCategories));
+
         setIsLoaded(true);
     }, []);
 
@@ -54,8 +61,9 @@ export default function AdminDashboard() {
         if (isLoaded) {
             localStorage.setItem('srivari_products', JSON.stringify(products));
             localStorage.setItem('srivari_orders', JSON.stringify(orders));
+            localStorage.setItem('srivari_categories', JSON.stringify(categories));
         }
-    }, [products, orders, isLoaded]);
+    }, [products, orders, categories, isLoaded]);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -134,6 +142,21 @@ export default function AdminDashboard() {
         alert('Order Created & Stock Updated!');
     };
 
+    // --- Category Logic ---
+    const handleAddCategory = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+            setCategories([...categories, newCategory.trim()]);
+            setNewCategory("");
+        }
+    };
+
+    const handleDeleteCategory = (cat: string) => {
+        if (confirm(`Delete category "${cat}"?`)) {
+            setCategories(categories.filter(c => c !== cat));
+        }
+    };
+
     // --- Image Helpers ---
     const updateImage = (index: number, value: string) => {
         const newImages = [...(formData.images || [])];
@@ -179,6 +202,12 @@ export default function AdminDashboard() {
                         >
                             <ShoppingCart size={18} /> Orders
                         </button>
+                        <button
+                            onClick={() => setActiveTab('categories' as any)}
+                            className={`px-6 py-2 rounded-md transition-all flex items-center gap-2 ${activeTab === ('categories' as any) ? 'bg-gold text-obsidian font-bold' : 'text-marble/60 hover:text-white'}`}
+                        >
+                            <Edit2 size={18} /> Categories
+                        </button>
                     </div>
                 </div>
 
@@ -214,10 +243,9 @@ export default function AdminDashboard() {
                                         <input type="number" placeholder="Stock" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none" required />
                                         <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none">
                                             <option value="" className="bg-obsidian">Select Category</option>
-                                            <option value="Silk" className="bg-obsidian">Silk</option>
-                                            <option value="Banarasi" className="bg-obsidian">Banarasi</option>
-                                            <option value="Cotton" className="bg-obsidian">Cotton</option>
-                                            <option value="Mysore Silk" className="bg-obsidian">Mysore Silk</option>
+                                            {categories.map(cat => (
+                                                <option key={cat} value={cat} className="bg-obsidian">{cat}</option>
+                                            ))}
                                         </select>
                                     </div>
 
@@ -307,6 +335,43 @@ export default function AdminDashboard() {
                                     </div>
                                 )
                             })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Categories Tab */}
+                {activeTab === ('categories' as any) && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="max-w-2xl mx-auto glass-card p-8 rounded-lg border border-white/10">
+                            <h2 className="text-2xl font-serif text-gold mb-6">Manage Categories</h2>
+
+                            <form onSubmit={handleAddCategory} className="flex gap-4 mb-8">
+                                <input
+                                    type="text"
+                                    value={newCategory}
+                                    onChange={(e) => setNewCategory(e.target.value)}
+                                    placeholder="Enter new category name..."
+                                    className="flex-1 bg-white/5 border border-white/10 p-3 rounded text-marble focus:border-gold outline-none"
+                                />
+                                <button type="submit" className="bg-gold text-obsidian font-bold px-6 py-3 rounded hover:bg-white transition-all flex items-center gap-2">
+                                    <Plus size={20} /> Add
+                                </button>
+                            </form>
+
+                            <div className="space-y-4">
+                                {categories.map((cat, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-4 bg-white/5 rounded border border-white/10 hover:border-gold/30 transition-colors">
+                                        <span className="text-white font-medium">{cat}</span>
+                                        <button
+                                            onClick={() => handleDeleteCategory(cat)}
+                                            className="p-2 text-marble/60 hover:text-red-400 transition-colors"
+                                            title="Delete Category"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}

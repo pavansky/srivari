@@ -10,7 +10,8 @@ import WAButton from "@/components/WAButton";
 import { products } from "@/data/products";
 import { Filter } from "lucide-react";
 
-const categories = ["All", "Kanjivaram", "Banarasi", "Mysore Silk", "Cotton", "Tussar"];
+// Default categories fallback
+const initialCategories = ["All", "Kanjivaram", "Banarasi", "Mysore Silk", "Cotton", "Tussar"];
 const colors = ["All", "Maroon", "Gold", "Green", "Blue", "Red", "Pink"];
 const priceRanges = ["All", "Under ₹5,000", "₹5,000 - ₹15,000", "₹15,000 - ₹25,000", "Above ₹25,000"];
 
@@ -21,11 +22,23 @@ function ShopContent() {
     const [selectedPrice, setSelectedPrice] = useState("All");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [productsData, setProductsData] = useState(products);
+    const [categories, setCategories] = useState(initialCategories);
 
     useEffect(() => {
         const storedProducts = localStorage.getItem('srivari_products');
         if (storedProducts) {
             setProductsData(JSON.parse(storedProducts));
+        }
+
+        const storedCategories = localStorage.getItem('srivari_categories');
+        if (storedCategories) {
+            // Ensure 'All' is at the start
+            const parsed = JSON.parse(storedCategories);
+            if (!parsed.includes("All")) {
+                setCategories(["All", ...parsed]);
+            } else {
+                setCategories(parsed);
+            }
         }
     }, []);
 
