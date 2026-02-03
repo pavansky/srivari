@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WAButton from "@/components/WAButton";
@@ -22,32 +23,37 @@ export default function ProductPage() {
     const { addToCart } = useCart();
 
     useEffect(() => {
+        if (!id) return;
+
         console.log("Product Page Mounted. URL ID:", id);
 
-        // Try to find in localStorage first
-        const storedProducts = localStorage.getItem('srivari_products');
-        let foundProduct;
+        const normalizeId = (val: any) => String(val).trim();
+        const targetId = normalizeId(id);
 
+        let found: Product | undefined;
+
+        // 1. Try LocalStorage
+        const storedProducts = localStorage.getItem('srivari_products');
         if (storedProducts) {
             try {
                 const products: Product[] = JSON.parse(storedProducts);
-                console.log("Loaded products from localStorage:", products.length);
-                foundProduct = products.find(p => p.id === id);
-                console.log("Found in localStorage?", !!foundProduct);
+                console.log("LocalStorage Products:", products.length);
+                found = products.find(p => normalizeId(p.id) === targetId);
+                console.log("Found in LocalStorage?", !!found);
             } catch (error) {
-                console.error("Failed to parse products from localStorage:", error);
+                console.error("LS Parse Error:", error);
             }
         }
 
-        // Fallback to initialProducts if not found or no storage
-        if (!foundProduct) {
-            console.log("Checking initialProducts (fallback)...");
-            foundProduct = initialProducts.find(p => p.id === id);
-            console.log("Found in initialProducts?", !!foundProduct);
+        // 2. Fallback to Initial Data
+        if (!found) {
+            console.log("Checking Initial Data...");
+            found = initialProducts.find(p => normalizeId(p.id) === targetId);
+            console.log("Found in Initial?", !!found);
         }
 
-        setProduct(foundProduct);
-        if (foundProduct) setActiveImage(foundProduct.images[0] || "");
+        setProduct(found);
+        if (found) setActiveImage(found.images[0] || "");
         setIsLoading(false);
     }, [id]);
 
@@ -67,10 +73,38 @@ export default function ProductPage() {
     }
 
     if (!product) {
+        // Collect debug info
+        const storedProducts = typeof window !== 'undefined' ? localStorage.getItem('srivari_products') : null;
+        let debugStoredIds: string[] = [];
+        if (storedProducts) {
+            try {
+                const parsed = JSON.parse(storedProducts);
+                debugStoredIds = parsed.map((p: any) => p.id);
+            } catch (e) { }
+        }
+        const initialIds = initialProducts.map(p => p.id);
+
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-4 text-center">
                 <h1 className="text-3xl font-heading text-[#4A0404]">Product not found</h1>
-                <p className="text-[#595959] mt-2">The product you are looking for does not exist or has been removed.</p>
+                <p className="text-[#595959] mt-2 mb-8">The product you are looking for does not exist or has been removed.</p>
+
+                <div className="bg-white p-4 rounded border border-gray-200 text-left text-xs text-gray-500 font-mono w-full max-w-lg">
+                    <p className="font-bold mb-2 text-red-500">DEBUG INFO:</p>
+                    <p>Searched ID: <span className="bg-yellow-100 px-1 text-black">{id}</span> (Type: {typeof id})</p>
+                    <p className="mt-2">LocalStorage IDs ({debugStoredIds.length}):</p>
+                    <div className="max-h-20 overflow-y-auto border p-1 mb-2">
+                        {debugStoredIds.join(', ') || "None"}
+                    </div>
+                    <p>Initial IDs ({initialIds.length}):</p>
+                    <div className="max-h-20 overflow-y-auto border p-1">
+                        {initialIds.join(', ')}
+                    </div>
+                </div>
+
+                <Link href="/shop" className="mt-8 px-6 py-2 bg-[#D4AF37] text-white font-bold uppercase text-sm tracking-widest hover:bg-[#B5952F] transition-colors">
+                    Back to Shop
+                </Link>
             </div>
         );
     }
