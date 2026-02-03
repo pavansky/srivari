@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WAButton from "@/components/WAButton";
 import { products } from "@/data/products";
 import { Filter } from "lucide-react";
 
@@ -12,8 +13,9 @@ const categories = ["All", "Kanjivaram", "Banarasi", "Mysore Silk", "Cotton", "T
 const colors = ["All", "Maroon", "Gold", "Green", "Blue", "Red", "Pink"];
 const priceRanges = ["All", "Under ₹5,000", "₹5,000 - ₹15,000", "₹15,000 - ₹25,000", "Above ₹25,000"];
 
-export default function ShopPage({ searchParams }: { searchParams: { category?: string } }) {
-    const [selectedCategory, setSelectedCategory] = useState(searchParams?.category || "All");
+function ShopContent() {
+    const searchParams = useSearchParams();
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
     const [selectedColor, setSelectedColor] = useState("All");
     const [selectedPrice, setSelectedPrice] = useState("All");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -145,5 +147,13 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
             <Footer />
             <WAButton />
         </main>
+    );
+}
+
+export default function ShopPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">Loading...</div>}>
+            <ShopContent />
+        </Suspense>
     );
 }
