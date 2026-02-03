@@ -11,6 +11,7 @@ import Image from "next/image";
 import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
 import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { Product } from "@/types";
 
 export default function ProductPage() {
@@ -21,6 +22,7 @@ export default function ProductPage() {
     const [activeImage, setActiveImage] = useState("");
     const [selectedSize, setSelectedSize] = useState("Free Size");
     const { addToCart } = useCart();
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
     useEffect(() => {
         if (!id) return;
@@ -190,7 +192,18 @@ export default function ProductPage() {
                         </div>
 
                         <div className="flex gap-4 text-[#595959] mb-8">
-                            <button className="flex items-center gap-2 hover:text-[#4A0404] transition-colors"><Heart size={18} /> Add to Wishlist</button>
+                            <button
+                                onClick={() => {
+                                    if (product) {
+                                        if (isInWishlist(product.id)) removeFromWishlist(product.id);
+                                        else addToWishlist(product);
+                                    }
+                                }}
+                                className={`flex items-center gap-2 transition-colors ${isInWishlist(product.id) ? 'text-red-500 hover:text-red-600' : 'hover:text-[#4A0404]'}`}
+                            >
+                                <Heart size={18} fill={isInWishlist(product.id) ? "currentColor" : "none"} />
+                                {isInWishlist(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
+                            </button>
                             <button className="flex items-center gap-2 hover:text-[#4A0404] transition-colors"><Share2 size={18} /> Share</button>
                         </div>
 
