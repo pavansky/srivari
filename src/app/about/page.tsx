@@ -42,7 +42,7 @@ export default function AboutPage() {
                     <div className="relative p-4">
                         <div className="absolute inset-0 border-2 border-gold translate-x-4 translate-y-4 -z-10 rounded-sm"></div>
                         <img
-                            src="https://images.unsplash.com/photo-1606293926075-69a00febf280?q=80&w=800&auto=format&fit=crop"
+                            src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop"
                             alt="Saree Detail"
                             className="w-full h-auto shadow-lg rounded-sm"
                         />

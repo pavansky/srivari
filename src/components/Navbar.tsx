@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShoppingBag, Menu, User } from "lucide-react";
@@ -10,13 +11,19 @@ import { useCart } from "@/context/CartContext";
 export default function Navbar() {
     const { cart } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const pathname = usePathname();
+
+    // Check if we are on a page that needs a contrasting header (like product details)
+    const isLightPage = pathname.startsWith("/product/");
 
     return (
         <motion.nav
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.8, ease: "circOut" }}
-            className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex justify-between items-center bg-white/5 backdrop-blur-md border-b border-white/10"
+            className={`fixed top-0 left-0 w-full z-50 px-6 py-4 flex justify-between items-center border-b transition-colors duration-300
+                ${isLightPage ? 'bg-[#1A1A1A] border-white/5 shadow-md' : 'bg-white/5 backdrop-blur-md border-white/10'}
+            `}
         >
             {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (

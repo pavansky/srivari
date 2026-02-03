@@ -37,55 +37,61 @@ export default function ContactPage() {
                         </div>
 
                         <div className="space-y-8">
-                            <div className="flex items-start gap-4 p-6 bg-white border border-gold/10 rounded-sm shadow-sm hover:shadow-md transition-shadow">
-                                <div className="p-3 bg-obsidian text-gold rounded-full">
-                                    <Phone size={24} />
+                            <a href="tel:+919739988771" className="block group">
+                                <div className="flex items-start gap-4 p-6 bg-white border border-[#D4AF37]/20 rounded-sm shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[#D4AF37] hover:-translate-y-1">
+                                    <div className="p-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full group-hover:bg-[#D4AF37] group-hover:text-[#1A1A1A] transition-colors">
+                                        <Phone size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-1 font-[family-name:var(--font-playfair)] text-[#1A1A1A]">Phone & WhatsApp</h3>
+                                        <p className="text-[#595959] font-[family-name:var(--font-montserrat)] group-hover:text-[#D4AF37] transition-colors">+91 97399 88771</p>
+                                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Mon - Sat, 10:00 AM - 7:00 PM</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold mb-1">Phone & WhatsApp</h3>
-                                    <p className="text-obsidian/80 font-sans">+91 97399 88771</p>
-                                    <p className="text-sm text-gray-500 mt-1">Mon - Sat, 10:00 AM - 7:00 PM</p>
-                                </div>
-                            </div>
+                            </a>
 
-                            <div className="flex items-start gap-4 p-6 bg-white border border-gold/10 rounded-sm shadow-sm hover:shadow-md transition-shadow">
-                                <div className="p-3 bg-obsidian text-gold rounded-full">
-                                    <Mail size={24} />
+                            <a href="mailto:support@thesrivari.com" className="block group">
+                                <div className="flex items-start gap-4 p-6 bg-white border border-[#D4AF37]/20 rounded-sm shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[#D4AF37] hover:-translate-y-1">
+                                    <div className="p-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full group-hover:bg-[#D4AF37] group-hover:text-[#1A1A1A] transition-colors">
+                                        <Mail size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-1 font-[family-name:var(--font-playfair)] text-[#1A1A1A]">Email</h3>
+                                        <p className="text-[#595959] font-[family-name:var(--font-montserrat)] group-hover:text-[#D4AF37] transition-colors">support@thesrivari.com</p>
+                                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">We usually reply within 24 hours.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold mb-1">Email</h3>
-                                    <p className="text-obsidian/80 font-sans">support@thesrivari.com</p>
-                                    <p className="text-sm text-gray-500 mt-1">We usually reply within 24 hours.</p>
-                                </div>
-                            </div>
+                            </a>
 
-                            <div className="flex items-start gap-4 p-6 bg-white border border-gold/10 rounded-sm shadow-sm hover:shadow-md transition-shadow">
-                                <div className="p-3 bg-obsidian text-gold rounded-full">
-                                    <MapPin size={24} />
+                            <a href="https://www.google.com/maps/search/?api=1&query=123+Heritage+Lane+Indiranagar+Bangalore" target="_blank" rel="noopener noreferrer" className="block group">
+                                <div className="flex items-start gap-4 p-6 bg-white border border-[#D4AF37]/20 rounded-sm shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[#D4AF37] hover:-translate-y-1">
+                                    <div className="p-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full group-hover:bg-[#D4AF37] group-hover:text-[#1A1A1A] transition-colors">
+                                        <MapPin size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-1 font-[family-name:var(--font-playfair)] text-[#1A1A1A]">Boutique</h3>
+                                        <p className="text-[#595959] font-[family-name:var(--font-montserrat)] group-hover:text-[#D4AF37] transition-colors">
+                                            123, Heritage Lane, Indiranagar<br />
+                                            Bangalore, Karnataka - 560038
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold mb-1">Boutique</h3>
-                                    <p className="text-obsidian/80 font-sans">
-                                        123, Heritage Lane, Indiranagar<br />
-                                        Bangalore, Karnataka - 560038
-                                    </p>
-                                </div>
-                            </div>
+                            </a>
                         </div>
 
                         {/* Social Media */}
-                        <div className="pt-8 border-t border-gray-200">
-                            <h3 className="text-2xl font-heading text-maroon mb-6">Follow Our Journey</h3>
+                        <div className="pt-8 border-t border-[#D4AF37]/10">
+                            <h3 className="text-2xl font-[family-name:var(--font-playfair)] text-[#1A1A1A] mb-6">Follow Our Journey</h3>
                             <div className="flex gap-4">
                                 <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-6 py-3 bg-gradient-to-tr from-purple-600 to-pink-500 text-white rounded hover:opacity-90 transition-opacity">
-                                    <Instagram size={24} />
-                                    <span className="font-bold tracking-wider">Instagram</span>
+                                    className="flex items-center gap-3 px-6 py-4 bg-[#1A1A1A] text-white rounded-sm hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-300 group shadow-lg shadow-black/5">
+                                    <Instagram size={20} className="group-hover:scale-110 transition-transform" />
+                                    <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Instagram</span>
                                 </a>
                                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-6 py-3 bg-[#1877F2] text-white rounded hover:opacity-90 transition-opacity">
-                                    <Facebook size={24} />
-                                    <span className="font-bold tracking-wider">Facebook</span>
+                                    className="flex items-center gap-3 px-6 py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] rounded-sm hover:bg-[#1A1A1A] hover:text-white transition-all duration-300 group">
+                                    <Facebook size={20} className="group-hover:scale-110 transition-transform" />
+                                    <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Facebook</span>
                                 </a>
                             </div>
                         </div>
@@ -94,7 +100,7 @@ export default function ContactPage() {
                     {/* Image / Map Placeholder */}
                     <div className="relative h-[600px] bg-gray-100 rounded-sm overflow-hidden border border-gold/20">
                         <img
-                            src="https://images.unsplash.com/photo-1566244662768-b80c102a9009?q=80&w=1200&auto=format&fit=crop"
+                            src="https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?q=80&w=1200&auto=format&fit=crop"
                             alt="Boutique Interior"
                             className="w-full h-full object-cover"
                         />

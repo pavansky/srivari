@@ -41,41 +41,49 @@ export default function AntiGravityGallery() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12 md:gap-24">
-                    {featuredProducts.map((product, index) => (
-                        <motion.div
-                            key={product.id}
-                            style={{ y: index % 2 === 0 ? y1 : y2 }} // Parallax effect
-                            className="group relative"
-                        >
-                            <div className="aspect-[3/4] overflow-hidden rounded-sm bg-gray-900 relative">
-                                {product.images[0] ? (
-                                    <Image
-                                        src={product.images[0]}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center text-marble/20 text-4xl font-serif">
-                                        {product.name.charAt(0)}
-                                    </div>
-                                )}
+                    {featuredProducts.map((product, index) => {
+                        const displayImage = product.images.find(img => img && img.trim() !== "") || "";
 
-                                {/* Floating Price Tag */}
-                                <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 border border-white/20 text-marble">
-                                    <span className="block text-xs uppercase tracking-wider text-gold">Price</span>
-                                    <span className="font-serif text-lg">₹{product.price.toLocaleString('en-IN')}</span>
-                                </div>
-                            </div>
-                            <div className="mt-6 flex justify-between items-center bg-transparent">
-                                <h3 className="text-2xl font-serif text-marble group-hover:text-gold transition-colors">{product.name}</h3>
-                                <Link href={`/product/${product.id}`}>
-                                    <button className="text-sm uppercase tracking-widest text-marble/60 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1">View</button>
+                        return (
+                            <motion.div
+                                key={product.id}
+                                style={{ y: index % 2 === 0 ? y1 : y2 }} // Parallax effect
+                                className="group relative"
+                            >
+                                <Link href={`/product/${product.id}`} className="block">
+                                    <div className="aspect-[3/4] overflow-hidden rounded-sm bg-gray-900 relative cursor-pointer">
+                                        {displayImage ? (
+                                            <Image
+                                                src={displayImage}
+                                                alt={product.name}
+                                                fill
+                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                unoptimized
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center text-marble/20 text-4xl font-serif">
+                                                {product.name.charAt(0)}
+                                            </div>
+                                        )}
+
+                                        {/* Floating Price Tag */}
+                                        <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 border border-white/20 text-marble">
+                                            <span className="block text-xs uppercase tracking-wider text-gold">Price</span>
+                                            <span className="font-serif text-lg">₹{product.price.toLocaleString('en-IN')}</span>
+                                        </div>
+                                    </div>
                                 </Link>
-                            </div>
-                        </motion.div>
-                    ))}
+                                <div className="mt-6 flex justify-between items-center bg-transparent">
+                                    <Link href={`/product/${product.id}`}>
+                                        <h3 className="text-2xl font-serif text-marble group-hover:text-gold transition-colors">{product.name}</h3>
+                                    </Link>
+                                    <Link href={`/product/${product.id}`}>
+                                        <button className="text-sm uppercase tracking-widest text-marble/60 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1">View</button>
+                                    </Link>
+                                </div>
+                            </motion.div>
+                        )
+                    })}
                 </div>
             </div>
         </section>
