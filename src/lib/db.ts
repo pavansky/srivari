@@ -127,3 +127,13 @@ export async function getOrder(id: string): Promise<Order | null> {
         items: order.items as any[]
     };
 }
+
+export async function updateOrder(order: Order) {
+    return await prisma.order.update({
+        where: { id: order.id },
+        data: {
+            status: order.status,
+            // Allow updating other fields if needed
+        }
+    });
+}
