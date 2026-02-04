@@ -117,12 +117,13 @@ export async function createOrder(order: Order) {
     });
 }
 
-export async function updateOrder(order: Order) {
-    return await prisma.order.update({
-        where: { id: order.id },
-        data: {
-            status: order.status,
-            // Allow updating other fields if needed
-        }
+export async function getOrder(id: string): Promise<Order | null> {
+    const order = await prisma.order.findUnique({
+        where: { id }
     });
+    if (!order) return null;
+    return {
+        ...order,
+        items: order.items as any[]
+    };
 }
