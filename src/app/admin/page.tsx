@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useCompletion } from 'ai/react';
+import { useCompletion } from '@ai-sdk/react';
 import { Product, Order } from '@/types';
 import { products as initialProducts } from '@/data/products';
 import {
