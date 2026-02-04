@@ -1,84 +1,128 @@
-import fs from 'fs/promises';
-import path from 'path';
+import prisma from './prisma';
 import { Product, Order } from '@/types';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
-const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
-
-// Ensure directory exists
-async function ensureDir() {
-    try {
-        await fs.access(DATA_DIR);
-    } catch {
-        await fs.mkdir(DATA_DIR, { recursive: true });
-    }
-}
-
-// Generic Read/Write
-async function readJson<T>(file: string, defaultValue: T): Promise<T> {
-    try {
-        await ensureDir();
-        const data = await fs.readFile(file, 'utf-8');
-        return JSON.parse(data);
-    } catch (error) {
-        // If file doesn't exist, return default and create it ??
-        // Or just return default.
-        return defaultValue;
-    }
-}
-
-async function writeJson(file: string, data: any) {
-    await ensureDir();
-    await fs.writeFile(file, JSON.stringify(data, null, 2), 'utf-8');
-}
+import { products as initialProducts } from '@/data/products';
 
 // --- Products ---
 export async function getProducts(): Promise<Product[]> {
-    return readJson<Product[]>(PRODUCTS_FILE, []); // Start empty or seed?
+    try {
+        const products = await prisma.product.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Auto-seed if empty (so Admin isn't blank for the user)
+        if (products.length === 0) {
+            console.log("Seeding initial products...");
+            // We can't use createMany because of potential SQLite/Postgres differences in some envs, 
+            // but here we are on Postgres so createMany is fine.
+            // However, let's just map them.
+
+            for (const p of initialProducts) {
+                await prisma.product.create({
+                    data: {
+                        id: p.id,
+                        name: p.name,
+                        description: p.description,
+                        price: p.price,
+                        category: p.category,
+                        stock: p.stock,
+                        images: p.images,
+                        isFeatured: p.isFeatured,
+                        hashtags: p.hashtags
+                    }
+                });
+            }
+            return await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+        }
+
+        return products.map(p => ({
+            ...p,
+            images: p.images as string[], // Cast JSON to string array
+            hashtags: p.hashtags as string[]
+        }));
+    } catch (error) {
+        console.error("DB Error:", error);
+        return [];
+    }
 }
 
 export async function saveProduct(product: Product) {
-    const products = await getProducts();
-    const index = products.findIndex(p => p.id === product.id);
-    if (index >= 0) {
-        products[index] = product;
-    } else {
-        products.unshift(product);
+    if (product.id && product.id.length > 10) {
+        // Likely a UUID or existing ID
+        // Check if exists
+        const exists = await prisma.product.findUnique({ where: { id: product.id } });
+        if (exists) {
+            return await prisma.product.update({
+                where: { id: product.id },
+                data: {
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    category: product.category,
+                    stock: product.stock,
+                    images: product.images,
+                    isFeatured: product.isFeatured,
+                    hashtags: product.hashtags,
+                    priceCps: product.priceCps,
+                    shipping: product.shipping
+                }
+            });
+        }
     }
-    await writeJson(PRODUCTS_FILE, products);
-    return product;
+
+    // Create new
+    return await prisma.product.create({
+        data: {
+            id: product.id, // Optional, Prisma generates if missing usually, but our schema might have it string
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            category: product.category,
+            stock: product.stock,
+            images: product.images,
+            isFeatured: product.isFeatured,
+            hashtags: product.hashtags,
+            priceCps: product.priceCps,
+            shipping: product.shipping
+        }
+    });
 }
 
 export async function deleteProduct(id: string) {
-    const products = await getProducts();
-    const filtered = products.filter(p => p.id !== id);
-    await writeJson(PRODUCTS_FILE, filtered);
+    await prisma.product.delete({ where: { id } });
 }
 
 // --- Orders ---
 export async function getOrders(): Promise<Order[]> {
-    return readJson<Order[]>(ORDERS_FILE, []);
-}
-
-export async function getOrder(id: string): Promise<Order | undefined> {
-    const orders = await getOrders();
-    return orders.find(o => o.id === id);
+    const orders = await prisma.order.findMany({
+        orderBy: { date: 'desc' }
+    });
+    return orders.map(o => ({
+        ...o,
+        items: o.items as any[] // Start schema as JSON
+    }));
 }
 
 export async function createOrder(order: Order) {
-    const orders = await getOrders();
-    orders.unshift(order);
-    await writeJson(ORDERS_FILE, orders);
-    return order;
+    return await prisma.order.create({
+        data: {
+            id: order.id,
+            customerName: order.customerName,
+            customerEmail: order.customerEmail || "",
+            customerPhone: order.customerPhone,
+            totalAmount: order.totalAmount,
+            status: order.status,
+            date: new Date(order.date),
+            items: order.items
+        }
+    });
 }
 
 export async function updateOrder(order: Order) {
-    const orders = await getOrders();
-    const index = orders.findIndex(o => o.id === order.id);
-    if (index >= 0) {
-        orders[index] = order;
-        await writeJson(ORDERS_FILE, orders);
-    }
-    return order;
+    return await prisma.order.update({
+        where: { id: order.id },
+        data: {
+            status: order.status,
+            // Allow updating other fields if needed
+        }
+    });
 }

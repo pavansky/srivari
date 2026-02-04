@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ShoppingBag, Menu, User } from "lucide-react";
 
 import { useCart } from "@/context/CartContext";
+import UserButton from "@/components/UserButton";
 
 export default function Navbar() {
     const { cart } = useCart();
@@ -51,11 +52,7 @@ export default function Navbar() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-4 md:gap-6">
-                    <Link href="/admin">
-                        <button className="hover:text-gold transition-colors text-marble">
-                            <User className="w-5 h-5" />
-                        </button>
-                    </Link>
+                    <UserButton />
                     <Link href="/cart" className="relative group">
                         <ShoppingBag className="w-5 h-5 text-gold hover:text-white transition-colors" />
                         {cart.length > 0 && (

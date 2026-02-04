@@ -13,6 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import SrivariImage from '@/components/SrivariImage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/utils/supabase/client';
 
 // --- Reusable Glass Components ---
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -155,9 +156,19 @@ export default function AdminDashboard() {
     };
 
     useEffect(() => {
-        const auth = sessionStorage.getItem('srivari_admin_auth');
-        if (auth === 'true') setIsAuthenticated(true);
-        fetchData();
+        const checkAdminAuth = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user?.email === 'support@thesrivari.com') {
+                setIsAuthenticated(true);
+            } else {
+                // Redirect unauthorized
+                window.location.href = '/login';
+            }
+            fetchData();
+        };
+        checkAdminAuth();
     }, []);
 
     // Remove legacy localstorage sync
