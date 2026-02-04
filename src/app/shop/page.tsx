@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import WAButton from "@/components/WAButton";
 import GlassSearch from "@/components/GlassSearch";
-// Force rebuild
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { products } from "@/data/products";
 import { Filter } from "lucide-react";
 
@@ -101,6 +101,9 @@ function ShopContent() {
             </div>
 
             <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-8">
+                <div className="w-full md:hidden">
+                    <Breadcrumbs />
+                </div>
 
                 {/* Mobile Filter Toggle */}
                 <button

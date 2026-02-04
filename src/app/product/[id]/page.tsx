@@ -6,6 +6,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WAButton from "@/components/WAButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import SrivariImage from "@/components/SrivariImage";
@@ -150,6 +151,7 @@ export default function ProductPage() {
 
             {/* Luxury V2 Layout */}
             <div className="container mx-auto px-4 pt-32 pb-20">
+                <Breadcrumbs />
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 relative">
 
                     {/* Left: Gallery (Sticky) */}

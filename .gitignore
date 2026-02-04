@@ -30,3 +30,5 @@ pnpm-debug.log*
   
 # playwright  
 /test-results/ 
+
+/src/generated/prisma

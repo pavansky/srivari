@@ -10,7 +10,7 @@ export default function OrderTrackingPage() {
     const [step, setStep] = useState<"input" | "otp" | "dashboard">("input");
     const [orderId, setOrderId] = useState("");
     const [otp, setOtp] = useState("");
-    const [maskedPhone, setMaskedPhone] = useState("");
+    const [maskedEmail, setMaskedEmail] = useState("");
     const [orderDetails, setOrderDetails] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -28,10 +28,15 @@ export default function OrderTrackingPage() {
             const data = await res.json();
 
             if (data.success) {
-                setMaskedPhone(data.maskedPhone);
+                setMaskedEmail(data.maskedEmail);
                 setStep("otp");
-                // For "Free" mode: We show the OTP on screen since we can't send real SMS without money.
-                alert(`SRIVARI: Your OTP is ${data.debugOtp}. (In prod, this goes to ${data.maskedPhone})`);
+                // For "Free Email" mode: We still show alert for dev convenience, 
+                // but in production, this would be hidden.
+                if (data.debugOtp) {
+                    alert(`SRIVARI: OTP sent to ${data.maskedEmail}. (Debug: ${data.debugOtp})`);
+                } else {
+                    alert(`SRIVARI: An OTP has been sent to your email ${data.maskedEmail}`);
+                }
             } else {
                 setError(data.message || "Order not found");
             }
@@ -121,7 +126,7 @@ export default function OrderTrackingPage() {
                                 <ShieldCheck className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
                                 <h3 className="text-xl font-serif text-[#4A0404]">Security Verification</h3>
                                 <p className="text-sm text-neutral-500 mt-2">
-                                    We sent a One-Time Password to your registered number ending in <span className="font-bold text-black">{maskedPhone}</span>
+                                    We sent a One-Time Password to your registered email <span className="font-bold text-black">{maskedEmail}</span>
                                 </p>
                             </div>
 

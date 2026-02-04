@@ -137,30 +137,38 @@ export default function AdminDashboard() {
         }
     };
 
-    // --- Load/Save Data ---
+    // --- Load Data ---
+    const fetchData = async () => {
+        try {
+            const [pRes, oRes] = await Promise.all([
+                fetch('/api/products'),
+                fetch('/api/orders')
+            ]);
+
+            if (pRes.ok) setProducts(await pRes.json());
+            if (oRes.ok) setOrders(await oRes.json());
+
+        } catch (error) {
+            console.error("Failed to load data", error);
+        } finally {
+            setIsLoaded(true);
+        }
+    };
+
     useEffect(() => {
         const auth = sessionStorage.getItem('srivari_admin_auth');
         if (auth === 'true') setIsAuthenticated(true);
-
-        const storedProducts = localStorage.getItem('srivari_products');
-        setProducts(storedProducts ? JSON.parse(storedProducts) : initialProducts);
-
-        const storedOrders = localStorage.getItem('srivari_orders');
-        if (storedOrders) setOrders(JSON.parse(storedOrders));
-
-        const storedCategories = localStorage.getItem('srivari_categories');
-        if (storedCategories) setCategories(JSON.parse(storedCategories));
-
-        setIsLoaded(true);
+        fetchData();
     }, []);
 
+    // Remove legacy localstorage sync
+    /* 
     useEffect(() => {
         if (isLoaded) {
-            localStorage.setItem('srivari_products', JSON.stringify(products));
-            localStorage.setItem('srivari_orders', JSON.stringify(orders));
-            localStorage.setItem('srivari_categories', JSON.stringify(categories));
+           ...
         }
-    }, [products, orders, categories, isLoaded]);
+    }, ...); 
+    */
 
     // --- Actions ---
     const handleLogin = (e: React.FormEvent) => {
@@ -171,19 +179,33 @@ export default function AdminDashboard() {
         } else alert('Access Denied');
     };
 
-    const handleProductSubmit = (e: React.FormEvent) => {
+    const handleProductSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Filter out empty image strings
         const cleanedImages = formData.images?.filter(img => img && img.trim() !== "") || [];
-        const cleanedData = { ...formData, images: cleanedImages };
+        const productData = {
+            ...formData,
+            images: cleanedImages,
+            id: isEditing || Math.random().toString(36).substr(2, 9)
+        };
 
-        if (isEditing) {
-            setProducts(products.map(p => p.id === isEditing ? { ...cleanedData, id: isEditing } as Product : p));
-        } else {
-            setProducts([{ ...cleanedData, id: Math.random().toString(36).substr(2, 9) } as Product, ...products]);
+        try {
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+
+            if (res.ok) {
+                await fetchData(); // Reload to get fresh list
+                resetForm();
+            } else {
+                alert("Failed to save product");
+            }
+        } catch (err) {
+            alert("Error saving product");
         }
-        resetForm();
     };
 
     const resetForm = () => {
@@ -517,7 +539,13 @@ export default function AdminDashboard() {
                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => { setFormData(product); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]"><Edit2 size={18} /></button>
                                                         <button
-                                                            onClick={() => confirm('Delete?') && setProducts(products.filter(p => p.id !== product.id))}
+                                                            onClick={async () => {
+                                                                if (!confirm('Delete?')) return;
+                                                                try {
+                                                                    await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
+                                                                    fetchData();
+                                                                } catch (err) { alert('Delete failed'); }
+                                                            }}
                                                             className="p-2 hover:bg-red-500/20 rounded-lg text-red-500"
                                                         >
                                                             <Trash2 size={18} />
@@ -557,47 +585,29 @@ export default function AdminDashboard() {
                                             <select
                                                 aria-label="Order Status"
                                                 value={order.status}
-                                                onChange={(e) => {
+                                                onChange={async (e) => {
                                                     const newStatus = e.target.value as any;
-                                                    const oldStatus = order.status;
+                                                    const updatedOrder = { ...order, status: newStatus };
 
-                                                    // Handle Stock Adjustment
-                                                    if (newStatus === 'Cancelled' && oldStatus !== 'Cancelled') {
-                                                        // Restore stock
-                                                        const updatedProducts = [...products];
-                                                        order.items.forEach(item => {
-                                                            const productIndex = updatedProducts.findIndex(p => p.id === item.productId);
-                                                            if (productIndex !== -1) {
-                                                                updatedProducts[productIndex] = {
-                                                                    ...updatedProducts[productIndex],
-                                                                    stock: updatedProducts[productIndex].stock + item.quantity
-                                                                };
-                                                            }
+                                                    // Optimistic Update
+                                                    setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
+
+                                                    try {
+                                                        await fetch('/api/orders', {
+                                                            method: 'PUT',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify(updatedOrder)
                                                         });
-                                                        setProducts(updatedProducts);
-                                                    } else if (oldStatus === 'Cancelled' && newStatus !== 'Cancelled') {
-                                                        // Re-deduct stock if un-cancelled
-                                                        const updatedProducts = [...products];
-                                                        order.items.forEach(item => {
-                                                            const productIndex = updatedProducts.findIndex(p => p.id === item.productId);
-                                                            if (productIndex !== -1) {
-                                                                updatedProducts[productIndex] = {
-                                                                    ...updatedProducts[productIndex],
-                                                                    stock: updatedProducts[productIndex].stock - item.quantity
-                                                                };
-                                                            }
-                                                        });
-                                                        setProducts(updatedProducts);
+                                                        fetchData(); // Sync fully
+                                                    } catch (err) {
+                                                        alert("Failed to update order");
+                                                        fetchData(); // Revert
                                                     }
-
-                                                    const updated = orders.map(o => o.id === order.id ? { ...o, status: newStatus } : o);
-                                                    setOrders(updated);
                                                 }}
                                                 className={`mt-2 text-xs py-1 px-3 rounded-full border bg-transparent outline-none cursor-pointer ${order.status === 'Delivered' ? 'border-green-500 text-green-400' :
                                                     order.status === 'Cancelled' ? 'border-red-500 text-red-400' :
                                                         'border-yellow-500 text-yellow-400'
                                                     }`}
-                                                target-lint-error-id="742e5f25-c39d-448b-9783-f9a379281bb6"
                                             >
                                                 <option className="bg-neutral-900" value="Pending">Pending</option>
                                                 <option className="bg-neutral-900" value="Shipped">Shipped</option>

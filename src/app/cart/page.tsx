@@ -27,36 +27,65 @@ export default function CartPage() {
         setUserDetails(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleWhatsAppCheckout = () => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleWhatsAppCheckout = async () => {
         // Validate required fields
-        if (!userDetails.name || !userDetails.phone) {
-            alert("Please enter at least your Name and Phone Number.");
+        if (!userDetails.name || !userDetails.phone || !userDetails.email) {
+            alert("To ensure we can send you tracking updates, Email is now required.");
             return;
         }
 
-        const phoneNumber = "919739988771";
+        setIsSubmitting(true);
 
-        // Using Unicode escape sequences to ensure emojis render correctly everywhere
-        let message = "Namaste Srivari! \uD83C\uDF38\n"; // 🌸
-        message += "I would like to place an order.\n\n";
+        try {
+            // 1. Create Order on Server
+            const res = await fetch('/api/orders/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: userDetails.name,
+                    phone: userDetails.phone,
+                    email: userDetails.email,
+                    address: userDetails.address,
+                    items: cart.map(i => ({ name: i.name, price: i.price })),
+                    total: calculateTotal()
+                })
+            });
 
-        message += "*Customer Details:*\n";
-        message += "\uD83D\uDC64 Name: " + userDetails.name + "\n"; // 👤
-        message += "\uD83D\uDCF1 Phone: " + userDetails.phone + "\n"; // 📱
-        if (userDetails.email) message += "\uD83D\uDCE7 Email: " + userDetails.email + "\n"; // 📧
-        if (userDetails.address) message += "\uD83D\uDCCD Address: " + userDetails.address + "\n"; // 📍
+            const data = await res.json();
 
-        message += "\n*Order Summary:*\n";
-        cart.forEach((item, index) => {
-            message += `${index + 1}. ${item.name} - \u20B9${item.price.toLocaleString('en-IN')}\n`; // ₹ symbol
-        });
+            if (!data.success) {
+                alert("Failed to create order. Please try again.");
+                setIsSubmitting(false);
+                return;
+            }
 
-        message += `\n*\uD83D\uDCB0 Total Amount: \u20B9${calculateTotal().toLocaleString('en-IN')}*`; // 💰
-        message += "\n\nPlease confirm availability/shipping involved.";
+            const orderId = data.orderId;
 
-        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-        setIsCheckoutModalOpen(false);
+            // 2. Redirect to WhatsApp with Order ID
+            const phoneNumber = "919739988771";
+            let message = "Namaste Srivari! \uD83C\uDF38\n";
+            message += `I have placed Order #${orderId} via the website.\n`;
+            message += "I am writing to confirm availability and finalize the payment.\n\n";
+
+            message += "*Customer Details:*\n";
+            message += "\uD83D\uDC64 Name: " + userDetails.name + "\n";
+            message += "\uD83D\uDCE7 Email: " + userDetails.email + "\n"; // Included in msg too
+
+            message += `\n*\uD83D\uDCB0 Total Amount: \u20B9${calculateTotal().toLocaleString('en-IN')}*`;
+
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+
+            // Close modal / Clear cart if needed (optional, keeping cart for now in case user comes back)
+            setIsCheckoutModalOpen(false);
+
+        } catch (error) {
+            alert("Something went wrong. Please check your connection.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -131,7 +160,7 @@ export default function CartPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="group">
                                         <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                            <Mail size={14} /> Email
+                                            <Mail size={14} /> Email <span className="text-red-400">*</span>
                                         </label>
                                         <input
                                             type="email"
@@ -160,10 +189,17 @@ export default function CartPage() {
 
                             <button
                                 onClick={handleWhatsAppCheckout}
-                                className="w-full mt-8 py-4 bg-[#1A1A1A] text-white font-bold tracking-[0.15em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#4A0404] transition-all duration-500 shadow-xl flex items-center justify-center gap-3 group"
+                                disabled={isSubmitting}
+                                className="w-full mt-8 py-4 bg-[#1A1A1A] text-white font-bold tracking-[0.15em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#4A0404] transition-all duration-500 shadow-xl flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <span>Proceed to WhatsApp</span>
-                                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                {isSubmitting ? (
+                                    <span>Processing Request...</span>
+                                ) : (
+                                    <>
+                                        <span>Proceed to WhatsApp</span>
+                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
                             </button>
 
                             <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-neutral-400">
