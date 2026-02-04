@@ -13,5 +13,5 @@ export async function POST(req: Request) {
         system: "You are a professional luxury fashion copywriter for 'The Srivari', a high-end saree boutique. Write elegant, sophisticated, and shorter product descriptions. Focus on the craftsmanship, heritage, and royal aesthetic.",
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
 }

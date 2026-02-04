@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-
-const ORDER_FILE = path.join(process.cwd(), 'data', 'orders.json');
+import prisma from './prisma';
 
 export interface OrderItem {
     productId: string;
@@ -11,7 +8,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-    id: string; // Internal ID (e.g. ORD-123)
+    id: string; // Internal ID (e.g. SR-123456)
     razorpay_order_id?: string;
     customer: {
         name: string;
@@ -28,68 +25,78 @@ export interface Order {
     payment_method: 'Razorpay' | 'WhatsApp';
 }
 
-// Ensure DB exists
-const ensureDB = () => {
-    const dir = path.dirname(ORDER_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(ORDER_FILE)) fs.writeFileSync(ORDER_FILE, '[]');
-};
-
 // Create Order
 export const createOrder = async (orderData: Partial<Order>): Promise<Order> => {
-    ensureDB();
-    const orders: Order[] = JSON.parse(fs.readFileSync(ORDER_FILE, 'utf8'));
+    // Generate ID: SR-xxxxxx
+    const id = `SR-${Date.now().toString().slice(-6)}`;
 
-    const newOrder: Order = {
-        id: `SR-${Date.now().toString().slice(-6)}`,
-        customer: orderData.customer!,
-        items: orderData.items!,
-        amount: orderData.amount || 0,
-        shipping_cost: orderData.shipping_cost || 0,
-        total: (orderData.amount || 0) + (orderData.shipping_cost || 0),
-        status: 'Pending',
-        created_at: new Date().toISOString(),
-        payment_method: orderData.payment_method || 'Razorpay',
-        razorpay_order_id: orderData.razorpay_order_id
+    // Create in Prisma
+    const newOrder = await prisma.order.create({
+        data: {
+            id,
+            razorpay_order_id: orderData.razorpay_order_id,
+            customer: orderData.customer as any, // Cast to any for Json type
+            items: orderData.items as any,
+            amount: orderData.amount || 0,
+            shipping_cost: orderData.shipping_cost || 0,
+            total: (orderData.amount || 0) + (orderData.shipping_cost || 0),
+            status: 'Pending',
+            payment_method: orderData.payment_method || 'Razorpay',
+        }
+    });
+
+    // Map Prisma result back to our Interface (date handling etc)
+    return {
+        ...newOrder,
+        customer: newOrder.customer as any,
+        items: newOrder.items as any,
+        status: newOrder.status as any,
+        created_at: newOrder.createdAt.toISOString(),
+        payment_method: newOrder.payment_method as any
     };
-
-    orders.unshift(newOrder); // Add to top
-    fs.writeFileSync(ORDER_FILE, JSON.stringify(orders, null, 2));
-    return newOrder;
 };
 
 // Update Order Payment Status
 export const updateOrderPayment = async (razorpayOrderId: string, paymentId: string) => {
-    ensureDB();
-    const orders: Order[] = JSON.parse(fs.readFileSync(ORDER_FILE, 'utf8'));
-
-    // Find order
-    const index = orders.findIndex(o => o.razorpay_order_id === razorpayOrderId);
-    if (index !== -1) {
-        orders[index].status = 'Paid';
-        // You could add paymentId to the record if you updated the interface
-        fs.writeFileSync(ORDER_FILE, JSON.stringify(orders, null, 2));
+    try {
+        await prisma.order.update({
+            where: { razorpay_order_id: razorpayOrderId },
+            data: { status: 'Paid' }
+        });
         return true;
+    } catch (e) {
+        return false;
     }
-    return false;
 };
 
 // Update Order by ID (Generic)
 export const updateOrder = async (id: string, updates: Partial<Order>) => {
-    ensureDB();
-    const orders: Order[] = JSON.parse(fs.readFileSync(ORDER_FILE, 'utf8'));
-
-    const index = orders.findIndex(o => o.id === id);
-    if (index !== -1) {
-        orders[index] = { ...orders[index], ...updates };
-        fs.writeFileSync(ORDER_FILE, JSON.stringify(orders, null, 2));
+    try {
+        await prisma.order.update({
+            where: { id },
+            data: {
+                status: updates.status,
+                // Add other fields if needed
+            }
+        });
         return true;
+    } catch (e) {
+        return false;
     }
-    return false;
 };
 
 // Get All Orders
 export const getOrders = async (): Promise<Order[]> => {
-    ensureDB();
-    return JSON.parse(fs.readFileSync(ORDER_FILE, 'utf8'));
+    const orders = await prisma.order.findMany({
+        orderBy: { createdAt: 'desc' }
+    });
+
+    return orders.map(o => ({
+        ...o,
+        customer: o.customer as any,
+        items: o.items as any,
+        status: o.status as any,
+        created_at: o.createdAt.toISOString(),
+        payment_method: o.payment_method as any
+    }));
 };

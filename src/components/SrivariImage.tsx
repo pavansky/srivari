@@ -47,7 +47,6 @@ export default function SrivariImage({ src, alt, className, fallbackLabel = "The
             alt={alt}
             className={className}
             onError={handleError}
-            unoptimized
         />
     );
 }
