@@ -60,7 +60,7 @@ export default function Navbar() {
                         <ShoppingBag className="w-5 h-5 text-gold hover:text-white transition-colors" />
                         {cart.length > 0 && (
                             <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] text-obsidian font-bold">
-                                {cart.length}
+                                {cart.reduce((total, item) => total + item.quantity, 0)}
                             </span>
                         )}
                     </Link>

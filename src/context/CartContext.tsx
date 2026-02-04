@@ -7,18 +7,21 @@ import { products as initialProducts } from "@/data/products";
 // We only store the ID and quantity in localStorage to save space
 interface StoredCartItem {
     productId: string;
-    uniqueId: string;
+    quantity: number;
 }
 
 // The app uses the full product details
-interface CartItem extends Product {
-    uniqueId: string;
+export interface CartItem extends Product {
+    uniqueId: string; // Kept for backwards compatibility / keys
+    quantity: number;
 }
 
 interface CartContextType {
     cart: CartItem[];
-    addToCart: (product: Product) => void;
-    removeFromCart: (uniqueId: string) => void;
+    addToCart: (product: Product, quantity?: number) => void;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
+    clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -37,15 +40,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const storedCartJSON = localStorage.getItem('srivari_cart');
         const storedProductsJSON = localStorage.getItem('srivari_products');
 
-        // Combine static and local products for lookup
         let allProducts = [...initialProducts];
         if (storedProductsJSON) {
             try {
                 const localProducts = JSON.parse(storedProductsJSON);
-                // Create a map or just merge. For simplicity, just use local if available as it might have edits, 
-                // but actually we expect local to fully override or extend.
-                // The Admin flow sets 'srivari_products' as the source.
-                // Optimally, we use the same logic as ShopPage:
                 allProducts = localProducts.length > 0 ? localProducts : initialProducts;
             } catch (e) {
                 console.error("Failed to parse products", e);
@@ -54,15 +52,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
         if (storedCartJSON) {
             try {
-                const storedItems: StoredCartItem[] = JSON.parse(storedCartJSON);
+                // Handle legacy format (array of objects with potentially missing quantity)
+                const storedItems: any[] = JSON.parse(storedCartJSON);
                 const hydratedCart: CartItem[] = [];
 
+                // Reduce legacy items (if duplicates existed) or just load them
+                // Ideally, we start fresh or migrate. Let's try to migrate on load.
+                const tempMap = new Map<string, number>();
+
                 storedItems.forEach(item => {
-                    const product = getProductById(item.productId, allProducts);
-                    if (product) {
-                        hydratedCart.push({ ...product, uniqueId: item.uniqueId });
+                    const pid = item.productId || item.id; // Handle older formats if any
+                    const qty = item.quantity || 1;
+                    if (pid) {
+                        tempMap.set(pid, (tempMap.get(pid) || 0) + qty);
                     }
                 });
+
+                tempMap.forEach((qty, pid) => {
+                    const product = getProductById(pid, allProducts);
+                    if (product) {
+                        hydratedCart.push({
+                            ...product,
+                            uniqueId: Math.random().toString(36).substr(2, 9),
+                            quantity: qty
+                        });
+                    }
+                });
+
                 setCart(hydratedCart);
             } catch (e) {
                 console.error("Failed to parse cart", e);
@@ -71,34 +87,61 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setIsLoaded(true);
     }, []);
 
-    // Save to localStorage (only IDs)
+    // Save to localStorage
     useEffect(() => {
         if (isLoaded) {
             const itemsToStore: StoredCartItem[] = cart.map(item => ({
                 productId: item.id,
-                uniqueId: item.uniqueId
+                quantity: item.quantity
             }));
             try {
                 localStorage.setItem('srivari_cart', JSON.stringify(itemsToStore));
             } catch (e) {
                 console.error("Cart storage quota exceeded", e);
-                // Optional: Notify user via toast if possible, but existing items remain in state
-                alert("Cart is full! Storage limit reached.");
             }
         }
     }, [cart, isLoaded]);
 
-    const addToCart = (product: Product) => {
-        const newItem = { ...product, uniqueId: Math.random().toString(36).substr(2, 9) };
-        setCart((prev) => [...prev, newItem]);
+    const addToCart = (product: Product, quantity: number = 1) => {
+        setCart((prev) => {
+            const existingItem = prev.find(item => item.id === product.id);
+            if (existingItem) {
+                // Update quantity if exists
+                return prev.map(item =>
+                    item.id === product.id
+                        ? { ...item, quantity: item.quantity + quantity }
+                        : item
+                );
+            }
+            // Add new item
+            return [...prev, {
+                ...product,
+                uniqueId: Math.random().toString(36).substr(2, 9),
+                quantity: quantity
+            }];
+        });
     };
 
-    const removeFromCart = (uniqueId: string) => {
-        setCart((prev) => prev.filter((item) => item.uniqueId !== uniqueId));
+    const updateQuantity = (productId: string, quantity: number) => {
+        if (quantity < 1) {
+            removeFromCart(productId);
+            return;
+        }
+        setCart(prev => prev.map(item =>
+            item.id === productId ? { ...item, quantity } : item
+        ));
+    };
+
+    const removeFromCart = (productId: string) => {
+        setCart((prev) => prev.filter((item) => item.id !== productId));
+    };
+
+    const clearCart = () => {
+        setCart([]);
     };
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart }}>
+        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}>
             {children}
         </CartContext.Provider>
     );

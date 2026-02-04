@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useCompletion } from 'ai/react';
 import { Product, Order } from '@/types';
 import { products as initialProducts } from '@/data/products';
 import {
@@ -39,6 +40,23 @@ export default function AdminDashboard() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [categories, setCategories] = useState<string[]>(["Silk", "Banarasi", "Cotton", "Mysore Silk", "Tussar"]);
 
+    // AI SDK Integration (Vercel AI Gateway)
+    const { complete, completion, isLoading: isAIWriting } = useCompletion({
+        api: '/api/chat',
+        onFinish: (_prompt: string, result: string) => {
+            setFormData(prev => ({ ...prev, description: result }));
+        }
+    });
+
+
+
+    // Real-time stream update for typing effect
+    useEffect(() => {
+        if (isAIWriting && completion) {
+            setFormData(prev => ({ ...prev, description: completion }));
+        }
+    }, [isAIWriting, completion]);
+
     // Auth & Loading
     const [isLoaded, setIsLoaded] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,39 +88,20 @@ export default function AdminDashboard() {
     const [studioPreview, setStudioPreview] = useState<string | null>(null); // For uploaded file preview
 
     // AI State
-    const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [imagePrompt, setImagePrompt] = useState("");
     const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
 
-    // --- AI Logic (Mock) ---
+    // --- AI Logic (SDK) ---
     const generateAIDescription = async () => {
         if (!formData.name) return alert("Please enter a product name first!");
-        setIsGeneratingDesc(true);
 
-        try {
-            const res = await fetch('/api/admin/ai-description', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: formData.name,
-                    category: formData.category,
-                    additionalDetails: formData.description // pass existing text as context
-                })
-            });
-            const data = await res.json();
-            if (data.description) {
-                setFormData(prev => ({ ...prev, description: data.description }));
-            } else if (data.error) {
-                alert(`Error: ${data.error}`);
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Error connecting to AI service.");
-        } finally {
-            setIsGeneratingDesc(false);
-        }
+        // Construct a prompt context
+        const prompt = `Write a description for a saree named "${formData.name}". Category: ${formData.category}. Additional Notes: ${formData.description || 'None'}`;
+
+        await complete(prompt);
     };
 
     const handleGenerateStudioImage = async () => {
@@ -325,11 +324,11 @@ export default function AdminDashboard() {
                                                 <button
                                                     type="button"
                                                     onClick={generateAIDescription}
-                                                    disabled={isGeneratingDesc}
+                                                    disabled={isAIWriting}
                                                     className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-white transition-colors disabled:opacity-50"
                                                 >
-                                                    {isGeneratingDesc ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                                    {isGeneratingDesc ? 'Writing...' : 'Auto-Write with AI'}
+                                                    {isAIWriting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                                    {isAIWriting ? 'Streaming...' : 'AI Writing...'}
                                                 </button>
                                             </div>
                                             <textarea
@@ -434,8 +433,8 @@ export default function AdminDashboard() {
                                                         value={newCategoryInput}
                                                         onChange={e => setNewCategoryInput(e.target.value)}
                                                     />
-                                                    <button type="button" onClick={handleAddCategory} className="bg-green-500/20 text-green-400 p-3 rounded-lg border border-green-500/50 hover:bg-green-500/30"><Check size={20} /></button>
-                                                    <button type="button" onClick={() => setIsAddingCategory(false)} className="bg-red-500/20 text-red-400 p-3 rounded-lg border border-red-500/50 hover:bg-red-500/30"><X size={20} /></button>
+                                                    <button type="button" onClick={handleAddCategory} className="bg-green-500/20 text-green-400 p-3 rounded-lg border border-green-500/50 hover:bg-green-500/30" aria-label="Confirm new category"><Check size={20} /></button>
+                                                    <button type="button" onClick={() => setIsAddingCategory(false)} className="bg-red-500/20 text-red-400 p-3 rounded-lg border border-red-500/50 hover:bg-red-500/30" aria-label="Cancel new category"><X size={20} /></button>
                                                 </div>
                                             ) : (
                                                 <>
@@ -537,7 +536,7 @@ export default function AdminDashboard() {
                                                     </div>
 
                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => { setFormData(product); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]"><Edit2 size={18} /></button>
+                                                        <button onClick={() => { setFormData(product); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]" aria-label="Edit product"><Edit2 size={18} /></button>
                                                         <button
                                                             onClick={async () => {
                                                                 if (!confirm('Delete?')) return;
@@ -547,6 +546,7 @@ export default function AdminDashboard() {
                                                                 } catch (err) { alert('Delete failed'); }
                                                             }}
                                                             className="p-2 hover:bg-red-500/20 rounded-lg text-red-500"
+                                                            aria-label="Delete product"
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
@@ -637,7 +637,7 @@ export default function AdminDashboard() {
                     <GlassCard className="max-w-md w-full p-8 border-[#D4AF37]/50">
                         <div className="flex justify-between mb-6">
                             <h3 className="text-xl text-[#D4AF37] font-serif">New Order</h3>
-                            <button onClick={() => setIsOrderModalOpen(false)}><X className="text-white/50 hover:text-white" /></button>
+                            <button onClick={() => setIsOrderModalOpen(false)} aria-label="Close order modal"><X className="text-white/50 hover:text-white" /></button>
                         </div>
                         {/* reusing similar form logic for order creation */}
                         <form className="space-y-4" onSubmit={(e) => {
@@ -681,7 +681,7 @@ export default function AdminDashboard() {
                                 <h3 className="text-xl text-[#D4AF37] font-serif flex items-center gap-2">
                                     <Wand2 className="animate-pulse" /> AI Studio
                                 </h3>
-                                <button onClick={() => setIsImageModalOpen(false)} className="md:hidden"><X className="text-white/50" /></button>
+                                <button onClick={() => setIsImageModalOpen(false)} className="md:hidden" aria-label="Close studio"><X className="text-white/50" /></button>
                             </div>
 
                             {/* Mode Support */}
@@ -765,7 +765,7 @@ export default function AdminDashboard() {
 
                         {/* Right: Preview Canvas */}
                         <div className="flex-1 bg-[#0a0a0a] relative flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
-                            <button onClick={() => setIsImageModalOpen(false)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-white hover:text-black transition-colors z-50"><X size={20} /></button>
+                            <button onClick={() => setIsImageModalOpen(false)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-white hover:text-black transition-colors z-50" aria-label="Close preview"><X size={20} /></button>
 
                             {generatedPreview ? (
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-2xl aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/50 group">

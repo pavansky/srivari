@@ -22,7 +22,7 @@ export default function ProductPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [product, setProduct] = useState<Product | undefined>(undefined);
     const [activeImage, setActiveImage] = useState("");
-    const [selectedSize, setSelectedSize] = useState("Free Size");
+    const [quantity, setQuantity] = useState(1);
     const { addToCart } = useCart();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
@@ -41,9 +41,7 @@ export default function ProductPage() {
         if (storedProducts) {
             try {
                 const products: Product[] = JSON.parse(storedProducts);
-                console.log("LocalStorage Products:", products.length);
                 found = products.find(p => normalizeId(p.id) === targetId);
-                console.log("Found in LocalStorage?", !!found);
             } catch (error) {
                 console.error("LS Parse Error:", error);
             }
@@ -51,9 +49,7 @@ export default function ProductPage() {
 
         // 2. Fallback to Initial Data
         if (!found) {
-            console.log("Checking Initial Data...");
             found = initialProducts.find(p => normalizeId(p.id) === targetId);
-            console.log("Found in Initial?", !!found);
         }
 
         setProduct(found);
@@ -66,8 +62,8 @@ export default function ProductPage() {
 
     const handleAddToCart = () => {
         if (product) {
-            addToCart(product);
-            alert("Added to cart!");
+            addToCart(product, quantity);
+            alert(`Added ${quantity} item(s) to cart!`);
         }
     };
 
@@ -104,35 +100,9 @@ export default function ProductPage() {
     }
 
     if (!product) {
-        // Collect debug info
-        const storedProducts = typeof window !== 'undefined' ? localStorage.getItem('srivari_products') : null;
-        let debugStoredIds: string[] = [];
-        if (storedProducts) {
-            try {
-                const parsed = JSON.parse(storedProducts);
-                debugStoredIds = parsed.map((p: any) => p.id);
-            } catch (e) { }
-        }
-        const initialIds = initialProducts.map(p => p.id);
-
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-4 text-center">
                 <h1 className="text-3xl font-heading text-[#4A0404]">Product not found</h1>
-                <p className="text-[#595959] mt-2 mb-8">The product you are looking for does not exist or has been removed.</p>
-
-                <div className="bg-white p-4 rounded border border-gray-200 text-left text-xs text-gray-500 font-mono w-full max-w-lg">
-                    <p className="font-bold mb-2 text-red-500">DEBUG INFO:</p>
-                    <p>Searched ID: <span className="bg-yellow-100 px-1 text-black">{id}</span> (Type: {typeof id})</p>
-                    <p className="mt-2">LocalStorage IDs ({debugStoredIds.length}):</p>
-                    <div className="max-h-20 overflow-y-auto border p-1 mb-2">
-                        {debugStoredIds.join(', ') || "None"}
-                    </div>
-                    <p>Initial IDs ({initialIds.length}):</p>
-                    <div className="max-h-20 overflow-y-auto border p-1">
-                        {initialIds.join(', ')}
-                    </div>
-                </div>
-
                 <Link href="/shop" className="mt-8 px-6 py-2 bg-[#D4AF37] text-white font-bold uppercase text-sm tracking-widest hover:bg-[#B5952F] transition-colors">
                     Back to Shop
                 </Link>
@@ -142,7 +112,7 @@ export default function ProductPage() {
 
     // WhatsApp Order Logic
     const phoneNumber = "919739988771";
-    const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Color: ${product.description.split(' ')[0] || 'Standard'}. Please confirm availability.`;
+    const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Qty: ${quantity}. Please confirm availability.`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
     return (
@@ -188,6 +158,7 @@ export default function ProductPage() {
                                             className={`relative w-16 h-20 flex-shrink-0 transition-opacity duration-300
                                                 ${activeImage === img ? 'opacity-100 ring-1 ring-[#D4AF37]' : 'opacity-40 hover:opacity-80'}
                                             `}
+                                            aria-label={`View gallery image ${i + 1}`}
                                         >
                                             <SrivariImage src={img} alt="Thumbnail" fill className="object-cover" />
                                         </button>
@@ -234,6 +205,28 @@ export default function ProductPage() {
                             {/* Designer Action Bar */}
                             <div className="space-y-6">
                                 <div className="flex flex-col gap-3">
+                                    {/* Quantity Selector */}
+                                    <div className="flex items-center gap-6 mb-4">
+                                        <span className="text-xs font-[family-name:var(--font-montserrat)] uppercase tracking-widest font-bold text-[#1A1A1A]">
+                                            Quantity
+                                        </span>
+                                        <div className="flex items-center border border-[#1A1A1A] bg-white">
+                                            <button
+                                                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                                aria-label="Decrease quantity"
+                                            >-</button>
+                                            <span className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-playfair)] text-xl text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20">
+                                                {quantity}
+                                            </span>
+                                            <button
+                                                onClick={() => setQuantity(q => q + 1)}
+                                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                                aria-label="Increase quantity"
+                                            >+</button>
+                                        </div>
+                                    </div>
+
                                     <a
                                         href={whatsappUrl}
                                         target="_blank"
