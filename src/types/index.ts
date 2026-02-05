@@ -11,6 +11,7 @@ export interface Product {
     hashtags?: string[];
     priceCps?: number; // Cost Price from Seller
     shipping?: number; // Shipping cost paid
+    weight?: number; // Weight in kg
 }
 
 export interface Collection {

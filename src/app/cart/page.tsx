@@ -33,6 +33,11 @@ export default function CartPage() {
     const [pincode, setPincode] = useState('');
     const [isCheckingPincode, setIsCheckingPincode] = useState(false);
     const [courierName, setCourierName] = useState('');
+    const [shippingDetails, setShippingDetails] = useState({
+        city: '',
+        state: '',
+        eta: ''
+    });
 
     // Load Razorpay Script
     const loadRazorpay = () => {
@@ -53,10 +58,10 @@ export default function CartPage() {
 
         setIsCheckingPincode(true);
         try {
-            // Estimate weight: 0.8kg per saree approx (safe buffer for box)
-            const totalWeight = cart.reduce((w, item) => w + (item.quantity * 0.8), 0);
+            // Calculate total weight dynamically
+            const totalWeight = cart.reduce((w, item) => w + ((item.weight || 0.5) * item.quantity), 0);
 
-            const res = await fetch('/api/shiprocket/rates', {
+            const res = await fetch('/api/shiprocket/serviceability', {
                 method: 'POST',
                 body: JSON.stringify({ pincode, weight: totalWeight })
             });
@@ -66,11 +71,17 @@ export default function CartPage() {
             if (data.success) {
                 setShippingCost(data.shipping);
                 setCourierName(data.courier);
+                setShippingDetails({
+                    city: data.city,
+                    state: data.state,
+                    eta: data.eta
+                });
                 setUserDetails(prev => ({ ...prev, address: `${prev.address ? prev.address + ', ' : ''}Pincode: ${pincode}` }));
                 // Auto-append pincode to address if not there, or just useful for context
             } else {
                 alert("Shipping not serviceable to this pincode.");
                 setShippingCost(0);
+                setShippingDetails({ city: '', state: '', eta: '' });
             }
         } catch (err) {
             console.error(err);
@@ -490,8 +501,60 @@ export default function CartPage() {
                                             >
                                                 {isCheckingPincode ? '...' : 'Check'}
                                             </button>
+                                            <button
+                                                onClick={() => {
+                                                    if ("geolocation" in navigator) {
+                                                        navigator.geolocation.getCurrentPosition(async (position) => {
+                                                            const { latitude, longitude } = position.coords;
+                                                            try {
+                                                                const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                                                                const data = await res.json();
+                                                                if (data.postcode) {
+                                                                    setPincode(data.postcode);
+                                                                    // Optional: Auto-check
+                                                                    // checkShipping(); 
+                                                                } else {
+                                                                    alert("Could not detect pincode from location.");
+                                                                }
+                                                            } catch (e) {
+                                                                alert("Failed to get location details.");
+                                                            }
+                                                        }, () => {
+                                                            alert("Location permission denied.");
+                                                        });
+                                                    } else {
+                                                        alert("Geolocation is not supported by your browser.");
+                                                    }
+                                                }}
+                                                className="bg-white border border-neutral-300 text-neutral-500 p-2 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors"
+                                                title="Use Current Location"
+                                            >
+                                                <MapPin size={14} />
+                                            </button>
+
                                         </div>
-                                        {courierName && <p className="text-[10px] text-green-600">via {courierName}</p>}
+                                        {shippingCost > 0 && (
+                                            <div className="mt-3 space-y-1 bg-neutral-50 p-2 border border-neutral-100 rounded">
+                                                {courierName && (
+                                                    <p className="text-[10px] text-neutral-500 flex justify-between">
+                                                        <span>Courier:</span>
+                                                        <span className="font-bold text-obsidian">{courierName}</span>
+                                                    </p>
+                                                )}
+                                                {shippingDetails.city && (
+                                                    <p className="text-[10px] text-neutral-500 flex justify-between">
+                                                        <span>Location:</span>
+                                                        <span className="font-bold text-obsidian">{shippingDetails.city}, {shippingDetails.state}</span>
+                                                    </p>
+                                                )}
+                                                {shippingDetails.eta && (
+                                                    <p className="text-[10px] text-neutral-500 flex justify-between">
+                                                        <span>Est. Delivery:</span>
+                                                        <span className="font-bold text-[#D4AF37]">{shippingDetails.eta}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex justify-between items-center text-sm font-sans text-neutral-600">
@@ -539,6 +602,6 @@ export default function CartPage() {
             </div>
 
             <Footer />
-        </main>
+        </main >
     );
 }

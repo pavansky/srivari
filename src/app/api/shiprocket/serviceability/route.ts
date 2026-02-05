@@ -9,7 +9,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Pincode is required" }, { status: 400 });
         }
 
-        const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE || '500033'; // Default to a Hyderabad zip if missing
+        const pickupPincode = '560061'; // HARDCODED ORIGIN: Bangalore
 
         // Default weight: 0.5kg per item if not passed, but frontend should pass estimated total.
         // If we want to accept 'items' array, we can calc here, but passing total weight is easier.
@@ -25,6 +25,8 @@ export async function POST(req: Request) {
             success: true,
             shipping: Math.ceil(rateData.rate), // Round up to nearest rupee
             courier: rateData.courier_name,
+            city: rateData.city,
+            state: rateData.state,
             eta: rateData.etd // Estimated Time of Delivery
         });
 
