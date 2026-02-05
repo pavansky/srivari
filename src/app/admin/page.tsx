@@ -14,6 +14,7 @@ import Link from 'next/link';
 import SrivariImage from '@/components/SrivariImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
+import Script from 'next/script';
 
 // --- Reusable Glass Components ---
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -367,34 +368,55 @@ export default function AdminDashboard() {
                                         <div className="flex gap-2 text-xs">
                                             <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })} className="text-[#D4AF37] hover:underline">+ Add URL</button>
                                             <span className="text-white/20">|</span>
-                                            <label className="text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-1">
-                                                <Upload size={12} /> Upload File
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (!file) return;
 
-                                                        const data = new FormData();
-                                                        data.append('file', file);
-
-                                                        try {
-                                                            const res = await fetch('/api/upload', { method: 'POST', body: data });
-                                                            const json = await res.json();
-                                                            if (json.url) {
-                                                                setFormData(prev => ({ ...prev, images: [...(prev.images || []), json.url] }));
-                                                            } else {
-                                                                alert('Upload failed');
+                                            {/* Cloudinary Widget Trigger */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    // @ts-ignore
+                                                    const widget = window.cloudinary.createUploadWidget(
+                                                        {
+                                                            cloudName: 'SrivariData',
+                                                            uploadPreset: 'uploadPreset',
+                                                            folder: 'srivari/products', // Optional organization
+                                                            sources: ['local', 'url', 'camera', 'instagram'],
+                                                            multiple: false,
+                                                            clientAllowedFormats: ['image', 'video'],
+                                                            maxImageFileSize: 10000000, // 10MB
+                                                            styles: {
+                                                                palette: {
+                                                                    window: "#000000",
+                                                                    sourceBg: "#000000",
+                                                                    windowBorder: "#D4AF37",
+                                                                    tabIcon: "#D4AF37",
+                                                                    inactiveTabIcon: "#555a5f",
+                                                                    menuIcons: "#D4AF37",
+                                                                    link: "#D4AF37",
+                                                                    action: "#D4AF37",
+                                                                    inProgress: "#0433ff",
+                                                                    complete: "#33ff00",
+                                                                    error: "#cc0000",
+                                                                    textDark: "#000000",
+                                                                    textLight: "#fcfffd"
+                                                                },
                                                             }
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            alert('Upload error');
+                                                        },
+                                                        (error: any, result: any) => {
+                                                            if (!error && result && result.event === "success") {
+                                                                console.log('Done! Here is the image info: ', result.info);
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    images: [...(prev.images || []), result.info.secure_url]
+                                                                }));
+                                                            }
                                                         }
-                                                    }}
-                                                />
-                                            </label>
+                                                    );
+                                                    widget.open();
+                                                }}
+                                                className="text-[#D4AF37] hover:underline cursor-pointer flex items-center gap-1"
+                                            >
+                                                <Upload size={12} /> Upload Media
+                                            </button>
                                         </div>
 
                                         <button
@@ -405,6 +427,7 @@ export default function AdminDashboard() {
                                             <Wand2 size={16} /> Open AI Image Studio
                                         </button>
                                     </div>
+                                    <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="lazyOnload" />
                                 </div>
 
                                 {/* Right Column: Details */}
@@ -507,6 +530,9 @@ export default function AdminDashboard() {
                                 <AnimatePresence>
                                     {filteredProducts.map(product => {
                                         const { profit, margin } = calculateMargin(product.price, product.priceCps, product.shipping);
+                                        // Debug Log
+                                        const displayImg = product.images.find(img => img && img.trim() !== "") || "";
+                                        if (!displayImg) console.warn("Missing Image for", product.name, product.images);
                                         return (
                                             <motion.div
                                                 key={product.id}

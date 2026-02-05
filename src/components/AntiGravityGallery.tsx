@@ -5,17 +5,34 @@ import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import SrivariImage from "@/components/SrivariImage";
 import Link from "next/link";
-import { products as initialProducts } from "@/data/products";
+import { Product } from "@/types";
+// Imports already at top of file
 
+/**
+ * AntiGravityGallery Component
+ * 
+ * Displays a curated list of featured products with a parallax scrolling effect.
+ * Fetches product data from the API on mount suitable for the Home Page.
+ */
 export default function AntiGravityGallery() {
     const containerRef = useRef(null);
-    const [products, setProducts] = useState(initialProducts);
+    const [products, setProducts] = useState<Product[]>([]);
+
+
 
     useEffect(() => {
-        const storedProducts = localStorage.getItem('srivari_products');
-        if (storedProducts) {
-            setProducts(JSON.parse(storedProducts));
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/products');
+                if (res.ok) {
+                    const data = await res.json();
+                    setProducts(data);
+                }
+            } catch (error) {
+                console.error("Failed to load products", error);
+            }
         }
+        loadProducts();
     }, []);
 
     const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);

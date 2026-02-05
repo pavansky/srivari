@@ -3,9 +3,16 @@ import { Product, Order } from '@/types';
 import { products as initialProducts } from '@/data/products';
 
 // --- Products ---
+
+/**
+ * Retrieves all products from the database, ordered by creation date (newest first).
+ * If the database is empty, it seeds initial data from `@/data/products`.
+ * 
+ * @returns {Promise<Product[]>} List of products
+ */
 export async function getProducts(): Promise<Product[]> {
     try {
-        const products = await prisma.product.findMany({
+        let products = await prisma.product.findMany({
             orderBy: { createdAt: 'desc' }
         });
 
@@ -27,17 +34,28 @@ export async function getProducts(): Promise<Product[]> {
                         stock: p.stock,
                         images: p.images,
                         isFeatured: p.isFeatured,
-                        hashtags: p.hashtags
+                        // hashtags removed
                     }
                 });
             }
-            return await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+            // Re-fetch after seeding
+            products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
         }
 
         return products.map(p => ({
-            ...p,
-            images: p.images as string[], // Cast JSON to string array
-            hashtags: p.hashtags as string[]
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.category,
+            stock: p.stock,
+            images: p.images as string[],
+            isFeatured: p.isFeatured,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            video: p.video || undefined,
+            priceCps: p.priceCps || undefined,
+            shipping: p.shipping || undefined,
         }));
     } catch (error) {
         console.error("DB Error:", error);
@@ -45,6 +63,14 @@ export async function getProducts(): Promise<Product[]> {
     }
 }
 
+/**
+ * Saves a product to the database.
+ * If the product exists (has a valid ID), it updates the existing record.
+ * Otherwise, it creates a new product.
+ * 
+ * @param {Product} product - The product object to save
+ * @returns {Promise<Product>} The saved product
+ */
 export async function saveProduct(product: Product) {
     if (product.id && product.id.length > 10) {
         // Likely a UUID or existing ID
@@ -61,7 +87,7 @@ export async function saveProduct(product: Product) {
                     stock: product.stock,
                     images: product.images,
                     isFeatured: product.isFeatured,
-                    hashtags: product.hashtags,
+                    // hashtags removed (not in schema)
                     priceCps: product.priceCps,
                     shipping: product.shipping
                 }
@@ -72,7 +98,7 @@ export async function saveProduct(product: Product) {
     // Create new
     return await prisma.product.create({
         data: {
-            id: product.id, // Optional, Prisma generates if missing usually, but our schema might have it string
+            id: product.id,
             name: product.name,
             description: product.description,
             price: product.price,
@@ -80,7 +106,7 @@ export async function saveProduct(product: Product) {
             stock: product.stock,
             images: product.images,
             isFeatured: product.isFeatured,
-            hashtags: product.hashtags,
+            // hashtags removed (not in schema)
             priceCps: product.priceCps,
             shipping: product.shipping
         }
@@ -94,25 +120,37 @@ export async function deleteProduct(id: string) {
 // --- Orders ---
 export async function getOrders(): Promise<Order[]> {
     const orders = await prisma.order.findMany({
-        orderBy: { date: 'desc' }
+        orderBy: { createdAt: 'desc' } // Changed from date to createdAt (Prisma default)
     });
-    return orders.map(o => ({
-        ...o,
-        items: o.items as any[] // Start schema as JSON
-    }));
+    return orders.map(o => {
+        const customer = o.customer as any; // Cast JSON
+        return {
+            id: o.id,
+            customerName: customer?.name || "Unknown",
+            customerPhone: customer?.phone || "",
+            customerEmail: customer?.email || "",
+            totalAmount: o.total, // Map total to totalAmount
+            status: o.status as 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled',
+            date: o.createdAt.toISOString(),
+            items: o.items as any[]
+        };
+    });
 }
 
 export async function createOrder(order: Order) {
     return await prisma.order.create({
         data: {
             id: order.id,
-            customerName: order.customerName,
-            customerEmail: order.customerEmail || "",
-            customerPhone: order.customerPhone,
-            totalAmount: order.totalAmount,
+            customer: {
+                name: order.customerName,
+                phone: order.customerPhone,
+                email: order.customerEmail
+            },
+            items: order.items,
+            amount: order.totalAmount, // Assuming logic
+            total: order.totalAmount,
             status: order.status,
-            date: new Date(order.date),
-            items: order.items
+            payment_method: "Razorpay" // Default
         }
     });
 }
@@ -122,8 +160,15 @@ export async function getOrder(id: string): Promise<Order | null> {
         where: { id }
     });
     if (!order) return null;
+    const customer = order.customer as any;
     return {
-        ...order,
+        id: order.id,
+        customerName: customer?.name || "",
+        customerPhone: customer?.phone || "",
+        customerEmail: customer?.email || "",
+        totalAmount: order.total,
+        status: order.status as any,
+        date: order.createdAt.toISOString(),
         items: order.items as any[]
     };
 }
@@ -133,7 +178,6 @@ export async function updateOrder(order: Order) {
         where: { id: order.id },
         data: {
             status: order.status,
-            // Allow updating other fields if needed
         }
     });
 }

@@ -4,14 +4,16 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SrivariImage from '@/components/SrivariImage';
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
 
     const calculateTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        const total = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        console.log("Calculate Total:", total, "Cart Items:", cart);
+        return total;
     };
 
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -39,6 +41,14 @@ export default function CartPage() {
         eta: ''
     });
 
+    // Auto-recalculate shipping on cart change
+    useEffect(() => {
+        console.log("Cart/Pincode changed. Cart:", cart.length, "Pincode:", pincode);
+        if (pincode && pincode.length === 6 && cart.length > 0) {
+            checkShipping(true); // Silent update
+        }
+    }, [cart, pincode]); // Dependencies: cart contents or pincode changes
+
     // Load Razorpay Script
     const loadRazorpay = () => {
         return new Promise((resolve) => {
@@ -50,9 +60,9 @@ export default function CartPage() {
         });
     };
 
-    const checkShipping = async () => {
+    const checkShipping = async (silent = false) => {
         if (!pincode || pincode.length < 6) {
-            alert("Please enter a valid 6-digit pincode.");
+            if (!silent) alert("Please enter a valid 6-digit pincode.");
             return;
         }
 
@@ -69,6 +79,7 @@ export default function CartPage() {
             const data = await res.json();
 
             if (data.success) {
+                console.log("Shipping API Success:", data);
                 setShippingCost(data.shipping);
                 setCourierName(data.courier);
                 setShippingDetails({
@@ -79,7 +90,8 @@ export default function CartPage() {
                 setUserDetails(prev => ({ ...prev, address: `${prev.address ? prev.address + ', ' : ''}Pincode: ${pincode}` }));
                 // Auto-append pincode to address if not there, or just useful for context
             } else {
-                alert("Shipping not serviceable to this pincode.");
+                console.log("Shipping API Failed or Unserviceable:", data);
+                if (!silent) alert("Shipping not serviceable to this pincode.");
                 setShippingCost(0);
                 setShippingDetails({ city: '', state: '', eta: '' });
             }
@@ -495,7 +507,7 @@ export default function CartPage() {
                                                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
                                             />
                                             <button
-                                                onClick={checkShipping}
+                                                onClick={() => checkShipping(false)}
                                                 disabled={isCheckingPincode}
                                                 className="bg-[#1A1A1A] text-white text-[10px] uppercase font-bold px-3 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-colors whitespace-nowrap"
                                             >
@@ -569,6 +581,9 @@ export default function CartPage() {
                                     <div className="flex justify-between items-center font-serif text-xl text-[#4A0404]">
                                         <span>Total</span>
                                         <span>₹{(calculateTotal() + shippingCost).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 text-center">
+                                        Debug: Ship={shippingCost} | Total={calculateTotal()}
                                     </div>
                                 </div>
 
