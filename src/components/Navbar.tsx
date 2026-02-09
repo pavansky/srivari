@@ -14,11 +14,39 @@ export default function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
 
+    const [isScrolled, setIsScrolled] = useState(false);
+
     // Hide Navbar on Admin Dashboard
     if (pathname.startsWith("/admin")) return null;
 
-    // Check if we are on a page that needs a contrasting header (like product details)
-    const isLightPage = pathname.startsWith("/product/") || pathname === "/cart";
+    // Check if we are on a page that needs a contrasting header
+    const isLightPage = pathname.startsWith("/product/") || pathname === "/cart" || pathname === "/try-on";
+
+    // Handle Scroll Effect
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // Navbar Style Logic
+    // "Compact Glossy" Look
+    // Scrolled: Minimal height (py-2), high transparency, strong blur.
+    const navbarStyle = isScrolled
+        ? isLightPage
+            ? "bg-white/40 backdrop-blur-md border-b border-black/5 shadow-sm py-2 supports-[backdrop-filter]:bg-white/20" // Compact Light Glass
+            : "bg-black/30 backdrop-blur-md border-b border-white/5 shadow-md py-2 supports-[backdrop-filter]:bg-black/20"  // Compact Dark Glass
+        : isLightPage
+            ? "bg-transparent py-5"
+            : "bg-transparent py-6";
+
+    // Text Color Logic
+    // On Light Pages: Always Dark (unless specific overrides needed)
+    // On Dark Pages: Always White/Marble
+    const textColor = isLightPage ? "text-[#1A1A1A]" : "text-marble";
+    const hoverColor = "text-[#D4AF37]"; // Gold
 
     return (
         <>
@@ -26,26 +54,24 @@ export default function Navbar() {
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.8, ease: "circOut" }}
-                className={`fixed top-0 left-0 w-full z-40 px-6 py-4 flex justify-between items-center border-b transition-colors duration-300
-                ${isLightPage ? 'bg-[#1A1A1A] border-white/5 shadow-md' : 'bg-white/5 backdrop-blur-md border-white/10'}
-            `}
+                className={`fixed top-0 left-0 w-full z-40 px-6 flex justify-between items-center transition-all duration-700 ease-out ${navbarStyle}`}
             >
                 {/* Logo */}
                 <Link href="/">
-                    <h1 className="text-xl md:text-2xl font-serif text-gold tracking-widest cursor-pointer">
+                    <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${hoverColor}`}>
                         THE SRIVARI
                     </h1>
                 </Link>
 
                 {/* Desktop Menu */}
-                <div className="hidden md:flex gap-8 items-center text-sm tracking-widest text-marble/80">
-                    <Link href="/shop" className="hover:text-gold transition-colors">
+                <div className={`hidden md:flex gap-8 items-center text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/80' : 'text-marble/80'}`}>
+                    <Link href="/shop" className={`hover:${hoverColor} transition-colors`}>
                         COLLECTIONS
                     </Link>
-                    <Link href="/about" className="hover:text-gold transition-colors">
+                    <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
                         ATELIER
                     </Link>
-                    <Link href="/contact" className="hover:text-gold transition-colors">
+                    <Link href="/contact" className={`hover:${hoverColor} transition-colors`}>
                         CONTACT
                     </Link>
                 </div>
@@ -54,15 +80,15 @@ export default function Navbar() {
                 <div className="flex items-center gap-4 md:gap-6">
                     <UserButton />
                     <Link href="/cart" className="relative group">
-                        <ShoppingBag className="w-5 h-5 text-gold hover:text-white transition-colors" />
+                        <ShoppingBag className={`w-5 h-5 transition-colors ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-[#D4AF37] hover:text-white'}`} />
                         {cart.length > 0 && (
-                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] text-obsidian font-bold">
+                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-obsidian font-bold">
                                 {cart.reduce((total, item) => total + item.quantity, 0)}
                             </span>
                         )}
                     </Link>
                     <button
-                        className="md:hidden text-marble hover:text-gold transition-colors z-50 relative"
+                        className={`md:hidden transition-colors z-50 relative ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-marble hover:text-[#D4AF37]'}`}
                         onClick={() => setIsMobileMenuOpen(true)}
                     >
                         <Menu className="w-6 h-6" />

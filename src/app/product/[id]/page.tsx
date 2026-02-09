@@ -10,7 +10,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import SrivariImage from "@/components/SrivariImage";
-import { Check, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
+import { Check, Truck, ShieldCheck, Share2, Heart, Sparkles } from "lucide-react";
 import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -138,13 +138,24 @@ export default function ProductPage() {
                                     />
                                 )}
                                 {/* Minimalist Badge */}
-                                <div className="absolute top-0 left-0 p-6">
+                                <div className="absolute top-0 left-0 p-6 z-10">
                                     <div className="bg-white/90 backdrop-blur-sm px-4 py-2 border border-[#D4AF37]/20 shadow-sm">
                                         <span className="text-[#1A1A1A] text-[10px] font-[family-name:var(--font-montserrat)] uppercase tracking-[0.25em] font-bold">
                                             {product.category}
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* AI Try-On Overlay Button */}
+                                <Link
+                                    href={`/try-on?product=${encodeURIComponent(activeImage)}`}
+                                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-[#D4AF37]/30 text-[#4A0404] hover:bg-[#4A0404] hover:text-white transition-all duration-300 group/tryon"
+                                >
+                                    <Sparkles size={16} className="text-[#D4AF37] group-hover/tryon:text-white transition-colors" />
+                                    <span className="text-xs font-bold font-[family-name:var(--font-montserrat)] uppercase tracking-widest">
+                                        Virtual Try-On
+                                    </span>
+                                </Link>
                             </div>
 
                             {/* Gallery Strip */}

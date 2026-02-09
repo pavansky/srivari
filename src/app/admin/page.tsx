@@ -42,22 +42,34 @@ export default function AdminDashboard() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [categories, setCategories] = useState<string[]>(["Silk", "Banarasi", "Cotton", "Mysore Silk", "Tussar"]);
 
-    // AI SDK Integration (Vercel AI Gateway)
-    const { complete, completion, isLoading: isAIWriting } = useCompletion({
-        api: '/api/chat',
-        onFinish: (_prompt: string, result: string) => {
-            setFormData(prev => ({ ...prev, description: result }));
+    // AI Integration (Standard Fetch)
+    const [isAIWriting, setIsAIWriting] = useState(false);
+
+    const generateAIDescription = async () => {
+        if (!formData.name) return alert("Please enter a product name first!");
+        setIsAIWriting(true);
+
+        const prompt = `Write a description for a saree named "${formData.name}". Category: ${formData.category}. Additional Notes: ${formData.description || 'None'}`;
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({ prompt })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                alert(data.error);
+                setFormData(prev => ({ ...prev, description: data.error }));
+            } else {
+                setFormData(prev => ({ ...prev, description: data.text }));
+            }
+        } catch (err: any) {
+            alert("Network Error: " + err.message);
+        } finally {
+            setIsAIWriting(false);
         }
-    });
-
-
-
-    // Real-time stream update for typing effect
-    useEffect(() => {
-        if (isAIWriting && completion) {
-            setFormData(prev => ({ ...prev, description: completion }));
-        }
-    }, [isAIWriting, completion]);
+    };
 
     // Auth & Loading
     const [isLoaded, setIsLoaded] = useState(false);
@@ -138,19 +150,30 @@ export default function AdminDashboard() {
         }
     };
 
+    const [error, setError] = useState<string | null>(null);
+
     // --- Load Data ---
     const fetchData = async () => {
+        setError(null);
         try {
             const [pRes, oRes] = await Promise.all([
                 fetch('/api/products'),
                 fetch('/api/orders')
             ]);
 
-            if (pRes.ok) setProducts(await pRes.json());
+            if (pRes.ok) {
+                setProducts(await pRes.json());
+            } else {
+                const errData = await pRes.json();
+                setError(`Failed to load products: ${errData.details || errData.error || pRes.statusText}`);
+                console.error("Product Fetch Error:", errData);
+            }
+
             if (oRes.ok) setOrders(await oRes.json());
 
         } catch (error) {
             console.error("Failed to load data", error);
+            setError("Network Error: Could not reach API.");
         } finally {
             setIsLoaded(true);
         }
@@ -278,10 +301,20 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#D4AF37] rounded-lg flex items-center justify-center text-black font-serif font-bold text-xl">S</div>
                     <div>
-                        <h1 className="text-white font-serif tracking-wide">The Srivari</h1>
-                        <p className="text-xs text-[#D4AF37]">Admin Console</p>
+                        <h1 className="text-3xl font-[family-name:var(--font-playfair)] text-[#D4AF37]">Admin Console</h1>
+                        <p className="text-white/40 text-sm mt-1">Manage your boutique inventory and orders</p>
                     </div>
                 </div>
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-lg mb-6 flex items-center gap-3">
+                        <LogOut size={20} />
+                        <div>
+                            <p className="font-bold">System Error</p>
+                            <p className="text-sm opacity-80">{error}</p>
+                        </div>
+                        <button onClick={fetchData} className="ml-auto bg-red-500/20 px-3 py-1 rounded text-sm hover:bg-red-500/40">Retry</button>
+                    </div>
+                )}
                 <nav className="flex gap-2">
                     <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inventory' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Inventory</button>
                     <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'orders' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Orders</button>

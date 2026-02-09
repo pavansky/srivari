@@ -58,8 +58,17 @@ export async function getProducts(): Promise<Product[]> {
             shipping: p.shipping || undefined,
         }));
     } catch (error) {
-        console.error("DB Error:", error);
-        return [];
+        console.error("DB Error (Falling back to Mock Data):", error);
+        // Fallback to initialProducts so the app works even offline/blocked
+        return initialProducts.map(p => ({
+            ...p,
+            images: p.images,
+            video: undefined,
+            priceCps: undefined,
+            shipping: undefined,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        }));
     }
 }
 
@@ -119,22 +128,27 @@ export async function deleteProduct(id: string) {
 
 // --- Orders ---
 export async function getOrders(): Promise<Order[]> {
-    const orders = await prisma.order.findMany({
-        orderBy: { createdAt: 'desc' } // Changed from date to createdAt (Prisma default)
-    });
-    return orders.map(o => {
-        const customer = o.customer as any; // Cast JSON
-        return {
-            id: o.id,
-            customerName: customer?.name || "Unknown",
-            customerPhone: customer?.phone || "",
-            customerEmail: customer?.email || "",
-            totalAmount: o.total, // Map total to totalAmount
-            status: o.status as 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled',
-            date: o.createdAt.toISOString(),
-            items: o.items as any[]
-        };
-    });
+    try {
+        const orders = await prisma.order.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        return orders.map(o => {
+            const customer = o.customer as any;
+            return {
+                id: o.id,
+                customerName: customer?.name || "Unknown",
+                customerPhone: customer?.phone || "",
+                customerEmail: customer?.email || "",
+                totalAmount: o.total,
+                status: o.status as 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled',
+                date: o.createdAt.toISOString(),
+                items: o.items as any[]
+            };
+        });
+    } catch (error) {
+        console.error("DB Error (Orders):", error);
+        return [];
+    }
 }
 
 export async function createOrder(order: Order) {

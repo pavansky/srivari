@@ -17,9 +17,12 @@ async function main() {
         const products = await prisma.product.findMany({ take: 5, orderBy: { createdAt: 'desc' } });
         if (products.length > 0) {
             products.forEach(p => {
-                console.log(`✅ Product: ${p.name}, ID: ${p.id}`);
-                console.log(`   Images (Type: ${typeof p.images}, IsArray: ${Array.isArray(p.images)}):`, p.images);
+                console.log(`✅ Product: ${p.name}`);
+                console.log(`   ID: ${p.id}`);
+                console.log(`   Category: ${p.category}`);
+                console.log(`   Images (Type: ${typeof p.images}, IsArray: ${Array.isArray(p.images)}):`, JSON.stringify(p.images));
                 console.log(`   Featured: ${p.isFeatured}`);
+                console.log('---');
             });
         } else {
             console.log("✅ Read Success. Table is empty.");
