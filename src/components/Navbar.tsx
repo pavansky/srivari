@@ -16,9 +16,6 @@ export default function Navbar() {
 
     const [isScrolled, setIsScrolled] = useState(false);
 
-    // Hide Navbar on Admin Dashboard
-    if (pathname.startsWith("/admin")) return null;
-
     // Check if we are on a page that needs a contrasting header
     const isLightPage = pathname.startsWith("/product/") || pathname === "/cart" || pathname === "/try-on";
 
@@ -30,6 +27,9 @@ export default function Navbar() {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Hide Navbar on Admin Dashboard
+    if (pathname.startsWith("/admin")) return null;
 
     // Navbar Style Logic
     // "Compact Glossy" Look
