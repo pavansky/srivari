@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Montserrat, Rozha_One } from "next/font/google";
+import { Outfit, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { SocialFloating } from "@/components/SocialFloating";
 import ParticleBackground from "@/components/ParticleBackground";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
-const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
-const rozha = Rozha_One({ weight: "400", subsets: ["latin", "devanagari"], variable: "--font-rozha" });
+const outfit = Outfit({
+    subsets: ["latin"],
+    variable: "--font-sans",
+    display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+    weight: ["300", "400", "500", "600", "700"],
+    subsets: ["latin"],
+    variable: "--font-serif",
+    display: 'swap',
+});
 
 export const metadata: Metadata = {
     title: {
@@ -58,8 +66,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
-            <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} ${rozha.variable} bg-obsidian text-marble antialiased`}>
+        <html lang="en" className={`${outfit.variable} ${cormorant.variable}`}>
+            <body className="font-sans bg-obsidian text-marble antialiased selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
                 <CartProvider>
                     <WishlistProvider>
                         <ParticleBackground />

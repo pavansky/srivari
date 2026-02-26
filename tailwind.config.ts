@@ -22,8 +22,8 @@ const config: Config = {
                     "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
             },
             fontFamily: {
-                sans: ['var(--font-inter)', 'sans-serif'],
-                serif: ['var(--font-playfair)', 'serif'],
+                sans: ['var(--font-sans)', 'sans-serif'],
+                serif: ['var(--font-serif)', 'serif'],
             },
         },
     },
