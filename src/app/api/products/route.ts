@@ -30,9 +30,11 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        console.log("POST /api/products body:", JSON.stringify(body, null, 2));
         const saved = await saveProduct(body);
         return NextResponse.json({ success: true, product: saved });
     } catch (e) {
+        console.error("POST /api/products ERROR:", e);
         return NextResponse.json({ error: 'Failed to save', details: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
 }

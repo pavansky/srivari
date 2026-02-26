@@ -231,7 +231,8 @@ export default function AdminDashboard() {
                 await fetchData(); // Reload to get fresh list
                 resetForm();
             } else {
-                alert("Failed to save product");
+                const errData = await res.json();
+                alert(`Failed to save product: ${errData.details || errData.error || res.statusText}`);
             }
         } catch (err) {
             alert("Error saving product");
