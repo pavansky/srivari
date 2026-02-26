@@ -230,6 +230,12 @@ export default function AdminDashboard() {
             if (res.ok) {
                 await fetchData(); // Reload to get fresh list
                 resetForm();
+                // Show Success Toast Instead of Alert
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-10 right-10 bg-[#D4AF37] text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)] z-50 animate-bounce cursor-pointer flex items-center gap-2';
+                toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Artifact Saved Successfully`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
             } else {
                 const errData = await res.json();
                 alert(`Failed to save product: ${errData.details || errData.error || res.statusText}`);
@@ -566,36 +572,38 @@ export default function AdminDashboard() {
                                         return (
                                             <motion.div
                                                 key={product.id}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
                                                 layout
                                             >
-                                                <GlassCard className="p-4 flex items-center gap-6 group hover:border-[#D4AF37]/50 transition-all">
-                                                    <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-white/5">
+                                                <div className="p-4 rounded-xl bg-gradient-to-r from-white/[0.03] to-transparent border border-white/10 hover:border-[#D4AF37]/40 backdrop-blur-md flex items-center gap-6 group transition-all duration-300 shadow-xl">
+                                                    <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-black/50 shadow-inner group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-shadow">
                                                         <SrivariImage
                                                             src={product.images.find(img => img && img.trim() !== "") || ""}
                                                             alt={product.name}
                                                             fill
-                                                            className="object-cover"
+                                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
                                                         />
                                                     </div>
 
                                                     <div className="flex-1 grid grid-cols-4 gap-4 items-center">
                                                         <div className="col-span-1">
-                                                            <h4 className="font-medium text-white group-hover:text-[#D4AF37] transition-colors">{product.name}</h4>
-                                                            <p className="text-xs text-white/40">{product.category}</p>
+                                                            <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
+                                                            <p className="text-[10px] tracking-widest uppercase text-[#D4AF37]/70 mt-1">{product.category}</p>
                                                         </div>
                                                         <div className="text-center">
-                                                            <p className="text-xs text-white/40 uppercase">Price</p>
-                                                            <p className="font-bold text-white">₹{product.price.toLocaleString()}</p>
+                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Selling</p>
+                                                            <p className="font-semibold text-white tracking-wide">₹{product.price.toLocaleString()}</p>
                                                         </div>
                                                         <div className="text-center">
-                                                            <p className="text-xs text-white/40 uppercase">Stock</p>
-                                                            <p className={`font-bold ${product.stock < 5 ? 'text-red-400' : 'text-green-400'}`}>{product.stock}</p>
+                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Stock</p>
+                                                            <div className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border ${product.stock < 5 ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
+                                                                {product.stock}
+                                                            </div>
                                                         </div>
                                                         <div className="text-center">
-                                                            <p className="text-xs text-white/40 uppercase">Margin</p>
+                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Margin</p>
                                                             <span className={`text-xs px-2 py-0.5 rounded border ${margin > 20 ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
                                                                 {margin.toFixed(0)}%
                                                             </span>
@@ -618,7 +626,7 @@ export default function AdminDashboard() {
                                                             <Trash2 size={18} />
                                                         </button>
                                                     </div>
-                                                </GlassCard>
+                                                </div>
                                             </motion.div>
                                         )
                                     })}
