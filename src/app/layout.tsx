@@ -48,6 +48,7 @@ export const metadata: Metadata = {
 
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export default function RootLayout({
     children,
@@ -65,6 +66,7 @@ export default function RootLayout({
                         <SocialFloating />
                     </WishlistProvider>
                 </CartProvider>
+                <SpeedInsights />
             </body>
         </html>
     );
