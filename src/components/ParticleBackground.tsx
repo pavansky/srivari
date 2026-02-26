@@ -71,24 +71,27 @@ export default function ParticleBackground() {
                 const dx = mouseRef.current.x - p.x;
                 const dy = mouseRef.current.y - p.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 150;
+                const maxDistance = 400; // Massively increased grab radius
 
                 if (distance < maxDistance) {
-                    // Attraction force
-                    const force = (maxDistance - distance) / maxDistance;
+                    // Attraction force (gets stronger as you bring mouse closer, but smooths out)
+                    const force = Math.pow((maxDistance - distance) / maxDistance, 2);
                     const angle = Math.atan2(dy, dx);
-                    const pushX = Math.cos(angle) * force * 1.5; // Strength of attraction
-                    const pushY = Math.sin(angle) * force * 1.5;
 
-                    p.vx += pushX * 0.05;
-                    p.vy += pushY * 0.05;
+                    // The user "commands" the particles to fly towards the cursor
+                    const pullStrength = 3.0;
+                    const pushX = Math.cos(angle) * force * pullStrength;
+                    const pushY = Math.sin(angle) * force * pullStrength;
 
-                    // Grow size when near mouse
-                    p.size = p.baseSize + (force * 3);
+                    p.vx += pushX;
+                    p.vy += pushY;
+
+                    // Grow significantly when under user control
+                    p.size = p.baseSize + (force * 5);
                 } else {
-                    // Return to normal size
+                    // Return to normal size smoothly when released
                     if (p.size > p.baseSize) {
-                        p.size -= 0.1;
+                        p.size -= 0.15;
                     }
                 }
 
