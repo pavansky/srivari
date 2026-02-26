@@ -18,9 +18,11 @@ import Script from 'next/script';
 
 // --- Reusable Glass Components ---
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-    <div className={`bg-gradient-to-br from-neutral-900/90 to-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden group/card ${className}`}>
-        {/* Subtle inner highlight to make it pop like glass */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none rounded-3xl" />
+    <div className={`bg-gradient-to-br from-[#111111]/95 to-[#080808]/95 backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[0_8px_40px_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.05)] relative overflow-hidden group/card ${className}`}>
+        {/* Top highlight line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent pointer-events-none" />
+        {/* Inner glow */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-2xl" />
         {children}
     </div>
 );
@@ -28,14 +30,14 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode, cl
 const GlassInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:bg-black/80 hover:border-white/20 outline-none transition-all duration-300 shadow-inner font-sans ${props.className || ''}`}
+        className={`w-full bg-black/50 border border-white/[0.08] p-4 rounded-xl text-white placeholder-white/25 focus:border-[#D4AF37]/60 focus:ring-2 focus:ring-[#D4AF37]/20 focus:bg-black/70 hover:border-white/15 outline-none transition-all duration-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] font-sans text-sm ${props.className || ''}`}
     />
 );
 
 const GlassSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     <select
         {...props}
-        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 appearance-none shadow-inner font-sans ${props.className || ''}`}
+        className={`w-full bg-black/50 border border-white/[0.08] p-4 rounded-xl text-white focus:border-[#D4AF37]/60 focus:ring-2 focus:ring-[#D4AF37]/20 hover:border-white/15 outline-none transition-all duration-300 appearance-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] font-sans text-sm ${props.className || ''}`}
     />
 );
 
@@ -303,13 +305,18 @@ export default function AdminDashboard() {
     return (
         <div className={`min-h-screen bg-[#020202] text-gray-200 font-sans selection:bg-[#D4AF37]/30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/20 via-[#020202] to-[#020202] transition-colors duration-500 overflow-x-hidden ${isLightMode ? 'admin-light' : ''}`}>
             {/* --- Top Bar --- */}
-            <header className="sticky top-0 z-50 bg-[#020202]/70 backdrop-blur-2xl border-b border-white/5 px-6 md:px-12 py-5 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4 transition-colors duration-500">
+            <header className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border-b border-white/[0.06] px-6 md:px-12 py-4 flex flex-col md:flex-row items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] gap-4 transition-colors duration-500">
+                {/* Gold accent line at top */}
+                <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+
                 <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#8C7320] rounded-xl flex items-center justify-center text-black font-serif font-bold text-2xl shadow-[0_0_20px_rgba(212,175,55,0.3)]">S</div>
+                        <div className="w-11 h-11 bg-gradient-to-br from-[#D4AF37] to-[#8C7320] rounded-xl flex items-center justify-center text-black font-serif font-bold text-xl shadow-[0_0_25px_rgba(212,175,55,0.35)]">
+                            S
+                        </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-[family-name:var(--font-playfair)] bg-gradient-to-r from-[#D4AF37] via-[#F2D06B] to-[#D4AF37] bg-clip-text text-transparent">Admin Console</h1>
-                            <p className="text-white/40 text-xs md:text-sm mt-0.5 tracking-wide">Manage your boutique inventory and orders</p>
+                            <h1 className="text-xl md:text-2xl font-serif bg-gradient-to-r from-[#D4AF37] via-[#F2D06B] to-[#D4AF37] bg-clip-text text-transparent leading-tight">Admin Console</h1>
+                            <p className="text-white/30 text-[10px] md:text-xs mt-0.5 tracking-[0.15em] uppercase font-sans">Manage your boutique</p>
                         </div>
                     </div>
                 </div>
@@ -323,25 +330,25 @@ export default function AdminDashboard() {
                         <button onClick={fetchData} className="ml-auto bg-red-500/20 px-3 py-1 rounded text-sm hover:bg-red-500/40">Retry</button>
                     </div>
                 )}
-                <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-center w-full md:w-auto">
+                <nav className="flex items-center gap-1 md:gap-1.5 flex-wrap justify-center w-full md:w-auto">
                     {/* Theme Toggle */}
-                    <button onClick={() => setIsLightMode(!isLightMode)} className="p-2 mr-2 rounded-full hover:bg-white/10 transition-colors text-[#D4AF37]" title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}>
-                        {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+                    <button onClick={() => setIsLightMode(!isLightMode)} className="p-2.5 mr-1 rounded-xl hover:bg-white/[0.06] transition-all text-[#D4AF37] border border-transparent hover:border-white/[0.08]" title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}>
+                        {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
 
-                    <button onClick={() => setActiveTab('inventory')} className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inventory' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Inventory</button>
-                    <button onClick={() => setActiveTab('orders')} className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'orders' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Orders</button>
+                    <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'inventory' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Inventory</button>
+                    <button onClick={() => setActiveTab('orders')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'orders' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Orders</button>
 
-                    <div className="hidden md:block h-6 w-px bg-white/10 mx-2"></div>
+                    <div className="hidden md:block h-6 w-px bg-white/[0.06] mx-2"></div>
 
                     {/* Home Link */}
-                    <Link href="/" className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-emerald-400/80 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all flex items-center gap-2">
-                        <Home size={16} /> <span className="hidden sm:inline">Storefront</span>
+                    <Link href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all flex items-center gap-2 border border-transparent hover:border-emerald-500/20">
+                        <Home size={15} /> <span className="hidden sm:inline">Storefront</span>
                     </Link>
 
                     {/* Exit Link */}
-                    <Link href="/" className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2">
-                        <LogOut size={16} /> <span className="hidden sm:inline">Exit</span>
+                    <Link href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2 border border-transparent hover:border-red-500/20">
+                        <LogOut size={15} /> <span className="hidden sm:inline">Exit</span>
                     </Link>
                 </nav>
             </header>
@@ -349,17 +356,19 @@ export default function AdminDashboard() {
             <main className="max-w-7xl mx-auto p-6 md:p-12 space-y-12">
 
                 {/* --- Stats Row --- */}
-                <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {[
-                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400 font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(52,211,153,0.15)]" },
-                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400 font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(56,189,248,0.15)]" },
-                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37] font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(212,175,55,0.15)]" }
+                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-500/5", border: "border-emerald-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(52,211,153,0.12)]" },
+                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400", bg: "from-sky-500/20 to-sky-500/5", border: "border-sky-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(56,189,248,0.12)]" },
+                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37]", bg: "from-[#D4AF37]/20 to-[#D4AF37]/5", border: "border-[#D4AF37]/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(212,175,55,0.12)]" }
                     ].map((stat, idx) => (
-                        <GlassCard key={idx} className={`p-8 flex items-center gap-5 hover:border-white/20 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
-                            <div className={`p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner ${stat.color}`}><stat.icon size={28} /></div>
+                        <GlassCard key={idx} className={`p-7 flex items-center gap-5 hover:border-white/15 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
+                            <div className={`p-3.5 rounded-xl bg-gradient-to-br ${stat.bg} border ${stat.border} ${stat.color} shadow-lg`}>
+                                <stat.icon size={24} strokeWidth={1.5} />
+                            </div>
                             <div>
-                                <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1">{stat.label}</p>
-                                <p className={`text-3xl font-bold tracking-tight ${stat.color}`}>{stat.value}</p>
+                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5">{stat.label}</p>
+                                <p className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${stat.color}`}>{stat.value}</p>
                             </div>
                         </GlassCard>
                     ))}
@@ -614,8 +623,8 @@ export default function AdminDashboard() {
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 layout
                                             >
-                                                <div className="p-4 rounded-xl bg-gradient-to-r from-white/[0.03] to-transparent border border-white/10 hover:border-[#D4AF37]/40 backdrop-blur-md flex items-center gap-6 group transition-all duration-300 shadow-xl">
-                                                    <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-black/50 shadow-inner group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-shadow">
+                                                <div className="p-5 rounded-xl bg-gradient-to-r from-white/[0.04] to-transparent border border-white/[0.06] hover:border-[#D4AF37]/30 backdrop-blur-md flex items-center gap-6 group transition-all duration-500 shadow-lg hover:shadow-[0_8px_40px_rgba(212,175,55,0.06)]">
+                                                    <div className="w-14 h-14 relative rounded-xl overflow-hidden bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] group-hover:shadow-[0_0_20px_rgba(212,175,55,0.15)] transition-all duration-500 border border-white/[0.05] shrink-0">
                                                         <SrivariImage
                                                             src={product.images.find(img => img && img.trim() !== "") || ""}
                                                             alt={product.name}
