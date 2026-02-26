@@ -588,7 +588,7 @@ export default function CartPage() {
                                 </div>
 
                                 <button
-                                    onClick={handlePayment}
+                                    onClick={() => setIsCheckoutModalOpen(true)}
                                     className="w-full py-4 bg-[#4A0404] text-[#D4AF37] font-bold tracking-[0.2em] uppercase text-xs hover:bg-[#1A1A1A] transition-all duration-300 shadow-lg flex items-center justify-center gap-3 group"
                                 >
                                     <span>Pay Now</span>
