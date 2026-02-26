@@ -108,15 +108,7 @@ export default function AdminDashboard() {
     const [imagePrompt, setImagePrompt] = useState("");
     const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
 
-    // --- AI Logic (SDK) ---
-    const generateAIDescription = async () => {
-        if (!formData.name) return alert("Please enter a product name first!");
 
-        // Construct a prompt context
-        const prompt = `Write a description for a saree named "${formData.name}". Category: ${formData.category}. Additional Notes: ${formData.description || 'None'}`;
-
-        await complete(prompt);
-    };
 
     const handleGenerateStudioImage = async () => {
         if (!imagePrompt && !studioImage) return alert("Please explain what you want or upload an image!");

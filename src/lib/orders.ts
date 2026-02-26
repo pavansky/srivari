@@ -49,11 +49,11 @@ export const createOrder = async (orderData: Partial<Order>): Promise<Order> => 
     return {
         ...newOrder,
         customer: newOrder.customer as any,
-        items: newOrder.items as any,
+        items: newOrder.items as unknown as OrderItem[],
         status: newOrder.status as any,
         created_at: newOrder.createdAt.toISOString(),
         payment_method: newOrder.payment_method as any
-    };
+    } as Order;
 };
 
 // Update Order Payment Status
@@ -93,10 +93,11 @@ export const getOrders = async (): Promise<Order[]> => {
 
     return orders.map(o => ({
         ...o,
+        razorpay_order_id: o.razorpay_order_id ?? undefined,
         customer: o.customer as any,
-        items: o.items as any,
+        items: o.items as unknown as OrderItem[],
         status: o.status as any,
         created_at: o.createdAt.toISOString(),
         payment_method: o.payment_method as any
-    }));
+    } as Order));
 };

@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createOrder } from '@/lib/orders';
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(req: Request) {
+    const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID || 'dummy_key',
+        key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
+    });
     try {
         const body = await req.json();
         const { items, customer, amount, shipping_cost } = body;

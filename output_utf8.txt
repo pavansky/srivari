@@ -1,0 +1,336 @@
+﻿
+> srivaris-saree-store@0.1.0 build
+> prisma generate && next build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 71ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 7.8s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/31) ...
+  Generating static pages using 11 workers (7/31) 
+C:\Users\pguthiko\Idea
+Projects\node-portable
+\node-v24.14.0-win-x64
+\npm.cmd : ΓÜá 
+Unsupported metadata 
+themeColor is 
+configured in 
+metadata export in 
+/cart. Please move it 
+to viewport export 
+instead.
+At line:1 char:96
++ ...  $env:PATH; C:\U
+sers\pguthiko\IdeaProj
+ects\node-portable\nod
+e-v24.14. ...
++                 ~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (ΓÜá Unsupp   
+ orted...export in    
+stead.:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/cart. Please move it 
+to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/_not-found. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/_not-found. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/_not-found. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/_not-found. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/about. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/about. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/cart. Please move it 
+to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/about. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/about. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/cart. Please move it 
+to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/admin. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/admin. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/collections. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/collections. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/collections. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/collections. Please 
+move it to viewport 
+export instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/contact. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/contact. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata themeColor 
+is configured in 
+metadata export in 
+/contact. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+ΓÜá Unsupported 
+metadata viewport is 
+configured in 
+metadata export in 
+/contact. Please move 
+it to viewport export 
+instead.
+Read more: https://nex
+tjs.org/docs/app/api-r
+eference/functions/gen
+erate-viewport
+Error occurred 
+prerendering page 
+"/cart". Read more: ht
+tps://nextjs.org/docs/
+messages/prerender-err
+or
+Error: @supabase/ssr: 
+Your project's URL 
+and API key are 
+required to create a 
+Supabase client!
+
+Check your Supabase 
+project's API 
+settings to find 
+these values
+
+https://supabase.com/d
+ashboard/project/_/set
+tings/api
+    at <unknown> (http
+s://supabase.com/dashb
+oard/project/_/setting
+s/api)
+    at <unknown> (C:\U
+sers\pguthiko\IdeaProj
+ects\Srivari\srivari\.
+next\server\chunks\ssr
+\_e7a7b5d8._.js:55:63)
+    at cx (C:\Users\pg
+uthiko\IdeaProjects\Sr
+ivari\srivari\.next\se
+rver\chunks\ssr\_e7a7b
+5d8._.js:59:4544)
+    at p (C:\Users\pgu
+thiko\IdeaProjects\Sri
+vari\srivari\.next\ser
+ver\chunks\ssr\_45fa2d
+24._.js:1:763) {
+  digest: '719687165'
+}
+Export encountered an 
+error on /cart/page: 
+/cart, exiting the 
+build.
+Γ¿» Next.js build 
+worker exited with 
+code: 1 and signal: 
+null

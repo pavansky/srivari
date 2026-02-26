@@ -17,13 +17,6 @@ export const metadata: Metadata = {
     },
     description: "Exclusive collection of Kanjivaram and Banarasi silk sarees. Experience the ether of high fashion with our Anti-Gravity collection.",
     manifest: "/manifest.json",
-    themeColor: "#1A1A1A",
-    viewport: {
-        width: "device-width",
-        initialScale: 1,
-        maximumScale: 1,
-        userScalable: false,
-    },
     appleWebApp: {
         capable: true,
         statusBarStyle: "black-translucent",
@@ -44,6 +37,14 @@ export const metadata: Metadata = {
         locale: "en_US",
         type: "website",
     },
+};
+
+export const viewport = {
+    themeColor: "#1A1A1A",
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
 };
 
 import { CartProvider } from "@/context/CartContext";

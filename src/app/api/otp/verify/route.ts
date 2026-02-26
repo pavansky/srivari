@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Verify OTP against the email in the order
-        const isValid = verifyOTP(order.customer.email, otp);
+        const isValid = verifyOTP(order.customerEmail || '', otp);
 
         if (isValid) {
             return NextResponse.json({
