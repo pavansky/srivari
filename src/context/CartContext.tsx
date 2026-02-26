@@ -37,54 +37,60 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     // Load from localStorage
     useEffect(() => {
-        const storedCartJSON = localStorage.getItem('srivari_cart');
-        const storedProductsJSON = localStorage.getItem('srivari_products');
+        const loadCart = async () => {
+            const storedCartJSON = localStorage.getItem('srivari_cart');
+            const storedProductsJSON = localStorage.getItem('srivari_products');
 
-        let allProducts = [...initialProducts];
-        if (storedProductsJSON) {
-            try {
-                const localProducts = JSON.parse(storedProductsJSON);
-                allProducts = localProducts.length > 0 ? localProducts : initialProducts;
-            } catch (e) {
-                console.error("Failed to parse products", e);
+            let allProducts = [...initialProducts];
+            if (storedProductsJSON) {
+                try {
+                    const localProducts = JSON.parse(storedProductsJSON);
+                    allProducts = localProducts.length > 0 ? localProducts : initialProducts;
+                } catch (e) {
+                    console.error("Failed to parse products", e);
+                }
             }
-        }
 
-        if (storedCartJSON) {
-            try {
-                // Handle legacy format (array of objects with potentially missing quantity)
-                const storedItems: any[] = JSON.parse(storedCartJSON);
-                const hydratedCart: CartItem[] = [];
+            if (storedCartJSON) {
+                try {
+                    const storedItems: StoredCartItem[] = JSON.parse(storedCartJSON);
+                    const hydratedCart: CartItem[] = [];
 
-                // Reduce legacy items (if duplicates existed) or just load them
-                // Ideally, we start fresh or migrate. Let's try to migrate on load.
-                const tempMap = new Map<string, number>();
+                    for (const item of storedItems) {
+                        const pid = item.productId || (item as any).id;
+                        let product = getProductById(pid, allProducts);
 
-                storedItems.forEach(item => {
-                    const pid = item.productId || item.id; // Handle older formats if any
-                    const qty = item.quantity || 1;
-                    if (pid) {
-                        tempMap.set(pid, (tempMap.get(pid) || 0) + qty);
+                        // If not in local data, attempt to fetch from DB (graceful fallback)
+                        if (!product) {
+                            try {
+                                const res = await fetch('/api/products');
+                                if (res.ok) {
+                                    const dbProducts = await res.json();
+                                    product = dbProducts.find((p: Product) => p.id === pid);
+                                }
+                            } catch (e) {
+                                console.error("Could not fetch product for cart hydration", e);
+                            }
+                        }
+
+                        if (product) {
+                            hydratedCart.push({
+                                ...product,
+                                uniqueId: Math.random().toString(36).substr(2, 9),
+                                quantity: item.quantity || 1
+                            });
+                        }
                     }
-                });
 
-                tempMap.forEach((qty, pid) => {
-                    const product = getProductById(pid, allProducts);
-                    if (product) {
-                        hydratedCart.push({
-                            ...product,
-                            uniqueId: Math.random().toString(36).substr(2, 9),
-                            quantity: qty
-                        });
-                    }
-                });
-
-                setCart(hydratedCart);
-            } catch (e) {
-                console.error("Failed to parse cart", e);
+                    setCart(hydratedCart);
+                } catch (e) {
+                    console.error("Failed to parse cart", e);
+                }
             }
-        }
-        setIsLoaded(true);
+            setIsLoaded(true);
+        };
+
+        loadCart();
     }, []);
 
     // Save to localStorage
