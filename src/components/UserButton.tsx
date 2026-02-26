@@ -55,36 +55,28 @@ export default function UserButton() {
     const MenuIcon = isAdmin ? LayoutDashboard : ShoppingBag;
 
     return (
-        <div className="relative z-50" onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
+        <div className="relative z-50 flex items-center" onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
 
-            {/* Trigger Button */}
-            <Link href={targetLink} className="flex items-center gap-3 group py-2">
+            {/* Trigger Avatar */}
+            <Link href={targetLink} className="relative group cursor-pointer block p-1">
                 {user.user_metadata.avatar_url ? (
-                    <div className="relative">
+                    <div className="relative w-9 h-9">
                         <img
                             src={user.user_metadata.avatar_url}
                             alt="Profile"
-                            className="w-8 h-8 rounded-full border border-[#D4AF37]/50 group-hover:border-[#D4AF37] transition-colors object-cover"
+                            className="w-full h-full rounded-full border border-[#D4AF37]/50 group-hover:border-[#D4AF37] transition-all duration-300 object-cover shadow-[0_0_10px_rgba(212,175,55,0.2)] group-hover:shadow-[0_0_15px_rgba(212,175,55,0.5)]"
                         />
-                        <div className="absolute -bottom-1 -right-1 bg-[#D4AF37] w-3 h-3 rounded-full border-2 border-black flex items-center justify-center">
+                        <div className="absolute -bottom-0.5 -right-0.5 bg-[#D4AF37] w-3 h-3 rounded-full border-2 border-[#0A0A0A] flex items-center justify-center">
                             <span className="sr-only">Active</span>
                         </div>
                     </div>
                 ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#8C7323] flex items-center justify-center shadow-lg group-hover:shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all">
-                        <span className="font-serif text-black font-bold text-lg">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#8C7323] flex items-center justify-center shadow-[0_0_10px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_20px_rgba(212,175,55,0.6)] transition-all duration-300 border border-white/10 group-hover:border-white/30">
+                        <span className="font-serif text-[#0A0A0A] font-bold text-lg drop-shadow-sm">
                             {user.email?.[0].toUpperCase()}
                         </span>
                     </div>
                 )}
-
-                {/* Desktop Name Label */}
-                <span className="hidden md:flex flex-col text-left">
-                    <span className="text-[10px] uppercase text-[#D4AF37] tracking-widest leading-none mb-0.5">Welcome</span>
-                    <span className="text-xs font-serif text-white tracking-wide group-hover:text-[#D4AF37] transition-colors whitespace-nowrap max-w-[100px] truncate">
-                        {user.user_metadata.full_name || user.email?.split('@')[0]}
-                    </span>
-                </span>
             </Link>
 
             {/* Premium Dropdown */}
@@ -97,17 +89,17 @@ export default function UserButton() {
                         transition={{ duration: 0.2 }}
                         className="absolute right-0 top-full pt-4 min-w-[240px]"
                     >
-                        <div className="bg-[#050505]/95 backdrop-blur-xl border border-[#D4AF37]/30 rounded-none shadow-2xl relative overflow-hidden">
+                        <div className="bg-[#0A0A0A]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] relative overflow-hidden">
 
-                            {/* Decorative Top Line */}
-                            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-50"></div>
+                            {/* Decorative Background Glow */}
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#D4AF37]/10 blur-3xl rounded-full pointer-events-none"></div>
 
                             {/* User Header */}
-                            <div className="p-4 border-b border-white/10 bg-white/5">
-                                <p className="text-[#D4AF37] font-serif text-sm tracking-wide mb-1">
+                            <div className="p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent relative z-10">
+                                <p className="text-[#D4AF37] font-serif tracking-wide mb-1 text-base drop-shadow-sm truncate">
                                     {user.user_metadata.full_name || "Srivari Member"}
                                 </p>
-                                <p className="text-white/40 text-[10px] tracking-wider uppercase truncate">
+                                <p className="text-white/50 text-[10px] font-sans tracking-widest uppercase truncate">
                                     {user.email}
                                 </p>
                             </div>

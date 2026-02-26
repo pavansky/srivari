@@ -28,14 +28,14 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode, cl
 const GlassInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:bg-black/80 hover:border-white/20 outline-none transition-all duration-300 shadow-inner ${props.className}`}
+        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:bg-black/80 hover:border-white/20 outline-none transition-all duration-300 shadow-inner font-sans ${props.className || ''}`}
     />
 );
 
 const GlassSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     <select
         {...props}
-        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 appearance-none shadow-inner ${props.className}`}
+        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 appearance-none shadow-inner font-sans ${props.className || ''}`}
     />
 );
 
@@ -335,9 +335,9 @@ export default function AdminDashboard() {
                 {/* --- Stats Row --- */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400 font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(52,211,153,0.15)]" },
-                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400 font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(56,189,248,0.15)]" },
-                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37] font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(212,175,55,0.15)]" }
+                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400 font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(52,211,153,0.15)]" },
+                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400 font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(56,189,248,0.15)]" },
+                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37] font-sans tracking-tight", glow: "group-hover/card:shadow-[0_0_30px_rgba(212,175,55,0.15)]" }
                     ].map((stat, idx) => (
                         <GlassCard key={idx} className={`p-8 flex items-center gap-5 hover:border-white/20 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
                             <div className={`p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner ${stat.color}`}><stat.icon size={28} /></div>
@@ -709,9 +709,9 @@ export default function AdminDashboard() {
                                                         }
                                                     }}
                                                     className={`appearance-none text-xs font-bold py-2 pl-4 pr-10 rounded-full border bg-[#050505]/80 outline-none cursor-pointer shadow-inner transition-colors ${order.status === 'Delivered' ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' :
-                                                            order.status === 'Cancelled' ? 'border-red-500/50 text-red-400 hover:bg-red-500/10' :
-                                                                order.status === 'Shipped' ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' :
-                                                                    'border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                                                        order.status === 'Cancelled' ? 'border-red-500/50 text-red-400 hover:bg-red-500/10' :
+                                                            order.status === 'Shipped' ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' :
+                                                                'border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10'
                                                         }`}
                                                 >
                                                     <option className="bg-[#0f0f0f]" value="Pending">Pending Validation</option>

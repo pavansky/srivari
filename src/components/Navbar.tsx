@@ -57,10 +57,18 @@ export default function Navbar() {
                 className={`fixed top-0 left-0 w-full z-40 px-6 flex justify-between items-center transition-all duration-700 ease-out ${navbarStyle}`}
             >
                 {/* Logo */}
-                <Link href="/">
-                    <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${hoverColor}`}>
-                        THE SRIVARI
-                    </h1>
+                <Link href="/" className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#8C7320] flex items-center justify-center text-black font-serif font-bold text-xl md:text-2xl shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-all duration-500">
+                        S
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${hoverColor} group-hover:text-white transition-colors duration-500 line-clamp-1`}>
+                            THE SRIVARI
+                        </h1>
+                        <span className={`text-[8px] md:text-[10px] tracking-[0.2em] font-sans uppercase -mt-1 ${isLightPage ? 'text-black/50' : 'text-white/50'} group-hover:text-[#D4AF37] transition-colors duration-500`}>
+                            Royalty Woven
+                        </span>
+                    </div>
                 </Link>
 
                 {/* Desktop Menu */}
