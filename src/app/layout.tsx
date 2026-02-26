@@ -19,20 +19,44 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+    metadataBase: new URL('https://thesrivari.com'),
     title: {
         default: "The Srivari | Royal Silk Sarees",
         template: "%s | The Srivari"
     },
-    description: "Exclusive collection of Kanjivaram and Banarasi silk sarees. Experience the ether of high fashion with our Anti-Gravity collection.",
+    description: "Exclusive collection of premium handwoven Kanjivaram, Banarasi, and pure silk sarees. Experience the ether of high fashion with The Srivari.",
+    keywords: ["Silk Sarees", "Kanjivaram Silk", "Banarasi Sarees", "Handwoven Silk", "Indian Ethnic Wear", "Royal Silk Sarees", "The Srivari", "Pure Silk Saree", "Bridal Silk Sarees", "Premium Sarees Online", "Luxury Indian Wear"],
+    authors: [{ name: "The Srivari" }],
+    creator: "The Srivari",
+    publisher: "The Srivari",
+    formatDetection: {
+        email: false,
+        address: false,
+        telephone: false,
+    },
+    alternates: {
+        canonical: "/",
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
         statusBarStyle: "black-translucent",
-        title: "Srivari",
+        title: "The Srivari",
     },
     openGraph: {
         title: "The Srivari | Royal Silk Sarees",
-        description: "Weaving legacy into every thread. Authentic Kanjivaram and Banarasi silks for the modern royalty.",
+        description: "Weaving legacy into every thread. Authentic Kanjivaram and Banarasi silks for modern royalty. Explore our premium collection.",
         url: "https://thesrivari.com",
         siteName: "The Srivari",
         images: [
@@ -40,10 +64,17 @@ export const metadata: Metadata = {
                 url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop", // Using the beautiful saree image we added earlier
                 width: 1200,
                 height: 630,
+                alt: "The Srivari Royal Silk Sarees"
             },
         ],
-        locale: "en_US",
+        locale: "en_IN",
         type: "website",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "The Srivari | Royal Silk Sarees",
+        description: "Experience the ether of high fashion with our premium collection of authentic handwoven silk sarees.",
+        images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop"],
     },
 };
 

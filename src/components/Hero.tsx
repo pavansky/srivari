@@ -32,14 +32,25 @@ export default function Hero() {
                 >
                     Anti-Gravity Luxury
                 </motion.p>
-                <motion.h1
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8, duration: 1 }}
-                    className="text-5xl md:text-7xl lg:text-9xl font-serif text-marble font-light tracking-tighter"
-                >
-                    THE SRIVARI
-                </motion.h1>
+                <div className="relative inline-block">
+                    <motion.h1
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8, duration: 1 }}
+                        className="text-5xl md:text-7xl lg:text-9xl font-serif text-marble font-light tracking-tighter drop-shadow-2xl flex items-baseline"
+                    >
+                        <span>THE SRIVARI</span>
+                        <motion.span
+                            initial={{ opacity: 0, x: -10, rotate: -5 }}
+                            animate={{ opacity: 1, x: 0, rotate: 0 }}
+                            transition={{ delay: 1.8, duration: 1.2, ease: "easeOut" }}
+                            className="text-[#D4AF37] font-serif italic text-4xl md:text-6xl lg:text-8xl -ml-2 select-none"
+                            style={{ textShadow: '0 0 30px rgba(212,175,55,0.4)' }}
+                        >
+                            &apos;S
+                        </motion.span>
+                    </motion.h1>
+                </div>
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

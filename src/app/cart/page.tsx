@@ -262,7 +262,7 @@ export default function CartPage() {
     };
 
     return (
-        <main className="bg-[#FDFBF7] min-h-screen flex flex-col font-serif text-obsidian relative">
+        <main className="bg-[#FDFBF7] min-h-screen flex flex-col font-sans text-obsidian relative">
 
             {/* Header / Page Title - Premium Style */}
             <div className="pt-32 pb-12 bg-black/90 text-white text-center relative overflow-hidden">
@@ -272,114 +272,111 @@ export default function CartPage() {
                 <h1 className="text-4xl md:text-5xl font-serif relative z-10 text-white drop-shadow-md">
                     Your Selection
                 </h1>
-                <p className="mt-4 text-[#D4AF37] tracking-[0.2em] uppercase text-xs md:text-sm relative z-10 font-[family-name:var(--font-montserrat)] font-bold">
+                <p className="mt-4 text-[#D4AF37] tracking-[0.2em] uppercase text-xs md:text-sm relative z-10 font-sans font-bold">
                     Curated Excellence
                 </p>
             </div>
 
             {/* Checkout Modal - Premium Style */}
             {isCheckoutModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-[#FDFBF7] p-1 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300 relative border border-[#D4AF37]/30">
-                        {/* Decorative Inner Border */}
-                        <div className="bg-white p-6 md:p-8 border border-[#D4AF37]/10 h-full relative overflow-hidden">
-                            {/* Watermark */}
-                            <div className="absolute -top-10 -right-10 opacity-[0.03] text-9xl font-serif text-[#4A0404] select-none pointer-events-none">S</div>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 relative border border-[#D4AF37]/20 overflow-hidden">
+                        {/* Watermark */}
+                        <div className="absolute -top-10 -right-10 opacity-[0.03] text-9xl font-serif text-[#4A0404] select-none pointer-events-none">S</div>
 
-                            <button
-                                onClick={() => setIsCheckoutModalOpen(false)}
-                                className="absolute top-4 right-4 text-neutral-400 hover:text-[#4A0404] transition-colors"
-                                aria-label="Close modal"
-                            >
-                                <X size={24} strokeWidth={1.5} />
-                            </button>
+                        <button
+                            onClick={() => setIsCheckoutModalOpen(false)}
+                            className="absolute top-4 right-4 text-neutral-400 hover:text-[#4A0404] transition-colors"
+                            aria-label="Close modal"
+                        >
+                            <X size={24} strokeWidth={1.5} />
+                        </button>
 
-                            <div className="text-center mb-8">
-                                <span className="text-[#D4AF37] text-[10px] uppercase tracking-[0.3em] font-bold block mb-2">Concierge Service</span>
-                                <h2 className="text-3xl font-serif text-[#4A0404]">Request Purchase</h2>
-                                <p className="text-neutral-500 text-xs mt-2 font-sans max-w-xs mx-auto">
-                                    Our artisans will personally review your selection and verify availability via WhatsApp.
-                                </p>
+                        <div className="text-center mb-8">
+                            <span className="text-[#D4AF37] text-[10px] uppercase tracking-[0.3em] font-bold block mb-2">Concierge Service</span>
+                            <h2 className="text-3xl font-serif text-[#4A0404]">Request Purchase</h2>
+                            <p className="text-neutral-500 text-xs mt-2 font-sans max-w-xs mx-auto">
+                                Our artisans will personally review your selection and verify availability via WhatsApp.
+                            </p>
+                        </div>
+
+                        <div className="space-y-5 font-sans text-sm">
+                            <div className="group">
+                                <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
+                                    <User size={14} /> Full Name <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={userDetails.name}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
+                                    placeholder="E.g. Priya Sharma"
+                                />
                             </div>
 
-                            <div className="space-y-5 font-[family-name:var(--font-montserrat)] text-sm">
+                            <div className="group">
+                                <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
+                                    <Phone size={14} /> Phone Number <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={userDetails.phone}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
+                                    placeholder="+91 98765 43210"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="group">
                                     <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                        <User size={14} /> Full Name <span className="text-red-400">*</span>
+                                        <Mail size={14} /> Email <span className="text-red-400">*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={userDetails.email}
+                                        onChange={handleInputChange}
+                                        className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
+                                        placeholder="Required string"
+                                    />
+                                </div>
+                                <div className="group">
+                                    <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
+                                        <MapPin size={14} /> Location
                                     </label>
                                     <input
                                         type="text"
-                                        name="name"
-                                        value={userDetails.name}
+                                        name="address"
+                                        value={userDetails.address}
                                         onChange={handleInputChange}
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 p-3 text-obsidian focus:border-[#D4AF37] focus:ring-0 outline-none transition-all placeholder:text-neutral-300"
-                                        placeholder="E.g. Priya Sharma"
+                                        className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
+                                        placeholder="City / Region"
                                     />
                                 </div>
-
-                                <div className="group">
-                                    <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                        <Phone size={14} /> Phone Number <span className="text-red-400">*</span>
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={userDetails.phone}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 p-3 text-obsidian focus:border-[#D4AF37] focus:ring-0 outline-none transition-all placeholder:text-neutral-300"
-                                        placeholder="+91 98765 43210"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="group">
-                                        <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                            <Mail size={14} /> Email <span className="text-red-400">*</span>
-                                        </label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={userDetails.email}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 p-3 text-obsidian focus:border-[#D4AF37] focus:ring-0 outline-none transition-all placeholder:text-neutral-300"
-                                            placeholder="Optional"
-                                        />
-                                    </div>
-                                    <div className="group">
-                                        <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                            <MapPin size={14} /> Location
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="address"
-                                            value={userDetails.address}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 p-3 text-obsidian focus:border-[#D4AF37] focus:ring-0 outline-none transition-all placeholder:text-neutral-300"
-                                            placeholder="City / Region"
-                                        />
-                                    </div>
-                                </div>
                             </div>
+                        </div>
 
-                            <button
-                                onClick={handleWhatsAppCheckout}
-                                disabled={isSubmitting}
-                                className="w-full mt-8 py-4 bg-[#1A1A1A] text-white font-bold tracking-[0.15em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#4A0404] transition-all duration-500 shadow-xl flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting ? (
-                                    <span>Processing Request...</span>
-                                ) : (
-                                    <>
-                                        <span>Proceed to WhatsApp</span>
-                                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
+                        <button
+                            onClick={handleWhatsAppCheckout}
+                            disabled={isSubmitting}
+                            className="w-full mt-8 py-4 bg-[#1A1A1A] text-white rounded-xl font-bold tracking-[0.15em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-300 shadow-xl hover:-translate-y-1 flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed border border-[#1A1A1A]/10"
+                        >
+                            {isSubmitting ? (
+                                <span>Processing Request...</span>
+                            ) : (
+                                <>
+                                    <span>Proceed to WhatsApp</span>
+                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
 
-                            <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-neutral-400">
-                                <ShieldCheck size={12} />
-                                <span>Privacy Guaranteed. Direct Artisan Contact.</span>
-                            </div>
+                        <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-neutral-400">
+                            <ShieldCheck size={12} />
+                            <span>Privacy Guaranteed. Direct Artisan Contact.</span>
                         </div>
                     </div>
                 </div>
@@ -388,15 +385,15 @@ export default function CartPage() {
             <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-20 flex-1">
 
                 {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center py-20 border border-dashed border-[#D4AF37]/30 bg-white/50 p-12">
-                        <div className="w-20 h-20 rounded-full bg-[#FDFBF7] border border-[#D4AF37]/20 flex items-center justify-center mb-6">
+                    <div className="flex flex-col items-center justify-center text-center py-20 border border-dashed border-[#D4AF37]/30 bg-white/50 rounded-3xl p-12 shadow-sm">
+                        <div className="w-20 h-20 rounded-full bg-[#FDFBF7] border border-[#D4AF37]/20 flex items-center justify-center mb-6 shadow-inner">
                             <ShoppingBag size={32} className="text-[#D4AF37]" strokeWidth={1} />
                         </div>
                         <h3 className="text-3xl font-serif text-[#4A0404] mb-3">Your collection awaits</h3>
                         <p className="text-neutral-500 font-sans text-sm max-w-xs mb-8 leading-relaxed">
                             Discover our handwoven masterpieces and begin your journey into royal elegance.
                         </p>
-                        <Link href="/shop" className="inline-flex items-center gap-2 px-8 py-3 bg-white border border-[#4A0404]/20 text-[#4A0404] hover:bg-[#4A0404] hover:text-white hover:border-[#4A0404] transition-all duration-300 uppercase tracking-widest text-xs font-bold">
+                        <Link href="/shop" className="inline-flex items-center gap-2 px-8 py-4 bg-white border border-[#4A0404]/20 text-[#4A0404] rounded-xl hover:bg-[#4A0404] hover:text-white hover:border-[#4A0404] shadow-sm hover:shadow-md transition-all duration-300 uppercase tracking-widest text-xs font-bold">
                             <span>Explore Collection</span>
                             <ArrowRight size={14} />
                         </Link>
@@ -412,9 +409,9 @@ export default function CartPage() {
                             </div>
 
                             {cart.map((item) => (
-                                <div key={item.uniqueId} className="group relative flex flex-col sm:flex-row gap-6 bg-white p-4 border border-transparent hover:border-[#D4AF37]/20 transition-all duration-500 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)]">
+                                <div key={item.uniqueId} className="group relative flex flex-col sm:flex-row gap-6 bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#D4AF37]/10 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-[#D4AF37]/30 transition-all duration-500">
                                     {/* Image */}
-                                    <div className="relative w-full sm:w-32 h-40 flex-shrink-0 bg-[#f0eee6] overflow-hidden">
+                                    <div className="relative w-full sm:w-32 h-40 flex-shrink-0 bg-[#f0eee6] overflow-hidden rounded-xl">
                                         {item.images && item.images[0] && (
                                             <SrivariImage
                                                 src={item.images[0]}
@@ -433,7 +430,7 @@ export default function CartPage() {
                                                 <span className="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold mb-1 block">
                                                     {item.category}
                                                 </span>
-                                                <h3 className="text-xl font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors">
+                                                <h3 className="text-xl font-sans text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors">
                                                     {item.name}
                                                 </h3>
                                             </div>
@@ -450,19 +447,19 @@ export default function CartPage() {
                                         <div className="flex flex-wrap items-end justify-between mt-4 sm:mt-0 gap-4">
                                             {/* Quantity Control */}
                                             <div className="flex items-center gap-3">
-                                                <span className="text-xs text-[#1A1A1A] font-sans uppercase tracking-wider font-bold">Qty</span>
-                                                <div className="flex items-center border border-[#1A1A1A] bg-white">
+                                                <span className="text-xs text-neutral-400 font-sans uppercase tracking-wider font-bold">Qty</span>
+                                                <div className="flex items-center border border-neutral-200 bg-[#FDFBF7] rounded-full overflow-hidden shadow-sm">
                                                     <button
                                                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                        className="w-8 h-8 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors"
+                                                        className="w-10 h-10 flex items-center justify-center text-neutral-600 hover:bg-white hover:text-[#4A0404] transition-colors"
                                                         aria-label="Decrease quantity"
                                                     >-</button>
-                                                    <span className="w-8 h-8 flex items-center justify-center font-serif text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20">
+                                                    <span className="w-8 h-10 flex items-center justify-center font-sans text-obsidian font-bold">
                                                         {item.quantity}
                                                     </span>
                                                     <button
                                                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                        className="w-8 h-8 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors"
+                                                        className="w-10 h-10 flex items-center justify-center text-neutral-600 hover:bg-white hover:text-[#4A0404] transition-colors"
                                                         aria-label="Increase quantity"
                                                     >+</button>
                                                 </div>
@@ -472,7 +469,7 @@ export default function CartPage() {
                                                 <div className="text-xs text-neutral-400 font-sans mb-1">
                                                     Silk Mark Certified
                                                 </div>
-                                                <div className="text-lg font-serif text-[#4A0404]">
+                                                <div className="text-lg font-sans font-medium text-[#4A0404]">
                                                     ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                                                 </div>
                                             </div>
@@ -484,7 +481,7 @@ export default function CartPage() {
 
                         {/* Order Summary Stick */}
                         <div className="w-full lg:w-1/3 lg:sticky lg:top-32">
-                            <div className="bg-white p-8 border border-[#D4AF37]/20 relative overflow-hidden">
+                            <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-[#D4AF37]/10 relative overflow-hidden flex flex-col">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-50"></div>
 
                                 <h3 className="text-2xl font-serif text-[#4A0404] mb-8 text-center">Summary</h3>
@@ -492,7 +489,7 @@ export default function CartPage() {
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between items-center text-sm font-sans text-neutral-600">
                                         <span>Subtotal</span>
-                                        <span className="text-obsidian">₹{calculateTotal().toLocaleString('en-IN')}</span>
+                                        <span className="text-obsidian font-medium">₹{calculateTotal().toLocaleString('en-IN')}</span>
                                     </div>
 
                                     {/* Shipping Calculator */}
@@ -501,7 +498,7 @@ export default function CartPage() {
                                             <input
                                                 type="text"
                                                 placeholder="Pincode"
-                                                className="w-full bg-[#FDFBF7] border border-neutral-300 p-2 text-xs outline-none focus:border-[#D4AF37]"
+                                                className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-sm outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 transition-all font-sans"
                                                 maxLength={6}
                                                 value={pincode}
                                                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
@@ -509,9 +506,9 @@ export default function CartPage() {
                                             <button
                                                 onClick={() => checkShipping(false)}
                                                 disabled={isCheckingPincode}
-                                                className="bg-[#1A1A1A] text-white text-[10px] uppercase font-bold px-3 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-colors whitespace-nowrap"
+                                                className="bg-[#1A1A1A] rounded-xl text-white text-[10px] uppercase font-bold px-4 hover:bg-[#D4AF37] hover:text-[#1A1A1A] hover:shadow-md transition-all whitespace-nowrap"
                                             >
-                                                {isCheckingPincode ? '...' : 'Check'}
+                                                {isCheckingPincode ? '...' : 'Verify'}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -538,10 +535,10 @@ export default function CartPage() {
                                                         alert("Geolocation is not supported by your browser.");
                                                     }
                                                 }}
-                                                className="bg-white border border-neutral-300 text-neutral-500 p-2 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors"
+                                                className="bg-[#fcfcfa] border border-neutral-200 rounded-xl text-neutral-500 p-3 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:bg-white transition-all shadow-sm shadow-[#D4AF37]/5 shrink-0"
                                                 title="Use Current Location"
                                             >
-                                                <MapPin size={14} />
+                                                <MapPin size={16} />
                                             </button>
 
                                         </div>
@@ -572,13 +569,13 @@ export default function CartPage() {
                                     <div className="flex justify-between items-center text-sm font-sans text-neutral-600">
                                         <span>Shipping</span>
                                         {shippingCost > 0 ? (
-                                            <span className="text-obsidian">₹{shippingCost.toLocaleString('en-IN')}</span>
+                                            <span className="text-obsidian font-medium">₹{shippingCost.toLocaleString('en-IN')}</span>
                                         ) : (
-                                            <span className="text-green-600 text-xs font-bold uppercase tracking-wider bg-green-50 px-2 py-1">Complimentary / Check Pincode</span>
+                                            <span className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 rounded-full px-3 py-1">Complimentary</span>
                                         )}
                                     </div>
-                                    <div className="h-px bg-black/5 my-2"></div>
-                                    <div className="flex justify-between items-center font-serif text-xl text-[#4A0404]">
+                                    <div className="h-px w-full bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent my-4"></div>
+                                    <div className="flex justify-between items-center font-sans font-bold text-xl text-[#4A0404]">
                                         <span>Total</span>
                                         <span>₹{(calculateTotal() + shippingCost).toLocaleString('en-IN')}</span>
                                     </div>
@@ -589,9 +586,9 @@ export default function CartPage() {
 
                                 <button
                                     onClick={() => setIsCheckoutModalOpen(true)}
-                                    className="w-full py-4 bg-[#4A0404] text-[#D4AF37] font-bold tracking-[0.2em] uppercase text-xs hover:bg-[#1A1A1A] transition-all duration-300 shadow-lg flex items-center justify-center gap-3 group"
+                                    className="w-full py-4 bg-[#1A1A1A] text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-300 shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-lg hover:-translate-y-1 flex items-center justify-center gap-3 group ring-1 ring-[#1A1A1A]/5"
                                 >
-                                    <span>Pay Now</span>
+                                    <span>Secure Checkout</span>
                                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                 </button>
 
