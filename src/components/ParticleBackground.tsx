@@ -10,6 +10,9 @@ interface Particle {
     baseSize: number;
     size: number;
     alpha: number;
+    type: 'heart' | 'butterfly' | 'circle';
+    rotation: number;
+    rotationSpeed: number;
 }
 
 export default function ParticleBackground() {
@@ -40,8 +43,10 @@ export default function ParticleBackground() {
         const initParticles = () => {
             const particleCount = Math.min(window.innerWidth * 0.1, 150); // Increased density
             particles = [];
+            const types = ['heart', 'butterfly', 'circle'] as const;
+
             for (let i = 0; i < particleCount; i++) {
-                const size = Math.random() * 2 + 1.5; // Slightly larger base size
+                const size = Math.random() * 4 + 2; // Slightly larger for intricate shapes
                 particles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
@@ -50,6 +55,9 @@ export default function ParticleBackground() {
                     baseSize: size,
                     size: size,
                     alpha: Math.random() * 0.6 + 0.2, // Higher opacity
+                    type: types[Math.floor(Math.random() * types.length)],
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.05
                 });
             }
         };
@@ -96,16 +104,46 @@ export default function ParticleBackground() {
                 if (Math.abs(p.vy) < 0.2) p.vy += (Math.random() - 0.5) * 0.05;
 
                 // Wrap around edges
-                if (p.x < 0) p.x = canvas.width;
-                if (p.x > canvas.width) p.x = 0;
-                if (p.y < 0) p.y = canvas.height;
-                if (p.y > canvas.height) p.y = 0;
+                if (p.x < -20) p.x = canvas.width + 20;
+                if (p.x > canvas.width + 20) p.x = -20;
+                if (p.y < -20) p.y = canvas.height + 20;
+                if (p.y > canvas.height + 20) p.y = -20;
 
                 // Draw Particle
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                p.rotation += p.rotationSpeed;
+
                 ctx.fillStyle = `rgba(212, 175, 55, ${p.alpha})`; // Gold color #D4AF37
-                ctx.fill();
+
+                if (p.type === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (p.type === 'heart') {
+                    const s = p.size;
+                    ctx.beginPath();
+                    ctx.moveTo(0, s * 0.3);
+                    ctx.bezierCurveTo(-s * 0.5, -s * 0.1, -s * 0.9, s * 0.5, 0, s * 1.2);
+                    ctx.bezierCurveTo(s * 0.9, s * 0.5, s * 0.5, -s * 0.1, 0, s * 0.3);
+                    ctx.fill();
+                } else if (p.type === 'butterfly') {
+                    const s = p.size;
+                    ctx.beginPath();
+                    // Top left wing
+                    ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(-s * 1.2, -s * 0.8, -s * 1.5, s * 0.4, 0, s * 0.4);
+                    // Bottom left wing
+                    ctx.bezierCurveTo(-s * 0.8, s * 0.8, -s * 0.4, s * 1.2, 0, s * 0.8);
+                    // Bottom right wing
+                    ctx.bezierCurveTo(s * 0.4, s * 1.2, s * 0.8, s * 0.8, 0, s * 0.4);
+                    // Top right wing
+                    ctx.bezierCurveTo(s * 1.5, s * 0.4, s * 1.2, -s * 0.8, 0, 0);
+                    ctx.fill();
+                }
+
+                ctx.restore();
             });
 
             animationFrameId = requestAnimationFrame(animate);

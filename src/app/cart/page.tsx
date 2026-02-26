@@ -239,7 +239,10 @@ export default function CartPage() {
 
             message += "*Customer Details:*\n";
             message += "\uD83D\uDC64 Name: " + userDetails.name + "\n";
-            message += "\uD83D\uDCE7 Email: " + userDetails.email + "\n"; // Included in msg too
+            message += "\uD83D\uDCE7 Email: " + userDetails.email + "\n";
+            if (userDetails.address) {
+                message += "\uD83D\uDCCD Location: " + userDetails.address + "\n";
+            }
 
             message += "\n*Order Selection:*\n";
             cart.forEach(item => {
@@ -343,18 +346,50 @@ export default function CartPage() {
                                         placeholder="Required string"
                                     />
                                 </div>
-                                <div className="group">
+                                <div className="group md:col-span-2">
                                     <label className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 transition-colors group-focus-within:text-[#D4AF37]">
-                                        <MapPin size={14} /> Location
+                                        <MapPin size={14} /> Location / Delivery Address
                                     </label>
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={userDetails.address}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
-                                        placeholder="City / Region"
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            name="address"
+                                            value={userDetails.address}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-[#fcfcfa] border border-neutral-200 rounded-xl p-3 text-obsidian focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 outline-none transition-all placeholder:text-neutral-300"
+                                            placeholder="City / Region"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if ("geolocation" in navigator) {
+                                                    navigator.geolocation.getCurrentPosition(async (position) => {
+                                                        const { latitude, longitude } = position.coords;
+                                                        try {
+                                                            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                                                            const data = await res.json();
+                                                            if (data.city || data.principalSubdivision) {
+                                                                const locString = [data.city, data.principalSubdivision, data.postcode].filter(Boolean).join(", ");
+                                                                setUserDetails(prev => ({ ...prev, address: locString }));
+                                                            } else {
+                                                                alert("Could not detect precise location. Please enter manually.");
+                                                            }
+                                                        } catch (e) {
+                                                            alert("Failed to get location details.");
+                                                        }
+                                                    }, () => {
+                                                        alert("Location permission denied. Please enter manually.");
+                                                    });
+                                                } else {
+                                                    alert("Geolocation is not supported by your browser.");
+                                                }
+                                            }}
+                                            className="bg-[#fcfcfa] border border-neutral-200 rounded-xl text-neutral-500 px-4 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:bg-white transition-all shadow-sm shrink-0 flex items-center justify-center gap-2 text-xs font-bold uppercase"
+                                            title="Use Device Location"
+                                        >
+                                            <MapPin size={14} /> <span>Detect</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -578,9 +613,6 @@ export default function CartPage() {
                                     <div className="flex justify-between items-center font-sans font-bold text-xl text-[#4A0404]">
                                         <span>Total</span>
                                         <span>₹{(calculateTotal() + shippingCost).toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div className="text-[10px] text-gray-400 text-center">
-                                        Debug: Ship={shippingCost} | Total={calculateTotal()}
                                     </div>
                                 </div>
 

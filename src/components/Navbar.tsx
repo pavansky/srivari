@@ -32,77 +32,89 @@ export default function Navbar() {
     if (pathname.startsWith("/admin")) return null;
 
     // Navbar Style Logic
-    // "Compact Glossy" Look
-    // Scrolled: Minimal height (py-2), high transparency, strong blur.
-    const navbarStyle = isScrolled
+    // Floating Premium Pill Design
+    const navbarWrapper = isScrolled
+        ? "fixed top-0 left-0 w-full z-50 pt-4 px-4 transition-all duration-700 ease-out"
+        : "fixed top-0 left-0 w-full z-50 px-0 transition-all duration-700 ease-out";
+
+    const navbarInner = isScrolled
         ? isLightPage
-            ? "bg-white/40 backdrop-blur-md border-b border-black/5 shadow-sm py-2 supports-[backdrop-filter]:bg-white/20" // Compact Light Glass
-            : "bg-black/30 backdrop-blur-md border-b border-white/5 shadow-md py-2 supports-[backdrop-filter]:bg-black/20"  // Compact Dark Glass
+            ? "bg-white/90 backdrop-blur-2xl border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full px-6 py-2.5 mx-auto max-w-7xl w-full flex justify-between items-center supports-[backdrop-filter]:bg-white/60"
+            : "bg-obsidian/90 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.4)] rounded-full px-6 py-2.5 mx-auto max-w-7xl w-full flex justify-between items-center supports-[backdrop-filter]:bg-obsidian/60"
         : isLightPage
-            ? "bg-transparent py-5"
-            : "bg-transparent py-6";
+            ? "bg-transparent py-5 px-6 mx-auto w-full flex justify-between items-center"
+            : "bg-transparent py-6 px-6 mx-auto w-full flex justify-between items-center";
 
     // Text Color Logic
-    // On Light Pages: Always Dark (unless specific overrides needed)
-    // On Dark Pages: Always White/Marble
     const textColor = isLightPage ? "text-[#1A1A1A]" : "text-marble";
     const hoverColor = "text-[#D4AF37]"; // Gold
 
     return (
         <>
-            <motion.nav
+            <motion.div
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.8, ease: "circOut" }}
-                className={`fixed top-0 left-0 w-full z-40 px-6 flex justify-between items-center transition-all duration-700 ease-out ${navbarStyle}`}
+                className={navbarWrapper}
             >
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#8C7320] flex items-center justify-center text-black font-serif font-bold text-xl md:text-2xl shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-all duration-500">
-                        S
-                    </div>
-                    <div className="flex flex-col">
-                        <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'} transition-colors duration-500 line-clamp-1`}>
-                            THE SRIVARI
-                        </h1>
-                        <span className={`text-[8px] md:text-[10px] tracking-[0.2em] font-sans uppercase -mt-1 ${isLightPage ? 'text-black/50' : 'text-white/50'} group-hover:text-[#D4AF37] transition-colors duration-500`}>
-                            Royalty Woven
-                        </span>
-                    </div>
-                </Link>
-
-                {/* Desktop Menu */}
-                <div className={`hidden md:flex gap-8 items-center text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/80' : 'text-marble/80'}`}>
-                    <Link href="/shop" className={`hover:${hoverColor} transition-colors`}>
-                        COLLECTIONS
-                    </Link>
-                    <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
-                        ATELIER
-                    </Link>
-                    <Link href="/contact" className={`hover:${hoverColor} transition-colors`}>
-                        CONTACT
-                    </Link>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-4 md:gap-6">
-                    <UserButton />
-                    <Link href="/cart" className="relative group">
-                        <ShoppingBag className={`w-5 h-5 transition-colors ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-[#D4AF37] hover:text-white'}`} />
-                        {cart.length > 0 && (
-                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] text-obsidian font-bold">
-                                {cart.reduce((total, item) => total + item.quantity, 0)}
+                <div className={`${navbarInner} transition-all duration-700 delay-75`}>
+                    {/* Logo Section */}
+                    <Link href="/" className="flex items-center gap-3 shrink-0 group">
+                        <div className="relative flex items-center justify-center">
+                            {/* The missing logo image the user requested - falls back elegantly if missing */}
+                            <img
+                                src="/logo.png"
+                                alt="Srivari Logo"
+                                className="w-8 h-8 md:w-10 md:h-10 object-contain absolute opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8C7320] flex items-center justify-center text-black font-serif font-bold text-xl md:text-2xl shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-all duration-500 relative z-10">
+                                S
+                            </div>
+                        </div>
+                        <div className="flex flex-col hidden sm:flex">
+                            <h1 className={`text-lg md:text-xl font-serif tracking-widest cursor-pointer ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'} transition-colors duration-500 whitespace-nowrap`}>
+                                THE SRIVARI
+                            </h1>
+                            <span className={`text-[8px] md:text-[9px] tracking-[0.2em] font-sans uppercase -mt-1 ${isLightPage ? 'text-black/50' : 'text-white/50'} group-hover:text-[#D4AF37] transition-colors duration-500 whitespace-nowrap`}>
+                                Royalty Woven
                             </span>
-                        )}
+                        </div>
                     </Link>
-                    <button
-                        className={`md:hidden transition-colors z-50 relative ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-marble hover:text-[#D4AF37]'}`}
-                        onClick={() => setIsMobileMenuOpen(true)}
-                    >
-                        <Menu className="w-6 h-6" />
-                    </button>
+
+                    {/* Desktop Menu */}
+                    <div className={`hidden md:flex gap-4 lg:gap-8 items-center text-xs lg:text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/90' : 'text-marble/90'}`}>
+                        <Link href="/shop" className={`hover:${hoverColor} transition-colors`}>
+                            COLLECTIONS
+                        </Link>
+                        <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
+                            ATELIER
+                        </Link>
+                        <Link href="/contact" className={`hover:${hoverColor} transition-colors`}>
+                            CONTACT
+                        </Link>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 md:gap-5 shrink-0">
+                        <UserButton />
+                        <Link href="/cart" className="relative group p-1">
+                            <ShoppingBag className={`w-5 h-5 transition-colors ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'}`} strokeWidth={1.5} />
+                            {cart.length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] text-obsidian font-bold shadow-sm">
+                                    {cart.reduce((total, item) => total + item.quantity, 0)}
+                                </span>
+                            )}
+                        </Link>
+                        <button
+                            className={`md:hidden p-1 transition-colors z-50 relative ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-[#D4AF37] hover:text-white'}`}
+                            onClick={() => setIsMobileMenuOpen(true)}
+                        >
+                            <Menu className="w-5 h-5" strokeWidth={1.5} />
+                        </button>
+                    </div>
                 </div>
-            </motion.nav>
+            </motion.div>
 
             {/* Mobile Sidebar Drawer */}
             {isMobileMenuOpen && (
