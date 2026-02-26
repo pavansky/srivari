@@ -126,7 +126,20 @@ export async function getShiprocketToken(): Promise<string> {
 // Helper: Get Rates
 export async function getShippingRate(pickupPincode: string, deliveryPincode: string, weightKg: number) {
     try {
-        const token = await getShiprocketToken();
+        let token;
+        try {
+            token = await getShiprocketToken();
+        } catch (authErr) {
+            console.error("SR Auth Failed, mocking rate for checkout:", authErr);
+            // Fallback mock rate if Shiprocket Auth is totally broken
+            return {
+                rate: 150,
+                courier_name: "Mock Courier (Auth Failed)",
+                city: "Unknown",
+                state: "Unknown",
+                etd: "3-5 Business Days"
+            };
+        }
 
         const url = `${BASE_URL}/courier/serviceability/?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&cod=0&weight=${weightKg}`;
         console.log("SR Rate Request:", url);
@@ -135,28 +148,39 @@ export async function getShippingRate(pickupPincode: string, deliveryPincode: st
             'Authorization': `Bearer ${token}`
         });
 
-        if (data && data.data && data.data.available_courier_companies) {
+        if (data && data.data && data.data.available_courier_companies && data.data.available_courier_companies.length > 0) {
             const couriers = data.data.available_courier_companies;
             console.log(`SR Success: Found ${couriers.length} couriers`);
-            if (couriers.length === 0) return null;
 
             couriers.sort((a: any, b: any) => a.rate - b.rate);
             const bestCourier = couriers[0];
             return {
                 rate: bestCourier.rate,
                 courier_name: bestCourier.courier_name,
-                city: bestCourier.city,
-                state: bestCourier.state,
-                etd: bestCourier.etd
+                city: bestCourier.city || "Unknown",
+                state: bestCourier.state || "Unknown",
+                etd: bestCourier.etd || "3-5 Business Days"
             };
         } else {
-            console.log("SR Response: No couriers", JSON.stringify(data));
+            console.log("SR Response: No couriers or unserviceable", JSON.stringify(data));
+            // Fallback to prevent blocking the user if SR says it's unserviceable but we still want to accept the order
+            return {
+                rate: 200, // Standard fallback rate
+                courier_name: "Standard Shipping",
+                city: "Local",
+                state: "Regional",
+                etd: "5-7 Business Days"
+            };
         }
-
-        return null;
-
     } catch (e) {
         console.error("SR Rate Fetch Error:", e);
-        return null;
+        // Absolute fallback
+        return {
+            rate: 200,
+            courier_name: "Standard Shipping",
+            city: "Local",
+            state: "Regional",
+            etd: "5-7 Business Days"
+        };
     }
 }
