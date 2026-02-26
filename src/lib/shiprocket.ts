@@ -129,7 +129,7 @@ export async function getShippingRate(pickupPincode: string, deliveryPincode: st
             console.error("SR Auth Failed, mocking rate for checkout:", authErr);
             // Fallback mock rate if Shiprocket Auth is totally broken
             return {
-                rate: 150,
+                rate: Math.ceil(weightKg / 0.5) * 150,
                 courier_name: "Mock Courier (Auth Failed)",
                 city: "Unknown",
                 state: "Unknown",
@@ -161,7 +161,7 @@ export async function getShippingRate(pickupPincode: string, deliveryPincode: st
             console.log("SR Response: No couriers or unserviceable", JSON.stringify(data));
             // Fallback to prevent blocking the user if SR says it's unserviceable but we still want to accept the order
             return {
-                rate: 200, // Standard fallback rate
+                rate: Math.ceil(weightKg / 0.5) * 200, // Standard fallback rate
                 courier_name: "Standard Shipping",
                 city: "Local",
                 state: "Regional",
@@ -172,7 +172,7 @@ export async function getShippingRate(pickupPincode: string, deliveryPincode: st
         console.error("SR Rate Fetch Error:", e);
         // Absolute fallback
         return {
-            rate: 200,
+            rate: Math.ceil(weightKg / 0.5) * 200,
             courier_name: "Standard Shipping",
             city: "Local",
             state: "Regional",
