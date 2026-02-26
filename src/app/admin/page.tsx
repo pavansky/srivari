@@ -212,6 +212,10 @@ export default function AdminDashboard() {
         const cleanedImages = formData.images?.filter(img => img && img.trim() !== "") || [];
         const productData = {
             ...formData,
+            price: Number(formData.price) || 0,
+            stock: parseInt(String(formData.stock)) || 0,
+            priceCps: Number(formData.priceCps) || 0,
+            shipping: Number(formData.shipping) || 0,
             images: cleanedImages,
             id: isEditing || Math.random().toString(36).substr(2, 9)
         };
