@@ -34,30 +34,47 @@ export default function ProductPage() {
         const normalizeId = (val: any) => String(val).trim();
         const targetId = normalizeId(id);
 
-        let found: Product | undefined;
+        const loadProduct = async () => {
+            let found: Product | undefined;
 
-        // 1. Try LocalStorage
-        const storedProducts = localStorage.getItem('srivari_products');
-        if (storedProducts) {
-            try {
-                const products: Product[] = JSON.parse(storedProducts);
-                found = products.find(p => normalizeId(p.id) === targetId);
-            } catch (error) {
-                console.error("LS Parse Error:", error);
+            // 1. Try LocalStorage
+            const storedProducts = localStorage.getItem('srivari_products');
+            if (storedProducts) {
+                try {
+                    const products: Product[] = JSON.parse(storedProducts);
+                    found = products.find(p => normalizeId(p.id) === targetId);
+                } catch (error) {
+                    console.error("LS Parse Error:", error);
+                }
             }
-        }
 
-        // 2. Fallback to Initial Data
-        if (!found) {
-            found = initialProducts.find(p => normalizeId(p.id) === targetId);
-        }
+            // 2. Fallback to Initial Data
+            if (!found) {
+                found = initialProducts.find(p => normalizeId(p.id) === targetId);
+            }
 
-        setProduct(found);
-        if (found) {
-            const validImage = found.images.find(img => img && img.trim() !== "") || "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1000&auto=format&fit=crop";
-            setActiveImage(validImage);
-        }
-        setIsLoading(false);
+            // 3. IMPORTANT: Fetch from Database API if not in static/local
+            if (!found) {
+                try {
+                    const res = await fetch('/api/products');
+                    if (res.ok) {
+                        const dbProducts: Product[] = await res.json();
+                        found = dbProducts.find(p => normalizeId(p.id) === targetId);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch product from DB:", error);
+                }
+            }
+
+            setProduct(found);
+            if (found) {
+                const validImage = found.images?.find(img => img && img.trim() !== "") || "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1000&auto=format&fit=crop";
+                setActiveImage(validImage);
+            }
+            setIsLoading(false);
+        };
+
+        loadProduct();
     }, [id]);
 
     const handleAddToCart = () => {
