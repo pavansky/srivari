@@ -269,7 +269,7 @@ export default function CartPage() {
                 <div className="absolute inset-0 bg-[#4A0404]/20" />
                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
 
-                <h1 className="text-4xl md:text-5xl font-heading relative z-10 text-white drop-shadow-md">
+                <h1 className="text-4xl md:text-5xl font-serif relative z-10 text-white drop-shadow-md">
                     Your Selection
                 </h1>
                 <p className="mt-4 text-[#D4AF37] tracking-[0.2em] uppercase text-xs md:text-sm relative z-10 font-[family-name:var(--font-montserrat)] font-bold">
@@ -284,7 +284,7 @@ export default function CartPage() {
                         {/* Decorative Inner Border */}
                         <div className="bg-white p-6 md:p-8 border border-[#D4AF37]/10 h-full relative overflow-hidden">
                             {/* Watermark */}
-                            <div className="absolute -top-10 -right-10 opacity-[0.03] text-9xl font-heading text-[#4A0404] select-none pointer-events-none">S</div>
+                            <div className="absolute -top-10 -right-10 opacity-[0.03] text-9xl font-serif text-[#4A0404] select-none pointer-events-none">S</div>
 
                             <button
                                 onClick={() => setIsCheckoutModalOpen(false)}
@@ -296,7 +296,7 @@ export default function CartPage() {
 
                             <div className="text-center mb-8">
                                 <span className="text-[#D4AF37] text-[10px] uppercase tracking-[0.3em] font-bold block mb-2">Concierge Service</span>
-                                <h2 className="text-3xl font-heading text-[#4A0404]">Request Purchase</h2>
+                                <h2 className="text-3xl font-serif text-[#4A0404]">Request Purchase</h2>
                                 <p className="text-neutral-500 text-xs mt-2 font-sans max-w-xs mx-auto">
                                     Our artisans will personally review your selection and verify availability via WhatsApp.
                                 </p>
@@ -392,7 +392,7 @@ export default function CartPage() {
                         <div className="w-20 h-20 rounded-full bg-[#FDFBF7] border border-[#D4AF37]/20 flex items-center justify-center mb-6">
                             <ShoppingBag size={32} className="text-[#D4AF37]" strokeWidth={1} />
                         </div>
-                        <h3 className="text-3xl font-heading text-[#4A0404] mb-3">Your collection awaits</h3>
+                        <h3 className="text-3xl font-serif text-[#4A0404] mb-3">Your collection awaits</h3>
                         <p className="text-neutral-500 font-sans text-sm max-w-xs mb-8 leading-relaxed">
                             Discover our handwoven masterpieces and begin your journey into royal elegance.
                         </p>
@@ -407,7 +407,7 @@ export default function CartPage() {
                         {/* Cart Items List */}
                         <div className="w-full lg:w-2/3 space-y-8">
                             <div className="flex items-center justify-between border-b border-[#D4AF37]/20 pb-4 mb-8">
-                                <h2 className="text-xl font-heading text-[#4A0404]">Selected Masterpieces</h2>
+                                <h2 className="text-xl font-serif text-[#4A0404]">Selected Masterpieces</h2>
                                 <span className="text-xs text-neutral-400 font-sans tracking-widest uppercase">{cart.length} Items</span>
                             </div>
 
@@ -433,7 +433,7 @@ export default function CartPage() {
                                                 <span className="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold mb-1 block">
                                                     {item.category}
                                                 </span>
-                                                <h3 className="text-xl font-heading text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors">
+                                                <h3 className="text-xl font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors">
                                                     {item.name}
                                                 </h3>
                                             </div>
@@ -487,7 +487,7 @@ export default function CartPage() {
                             <div className="bg-white p-8 border border-[#D4AF37]/20 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-50"></div>
 
-                                <h3 className="text-2xl font-heading text-[#4A0404] mb-8 text-center">Summary</h3>
+                                <h3 className="text-2xl font-serif text-[#4A0404] mb-8 text-center">Summary</h3>
 
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between items-center text-sm font-sans text-neutral-600">

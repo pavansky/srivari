@@ -62,7 +62,7 @@ export default function Navbar() {
                         S
                     </div>
                     <div className="flex flex-col">
-                        <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${hoverColor} group-hover:text-white transition-colors duration-500 line-clamp-1`}>
+                        <h1 className={`text-xl md:text-2xl font-serif tracking-widest cursor-pointer ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'} transition-colors duration-500 line-clamp-1`}>
                             THE SRIVARI
                         </h1>
                         <span className={`text-[8px] md:text-[10px] tracking-[0.2em] font-sans uppercase -mt-1 ${isLightPage ? 'text-black/50' : 'text-white/50'} group-hover:text-[#D4AF37] transition-colors duration-500`}>

@@ -1,0 +1,65 @@
+﻿
+> srivaris-saree-store@0.1.0 build
+> prisma generate && next build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 141ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want real-time updates to your database without manual polling? Discover how with Pulse: https://pris.ly/tip-0-pulse
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 42s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/31) ...
+  Generating static pages using 11 workers (7/31) 
+  Generating static pages using 11 workers (15/31) 
+  Generating static pages using 11 workers (23/31) 
+Γ£ô Generating static pages using 11 workers (31/31) in 3.4s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ Γùï /admin
+Γö£ ╞Æ /api/admin/ai-description
+Γö£ ╞Æ /api/admin/ai-image-helper
+Γö£ ╞Æ /api/admin/ai-studio-generate
+Γö£ ╞Æ /api/chat
+Γö£ ╞Æ /api/delivery-updates
+Γö£ ╞Æ /api/orders
+Γö£ ╞Æ /api/orders/create
+Γö£ ╞Æ /api/otp/send
+Γö£ ╞Æ /api/otp/verify
+Γö£ ╞Æ /api/payment/create-order
+Γö£ ╞Æ /api/payment/verify
+Γö£ ╞Æ /api/products
+Γö£ ╞Æ /api/shiprocket/serviceability
+Γö£ ╞Æ /api/test
+Γö£ ╞Æ /api/virtual-try-on
+Γö£ ╞Æ /auth/callback
+Γö£ Γùï /cart
+Γö£ Γùï /collections
+Γö£ Γùï /contact
+Γö£ Γùï /login
+Γö£ Γùï /order-tracking
+Γö£ Γùï /orders
+Γö£ ╞Æ /product/[id]
+Γö£ Γùï /returns
+Γö£ Γùï /shipping-policy
+Γö£ Γùï /shop
+Γöö Γùï /try-on
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+

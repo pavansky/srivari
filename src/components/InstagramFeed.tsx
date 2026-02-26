@@ -45,7 +45,7 @@ export default function InstagramFeed() {
                         <Instagram size={20} className="text-[#E1306C]" />
                         <span className="font-sans font-medium text-sm">@srivari_official</span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-heading text-[#4A0404]">
+                    <h2 className="text-3xl md:text-4xl font-serif text-[#4A0404]">
                         Follow Our Journey
                     </h2>
                     <p className="text-[#595959] mt-3 font-serif italic">

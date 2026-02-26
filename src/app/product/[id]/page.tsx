@@ -80,7 +80,36 @@ export default function ProductPage() {
     const handleAddToCart = () => {
         if (product) {
             addToCart(product, quantity);
-            alert(`Added ${quantity} item(s) to cart!`);
+
+            // Graceful Toast Notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-24 right-6 bg-[#000000]/90 backdrop-blur-md border border-[#D4AF37]/50 text-white px-6 py-4 flex items-center gap-4 z-[100] shadow-2xl transition-all duration-500 ease-out transform translate-x-full opacity-0';
+
+            toast.innerHTML = `
+                <div className="w-10 h-10 relative rounded overflow-hidden shadow-inner flex-shrink-0">
+                    <img src="${activeImage}" alt="${product.name}" class="w-10 h-10 object-cover rounded border border-[#D4AF37]/30" />
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold">Added to Cart</span>
+                    <span class="text-sm font-sans truncate max-w-[200px]">${product.name} (x${quantity})</span>
+                </div>
+                <div class="ml-4 pl-4 border-l border-white/10">
+                    <a href="/cart" class="text-xs text-white hover:text-[#D4AF37] uppercase tracking-widest transition-colors font-bold whitespace-nowrap">View Cart</a>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+
+            // Animate out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500); // Wait for transition
+            }, 4000);
         }
     };
 
@@ -119,7 +148,7 @@ export default function ProductPage() {
     if (!product) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-4 text-center">
-                <h1 className="text-3xl font-heading text-[#4A0404]">Product not found</h1>
+                <h1 className="text-3xl font-serif text-[#4A0404]">Product not found</h1>
                 <Link href="/shop" className="mt-8 px-6 py-2 bg-[#D4AF37] text-white font-bold uppercase text-sm tracking-widest hover:bg-[#B5952F] transition-colors">
                     Back to Shop
                 </Link>
