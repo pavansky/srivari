@@ -18,7 +18,9 @@ import Script from 'next/script';
 
 // --- Reusable Glass Components ---
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-    <div className={`bg-neutral-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl ${className}`}>
+    <div className={`bg-gradient-to-br from-neutral-900/90 to-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden group/card ${className}`}>
+        {/* Subtle inner highlight to make it pop like glass */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none rounded-3xl" />
         {children}
     </div>
 );
@@ -26,14 +28,14 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode, cl
 const GlassInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className={`w-full bg-white/5 border border-white/10 p-3 rounded-lg text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all ${props.className}`}
+        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:bg-black/80 hover:border-white/20 outline-none transition-all duration-300 shadow-inner ${props.className}`}
     />
 );
 
 const GlassSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     <select
         {...props}
-        className={`w-full bg-[#0a0a0a] border border-white/10 p-3 rounded-lg text-white focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all appearance-none ${props.className}`}
+        className={`w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 appearance-none shadow-inner ${props.className}`}
     />
 );
 
@@ -298,14 +300,14 @@ export default function AdminDashboard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#050505] text-gray-200 font-sans selection:bg-[#D4AF37]/30">
+        <div className="min-h-screen bg-[#020202] text-gray-200 font-sans selection:bg-[#D4AF37]/30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/20 via-[#020202] to-[#020202]">
             {/* --- Top Bar --- */}
-            <header className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-lg border-b border-white/5 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#D4AF37] rounded-lg flex items-center justify-center text-black font-serif font-bold text-xl">S</div>
+            <header className="sticky top-0 z-50 bg-[#020202]/70 backdrop-blur-2xl border-b border-white/5 px-6 md:px-12 py-5 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#8C7320] rounded-xl flex items-center justify-center text-black font-serif font-bold text-2xl shadow-[0_0_20px_rgba(212,175,55,0.3)]">S</div>
                     <div>
-                        <h1 className="text-3xl font-[family-name:var(--font-playfair)] text-[#D4AF37]">Admin Console</h1>
-                        <p className="text-white/40 text-sm mt-1">Manage your boutique inventory and orders</p>
+                        <h1 className="text-2xl md:text-3xl font-[family-name:var(--font-playfair)] bg-gradient-to-r from-[#D4AF37] via-[#F2D06B] to-[#D4AF37] bg-clip-text text-transparent">Admin Console</h1>
+                        <p className="text-white/40 text-xs md:text-sm mt-0.5 tracking-wide">Manage your boutique inventory and orders</p>
                     </div>
                 </div>
                 {error && (
@@ -333,15 +335,15 @@ export default function AdminDashboard() {
                 {/* --- Stats Row --- */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-green-400" },
-                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-blue-400" },
-                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37]" }
+                        { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400 font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(52,211,153,0.15)]" },
+                        { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400 font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(56,189,248,0.15)]" },
+                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37] font-serif", glow: "group-hover/card:shadow-[0_0_30px_rgba(212,175,55,0.15)]" }
                     ].map((stat, idx) => (
-                        <GlassCard key={idx} className="p-6 flex items-center gap-4 hover:border-[#D4AF37]/40 transition-colors">
-                            <div className={`p-3 rounded-full bg-white/5 ${stat.color}`}><stat.icon size={24} /></div>
+                        <GlassCard key={idx} className={`p-8 flex items-center gap-5 hover:border-white/20 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
+                            <div className={`p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner ${stat.color}`}><stat.icon size={28} /></div>
                             <div>
-                                <p className="text-white/40 text-xs uppercase tracking-wider">{stat.label}</p>
-                                <p className="text-2xl font-bold text-white">{stat.value}</p>
+                                <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1">{stat.label}</p>
+                                <p className={`text-3xl font-bold tracking-tight ${stat.color}`}>{stat.value}</p>
                             </div>
                         </GlassCard>
                     ))}
@@ -352,39 +354,45 @@ export default function AdminDashboard() {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
 
                         {/* Add/Edit Product Form */}
-                        <GlassCard className="p-8 border-[#D4AF37]/20 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                                <Package size={120} />
+                        <GlassCard className="p-8 md:p-10 border-[#D4AF37]/20 relative">
+                            {/* Decorative background element */}
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+                                <Sparkles size={300} />
                             </div>
-                            <h2 className="text-2xl font-serif text-[#D4AF37] mb-8 flex items-center gap-3">
-                                {isEditing ? <Edit2 size={24} /> : <Plus size={24} />}
-                                {isEditing ? 'Modify Artifact' : 'New Artifact'}
+
+                            <h2 className="text-2xl md:text-3xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent mb-10 flex items-center gap-4 border-b border-white/10 pb-6 w-full">
+                                {isEditing ? <Edit2 size={28} className="text-[#D4AF37]" /> : <Plus size={28} className="text-[#D4AF37]" />}
+                                {isEditing ? 'Modify Masterpiece' : 'Add New Masterpiece'}
                             </h2>
 
-                            <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10">
+                            <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-10 relative z-10">
                                 {/* Left Column: Media & Core Info */}
-                                <div className="md:col-span-5 space-y-6">
-                                    <div className="space-y-4">
-                                        <GlassInput placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="text-lg font-medium" />
-                                        <div className="relative">
+                                <div className="md:col-span-6 space-y-8">
+                                    <div className="space-y-5">
+                                        <div>
+                                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Artifact Name</label>
+                                            <GlassInput placeholder="e.g. Royal Kanjivaram Silk" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="text-xl font-serif placeholder:font-sans" />
+                                        </div>
+
+                                        <div className="relative pt-2">
                                             <div className="flex justify-between items-center mb-2">
-                                                <label className="text-sm font-medium text-white/60">Description</label>
+                                                <label className="text-xs text-white/50 uppercase tracking-widest font-medium">Curator's Description</label>
                                                 <button
                                                     type="button"
                                                     onClick={generateAIDescription}
                                                     disabled={isAIWriting}
-                                                    className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-white transition-colors disabled:opacity-50"
+                                                    className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-[#F2D06B] hover:bg-[#D4AF37]/10 px-3 py-1.5 rounded border border-[#D4AF37]/30 transition-all disabled:opacity-50"
                                                 >
-                                                    {isAIWriting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                                    {isAIWriting ? 'Streaming...' : 'AI Writing...'}
+                                                    {isAIWriting ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                                                    {isAIWriting ? 'Weaving magic...' : 'Auto-Generate Details'}
                                                 </button>
                                             </div>
                                             <textarea
-                                                placeholder="Enter details or let AI write it for you..."
+                                                placeholder="Enter the exquisite details or let the AI write an enchanting description for you..."
                                                 rows={5}
                                                 value={formData.description}
                                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white placeholder-white/30 focus:border-[#D4AF37] outline-none transition-all resize-none font-sans leading-relaxed"
+                                                className="w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 resize-none font-sans leading-relaxed shadow-inner"
                                                 required
                                             />
                                         </div>
@@ -467,61 +475,71 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Right Column: Details */}
-                                <div className="md:col-span-7 space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-white/40 mb-2 block">Selling Price</label>
-                                            <GlassInput type="number" placeholder="₹" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} required />
+                                <div className="md:col-span-6 space-y-8">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="group">
+                                            <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium">Selling Price</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-serif">₹</span>
+                                                <GlassInput type="number" placeholder="0.00" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} required className="pl-10 text-lg font-medium" />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="text-xs text-white/40 mb-2 block">Stock Count</label>
-                                            <GlassInput type="number" placeholder="Qty" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} required />
+                                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Inventory Stock</label>
+                                            <GlassInput type="number" placeholder="Qty" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} required className="text-lg" />
                                         </div>
                                     </div>
 
                                     {/* Cost Analysis Row */}
-                                    <div className="p-4 rounded-lg bg-white/5 border border-white/5 grid grid-cols-2 gap-4">
+                                    <div className="p-6 rounded-2xl bg-[#050505]/40 border border-white/5 grid grid-cols-2 gap-6 shadow-inner relative overflow-hidden">
+                                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                                         <div>
-                                            <label className="text-xs text-white/40 mb-2 block">Cost Price (CPS)</label>
-                                            <GlassInput type="number" placeholder="₹" value={formData.priceCps || ''} onChange={e => setFormData({ ...formData, priceCps: Number(e.target.value) })} className="bg-black/20" />
+                                            <label className="text-xs text-white/40 uppercase block mb-2">Cost Price (CPS)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20">₹</span>
+                                                <GlassInput type="number" placeholder="0" value={formData.priceCps || ''} onChange={e => setFormData({ ...formData, priceCps: Number(e.target.value) })} className="bg-black/40 pl-9" />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="text-xs text-white/40 mb-2 block">Shipping Cost</label>
-                                            <GlassInput type="number" placeholder="₹" value={formData.shipping || ''} onChange={e => setFormData({ ...formData, shipping: Number(e.target.value) })} className="bg-black/20" />
+                                            <label className="text-xs text-white/40 uppercase block mb-2">Base Shipping</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20">₹</span>
+                                                <GlassInput type="number" placeholder="0" value={formData.shipping || ''} onChange={e => setFormData({ ...formData, shipping: Number(e.target.value) })} className="bg-black/40 pl-9" />
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Inline Category Management */}
-                                    <div>
-                                        <label className="text-xs text-white/40 mb-2 block">Category</label>
-                                        <div className="flex gap-2 h-12">
+                                    <div className="pt-2">
+                                        <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Product Category</label>
+                                        <div className="flex gap-3 h-14">
                                             {isAddingCategory ? (
-                                                <div className="flex-1 flex gap-2 animate-in slide-in-from-left duration-300">
+                                                <div className="flex-1 flex gap-2 animate-in slide-in-from-right duration-300">
                                                     <GlassInput
                                                         autoFocus
                                                         placeholder="New Category Name..."
                                                         value={newCategoryInput}
                                                         onChange={e => setNewCategoryInput(e.target.value)}
                                                     />
-                                                    <button type="button" onClick={handleAddCategory} className="bg-green-500/20 text-green-400 p-3 rounded-lg border border-green-500/50 hover:bg-green-500/30" aria-label="Confirm new category"><Check size={20} /></button>
-                                                    <button type="button" onClick={() => setIsAddingCategory(false)} className="bg-red-500/20 text-red-400 p-3 rounded-lg border border-red-500/50 hover:bg-red-500/30" aria-label="Cancel new category"><X size={20} /></button>
+                                                    <button type="button" onClick={handleAddCategory} className="bg-emerald-500/20 text-emerald-400 aspect-square h-full rounded-xl border border-emerald-500/30 hover:bg-emerald-500/30 flex items-center justify-center transition-all" aria-label="Confirm new category"><Check size={20} /></button>
+                                                    <button type="button" onClick={() => setIsAddingCategory(false)} className="bg-red-500/20 text-red-400 aspect-square h-full rounded-xl border border-red-500/30 hover:bg-red-500/30 flex items-center justify-center transition-all" aria-label="Cancel new category"><X size={20} /></button>
                                                 </div>
                                             ) : (
                                                 <>
                                                     <div className="relative flex-1">
-                                                        <GlassSelect value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                                                            <option value="" className="bg-neutral-900">Select Category</option>
-                                                            {categories.map(cat => <option key={cat} value={cat} className="bg-neutral-900">{cat}</option>)}
+                                                        <GlassSelect value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} required>
+                                                            <option value="" className="bg-[#0f0f0f]">Select Category</option>
+                                                            {categories.map(cat => <option key={cat} value={cat} className="bg-[#0f0f0f]">{cat}</option>)}
                                                         </GlassSelect>
-                                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={16} />
+                                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[#D4AF37] pointer-events-none" size={18} />
                                                     </div>
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingCategory(true)}
-                                                        className="bg-white/5 border border-white/10 text-[#D4AF37] px-4 rounded-lg hover:bg-[#D4AF37] hover:text-black transition-all flex items-center justify-center"
+                                                        className="aspect-square h-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] rounded-xl hover:bg-[#D4AF37] hover:text-black transition-all duration-300 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.15)] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
                                                         title="Add New Category"
                                                     >
-                                                        <Plus size={20} />
+                                                        <Plus size={22} />
                                                     </button>
                                                 </>
                                             )}
@@ -529,21 +547,24 @@ export default function AdminDashboard() {
                                     </div>
 
                                     {/* Featured Toggle */}
-                                    <div className="flex items-center gap-3 p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })}>
-                                        <div className={`w-5 h-5 rounded border border-[#D4AF37] flex items-center justify-center transition-colors ${formData.isFeatured ? 'bg-[#D4AF37]' : 'bg-transparent'}`}>
-                                            {formData.isFeatured && <Check size={14} className="text-black" />}
+                                    <div className={`mt-4 flex items-center gap-4 p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${formData.isFeatured ? 'bg-gradient-to-r from-[#D4AF37]/20 to-transparent border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'bg-white/5 border-white/10 hover:border-white/30'}`} onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })}>
+                                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-300 ${formData.isFeatured ? 'bg-[#D4AF37] border-[#D4AF37]' : 'bg-transparent border-white/30'}`}>
+                                            {formData.isFeatured && <Check size={16} className="text-black font-bold" />}
                                         </div>
-                                        <span className="text-sm text-white select-none">Mark as Featured Product</span>
-                                        {formData.isFeatured && <Sparkles size={16} className="text-[#D4AF37] animate-pulse" />}
+                                        <div className="flex-1">
+                                            <span className="text-sm text-white font-medium select-none block">Highlight as Featured Artifact</span>
+                                            <span className="text-xs text-white/40 block mt-0.5">Showcase this masterpiece on the homepage marquee</span>
+                                        </div>
+                                        {formData.isFeatured && <Sparkles size={24} className="text-[#D4AF37] animate-pulse" />}
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="pt-4 flex justify-end gap-4">
+                                    <div className="pt-8 flex justify-end gap-5 border-t border-white/10 mt-8">
                                         {isEditing && (
-                                            <button type="button" onClick={resetForm} className="px-6 py-3 rounded-lg text-white/50 hover:text-white transition-colors">Cancel</button>
+                                            <button type="button" onClick={resetForm} className="px-8 py-3.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all font-medium">Discard Changes</button>
                                         )}
-                                        <button type="submit" className="bg-[#D4AF37] text-black font-bold px-8 py-3 rounded-lg hover:bg-white hover:scale-105 transition-all shadow-lg shadow-[#D4AF37]/20 flex items-center gap-2">
-                                            <Save size={18} /> {isEditing ? 'Update Artifact' : 'Save Artifact'}
+                                        <button type="submit" className="bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold px-10 py-3.5 rounded-xl hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                                            <Save size={18} /> {isEditing ? 'Commit Update' : 'Publish Masterpiece'}
                                         </button>
                                     </div>
                                 </div>
@@ -638,64 +659,80 @@ export default function AdminDashboard() {
 
                 {/* --- Orders Tab --- */}
                 {activeTab === 'orders' && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-serif text-[#D4AF37]">Order Log</h2>
-                            <button onClick={() => setIsOrderModalOpen(true)} className="bg-[#D4AF37] text-black px-4 py-2 rounded-lg font-bold hover:bg-white transition-colors flex items-center gap-2">
-                                <Plus size={18} /> Manual Order
+                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: "easeOut" }} className="space-y-8">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+                            <div>
+                                <h2 className="text-3xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent">Order Ledger</h2>
+                                <p className="text-sm text-white/40 mt-1">Track and manage boutique fulfillment</p>
+                            </div>
+                            <button onClick={() => setIsOrderModalOpen(true)} className="bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                                <Plus size={20} /> Record Manual Order
                             </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-6">
                             {orders.map(order => (
-                                <GlassCard key={order.id} className="p-6">
-                                    <div className="flex justify-between items-start mb-4 border-b border-white/5 pb-4">
+                                <GlassCard key={order.id} className="p-8 group hover:border-white/20 transition-all duration-500">
+                                    <div className="flex flex-col md:flex-row justify-between items-start mb-6 border-b border-white/5 pb-6 gap-6">
                                         <div>
-                                            <p className="text-xs text-[#D4AF37] mb-1">#{order.id}</p>
-                                            <h3 className="font-bold text-lg text-white">{order.customerName}</h3>
-                                            <p className="text-xs text-white/40">{new Date(order.date).toLocaleDateString()}</p>
+                                            <p className="text-xs text-[#D4AF37] mb-2 tracking-widest uppercase font-semibold">Order #{order.id}</p>
+                                            <h3 className="font-serif text-2xl text-white tracking-wide">{order.customerName}</h3>
+                                            <div className="flex items-center gap-3 mt-2">
+                                                <span className="text-xs text-white/40">{new Date(order.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                                {order.customerPhone && <span className="text-xs text-white/30 px-2 py-0.5 rounded-full border border-white/10">{order.customerPhone}</span>}
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-2xl font-bold text-white">₹{order.totalAmount.toLocaleString()}</p>
-                                            <select
-                                                aria-label="Order Status"
-                                                value={order.status}
-                                                onChange={async (e) => {
-                                                    const newStatus = e.target.value as any;
-                                                    const updatedOrder = { ...order, status: newStatus };
+                                        <div className="text-left md:text-right">
+                                            <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Total Amount</p>
+                                            <p className="text-3xl font-bold text-white tracking-tight mb-4">₹{order.totalAmount.toLocaleString()}</p>
+                                            <div className="relative inline-block">
+                                                <select
+                                                    aria-label="Order Status"
+                                                    value={order.status}
+                                                    onChange={async (e) => {
+                                                        const newStatus = e.target.value as any;
+                                                        const updatedOrder = { ...order, status: newStatus };
 
-                                                    // Optimistic Update
-                                                    setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
+                                                        // Optimistic Update
+                                                        setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
 
-                                                    try {
-                                                        await fetch('/api/orders', {
-                                                            method: 'PUT',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify(updatedOrder)
-                                                        });
-                                                        fetchData(); // Sync fully
-                                                    } catch (err) {
-                                                        alert("Failed to update order");
-                                                        fetchData(); // Revert
-                                                    }
-                                                }}
-                                                className={`mt-2 text-xs py-1 px-3 rounded-full border bg-transparent outline-none cursor-pointer ${order.status === 'Delivered' ? 'border-green-500 text-green-400' :
-                                                    order.status === 'Cancelled' ? 'border-red-500 text-red-400' :
-                                                        'border-yellow-500 text-yellow-400'
-                                                    }`}
-                                            >
-                                                <option className="bg-neutral-900" value="Pending">Pending</option>
-                                                <option className="bg-neutral-900" value="Shipped">Shipped</option>
-                                                <option className="bg-neutral-900" value="Delivered">Delivered</option>
-                                                <option className="bg-neutral-900" value="Cancelled">Cancelled</option>
-                                            </select>
+                                                        try {
+                                                            await fetch('/api/orders', {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify(updatedOrder)
+                                                            });
+                                                            fetchData(); // Sync fully
+                                                        } catch (err) {
+                                                            alert("Failed to update order");
+                                                            fetchData(); // Revert
+                                                        }
+                                                    }}
+                                                    className={`appearance-none text-xs font-bold py-2 pl-4 pr-10 rounded-full border bg-[#050505]/80 outline-none cursor-pointer shadow-inner transition-colors ${order.status === 'Delivered' ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' :
+                                                            order.status === 'Cancelled' ? 'border-red-500/50 text-red-400 hover:bg-red-500/10' :
+                                                                order.status === 'Shipped' ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' :
+                                                                    'border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                                                        }`}
+                                                >
+                                                    <option className="bg-[#0f0f0f]" value="Pending">Pending Validation</option>
+                                                    <option className="bg-[#0f0f0f]" value="Shipped">In Transit (Shipped)</option>
+                                                    <option className="bg-[#0f0f0f]" value="Delivered">Successfully Delivered</option>
+                                                    <option className="bg-[#0f0f0f]" value="Cancelled">Cancelled Order</option>
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" size={14} />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-3 bg-white/[0.02] p-6 rounded-xl border border-white/5">
+                                        <h4 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-4">Line Items</h4>
                                         {order.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between text-sm text-white/60">
-                                                <span>{item.productName} <span className="text-white/30">x{item.quantity}</span></span>
-                                                <span>₹{item.price * item.quantity}</span>
+                                            <div key={i} className="flex justify-between items-center text-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-white/20"></div>
+                                                    <span className="text-white/80">{item.productName}</span>
+                                                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-white/50 border border-white/5">x{item.quantity}</span>
+                                                </div>
+                                                <span className="font-medium">₹{(item.price * item.quantity).toLocaleString()}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -706,40 +743,91 @@ export default function AdminDashboard() {
                 )}
             </main>
 
-            {/* Manual Order Modal (Simplified for brevity, but functional) */}
+            {/* Manual Order Modal */}
             {isOrderModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <GlassCard className="max-w-md w-full p-8 border-[#D4AF37]/50">
-                        <div className="flex justify-between mb-6">
-                            <h3 className="text-xl text-[#D4AF37] font-serif">New Order</h3>
-                            <button onClick={() => setIsOrderModalOpen(false)} aria-label="Close order modal"><X className="text-white/50 hover:text-white" /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                    <GlassCard className="max-w-xl w-full p-10 border-[#D4AF37]/50 shadow-[0_0_50px_rgba(212,175,55,0.15)]">
+                        <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-6">
+                            <div>
+                                <h3 className="text-2xl text-[#D4AF37] font-serif">Record Manual Order</h3>
+                                <p className="text-xs text-white/40 mt-1 uppercase tracking-widest">In-store or telephone purchase</p>
+                            </div>
+                            <button onClick={() => setIsOrderModalOpen(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors" aria-label="Close order modal"><X className="text-white/50 hover:text-white" size={20} /></button>
                         </div>
-                        {/* reusing similar form logic for order creation */}
-                        <form className="space-y-4" onSubmit={(e) => {
+
+                        <form className="space-y-6" onSubmit={async (e) => {
                             e.preventDefault();
                             const product = products.find(p => p.id === orderFormData.productId);
-                            if (!product) return;
-                            const newOrder: Order = {
-                                id: Math.random().toString(36).substr(2, 9),
-                                ...orderFormData,
+                            if (!product) return alert('Select a valid product');
+                            if (product.stock < orderFormData.quantity) return alert('Not enough stock available');
+
+                            const newOrderStr = {
+                                customerName: orderFormData.customerName,
+                                customerPhone: orderFormData.customerPhone,
+                                customerEmail: orderFormData.customerEmail || 'manual@srivaristore.com',
                                 items: [{ productId: product.id, productName: product.name, quantity: orderFormData.quantity, price: product.price }],
                                 totalAmount: product.price * orderFormData.quantity,
-                                date: new Date().toISOString(),
-                                status: 'Pending'
+                                paymentId: 'MANUAL_' + Math.random().toString(36).substring(2, 9).toUpperCase()
                             };
-                            setOrders([newOrder, ...orders]);
-                            setProducts(products.map(p => p.id === product.id ? { ...p, stock: p.stock - orderFormData.quantity } : p));
-                            setIsOrderModalOpen(false);
-                            setOrderFormData({ customerName: '', customerPhone: '', customerEmail: '', productId: '', quantity: 1 });
+
+                            try {
+                                const res = await fetch('/api/orders/create', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(newOrderStr)
+                                });
+
+                                if (!res.ok) throw new Error(await res.text());
+
+                                // Show Success Toast
+                                const toast = document.createElement('div');
+                                toast.className = 'fixed bottom-10 right-10 bg-green-500 text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(74,222,128,0.4)] z-50 animate-bounce cursor-pointer flex items-center gap-2';
+                                toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Manual Order Pushed to Ledger`;
+                                document.body.appendChild(toast);
+                                setTimeout(() => toast.remove(), 4000);
+
+                                fetchData(); // Refresh data to get latest DB stock & orders
+                                setIsOrderModalOpen(false);
+                                setOrderFormData({ customerName: '', customerPhone: '', customerEmail: '', productId: '', quantity: 1 });
+                            } catch (err) {
+                                alert('Error creating order: ' + err);
+                            }
                         }}>
-                            <GlassInput placeholder="Customer Name" required value={orderFormData.customerName} onChange={e => setOrderFormData({ ...orderFormData, customerName: e.target.value })} />
-                            <GlassInput placeholder="Phone" required value={orderFormData.customerPhone} onChange={e => setOrderFormData({ ...orderFormData, customerPhone: e.target.value })} />
-                            <GlassSelect required value={orderFormData.productId} onChange={e => setOrderFormData({ ...orderFormData, productId: e.target.value })}>
-                                <option value="" className="bg-neutral-900">Select Product</option>
-                                {products.map(p => <option key={p.id} value={p.id} className="bg-neutral-900">{p.name} (Stock: {p.stock})</option>)}
-                            </GlassSelect>
-                            <GlassInput type="number" min="1" value={orderFormData.quantity} onChange={e => setOrderFormData({ ...orderFormData, quantity: Number(e.target.value) })} />
-                            <button className="w-full bg-[#D4AF37] text-black font-bold py-3 rounded-lg hover:bg-white mt-4">Confirm Order</button>
+                            <div className="space-y-5">
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Customer Name</label>
+                                        <GlassInput placeholder="Full Name" required value={orderFormData.customerName} onChange={e => setOrderFormData({ ...orderFormData, customerName: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Phone Number</label>
+                                        <GlassInput placeholder="+91..." required value={orderFormData.customerPhone} onChange={e => setOrderFormData({ ...orderFormData, customerPhone: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium flex justify-between">
+                                        <span>Select Artifact</span>
+                                        {orderFormData.productId && <span className="text-white/50">In Stock: {products.find(p => p.id === orderFormData.productId)?.stock || 0}</span>}
+                                    </label>
+                                    <div className="relative">
+                                        <GlassSelect required value={orderFormData.productId} onChange={e => setOrderFormData({ ...orderFormData, productId: e.target.value })}>
+                                            <option value="" className="bg-[#0f0f0f]">-- Browse Catalog --</option>
+                                            {products.filter(p => p.stock > 0).map(p => <option key={p.id} value={p.id} className="bg-[#0f0f0f]">{p.name} - ₹{p.price}</option>)}
+                                        </GlassSelect>
+                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-[#D4AF37]" size={18} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Quantity</label>
+                                    <GlassInput type="number" min="1" max={products.find(p => p.id === orderFormData.productId)?.stock || 1} required value={orderFormData.quantity} onChange={e => setOrderFormData({ ...orderFormData, quantity: Number(e.target.value) })} className="text-center font-bold text-xl" />
+                                </div>
+                            </div>
+
+                            <button type="submit" className="w-full bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold py-4 rounded-xl hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] mt-8 transition-transform transform hover:-translate-y-0.5 uppercase tracking-widest">
+                                Finalize Transaction
+                            </button>
                         </form>
                     </GlassCard>
                 </div>
