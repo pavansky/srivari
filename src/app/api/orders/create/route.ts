@@ -53,7 +53,7 @@ export async function POST(request: Request) {
                 </div>
 
                 <p><strong>Tracking Your Order:</strong><br>
-                You can track the status of your heirloom at any time by visiting our <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order-tracking">Concierge Portal</a> and using Order ID: <strong>${orderId}</strong>.</p>
+                You can track the status of your heirloom at any time by visiting our <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://thesrivari.com'}/order-tracking">Concierge Portal</a> and using Order ID: <strong>${orderId}</strong>.</p>
                 
                 <p style="font-size: 12px; color: #888; text-align: center; margin-top: 30px;">&copy; The Srivari</p>
             </div>
