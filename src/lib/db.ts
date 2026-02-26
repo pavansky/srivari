@@ -152,20 +152,42 @@ export async function getOrders(): Promise<Order[]> {
 }
 
 export async function createOrder(order: Order) {
-    return await prisma.order.create({
-        data: {
-            id: order.id,
-            customer: {
-                name: order.customerName,
-                phone: order.customerPhone,
-                email: order.customerEmail
-            },
-            items: order.items,
-            amount: order.totalAmount, // Assuming logic
-            total: order.totalAmount,
-            status: order.status,
-            payment_method: "Razorpay" // Default
+    // Start a transaction to ensure both order creation and stock deduction succeed or fail together
+    return await prisma.$transaction(async (tx) => {
+        // 1. Create the Order
+        const newOrder = await tx.order.create({
+            data: {
+                id: order.id,
+                customer: {
+                    name: order.customerName,
+                    phone: order.customerPhone,
+                    email: order.customerEmail
+                },
+                items: order.items,
+                amount: order.totalAmount, // Assuming logic
+                total: order.totalAmount,
+                status: order.status,
+                payment_method: "Razorpay" // Default
+            }
+        });
+
+        // 2. Deduct Stock for each item
+        if (order.items && Array.isArray(order.items)) {
+            for (const item of order.items) {
+                if (item.productId && item.quantity) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: {
+                                decrement: item.quantity
+                            }
+                        }
+                    });
+                }
+            }
         }
+
+        return newOrder;
     });
 }
 
