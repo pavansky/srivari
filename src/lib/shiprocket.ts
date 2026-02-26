@@ -3,7 +3,11 @@ import path from 'path';
 import https from 'https';
 import 'server-only';
 
-const TOKEN_FILE = path.join(process.cwd(), 'data', 'shiprocket_token.json');
+import os from 'os';
+
+const TOKEN_FILE = path.join(os.tmpdir(), 'shiprocket_token.json');
+let memoryToken: string | null = null;
+let memoryTokenExpiry: number = 0;
 const BASE_URL = 'https://apiv2.shiprocket.in/v1/external';
 
 interface ShiprocketToken {
@@ -69,14 +73,20 @@ function httpsRequest(url: string, method: string, data?: any, headers: any = {}
 export async function getShiprocketToken(): Promise<string> {
     const now = Date.now();
 
-    // 1. Check local cache
+    // 1. Check Memory Cache
+    if (memoryToken && memoryTokenExpiry > now + 3600000) {
+        return memoryToken;
+    }
+
+    // 2. Check local disk cache (in /tmp)
     if (fs.existsSync(TOKEN_FILE)) {
         try {
             const fileContent = fs.readFileSync(TOKEN_FILE, 'utf8');
             if (fileContent) {
                 const data: ShiprocketToken = JSON.parse(fileContent);
                 if (data.token && data.expires_at > now + 3600000) {
-                    // console.log("SR Auth: Using cached token");
+                    memoryToken = data.token;
+                    memoryTokenExpiry = data.expires_at;
                     return data.token;
                 }
             }
@@ -102,9 +112,14 @@ export async function getShiprocketToken(): Promise<string> {
         if (!token) throw new Error("No token returned");
 
         // 3. Cache it
+        const expiry = now + (24 * 60 * 60 * 1000);
+
+        memoryToken = token;
+        memoryTokenExpiry = expiry;
+
         const tokenData: ShiprocketToken = {
             token,
-            expires_at: now + (24 * 60 * 60 * 1000)
+            expires_at: expiry
         };
 
         const dir = path.dirname(TOKEN_FILE);
