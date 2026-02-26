@@ -52,3 +52,67 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #F1D592;
 }
+
+/* Admin Light Mode Overrides */
+.admin-light {
+    background: #F8F9FA !important;
+    background-image: radial-gradient(ellipse at top, #FFFFFF, #F8F9FA) !important;
+    color: #1A1A1A !important;
+}
+
+.admin-light header {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.admin-light .bg-\[\#050505\]\/60,
+.admin-light .bg-\[\#050505\] {
+    background-color: #FFFFFF !important;
+}
+
+.admin-light .text-white,
+.admin-light .text-gray-200,
+.admin-light .text-white\/80 {
+    color: #1A1A1A !important;
+}
+
+.admin-light .text-white\/50,
+.admin-light .text-white\/40,
+.admin-light .text-white\/30,
+.admin-light .text-gray-400 {
+    color: #6B7280 !important;
+}
+
+.admin-light .border-white\/10,
+.admin-light .border-white\/5 {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.admin-light .bg-white\/5,
+.admin-light .bg-white\/10 {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.admin-light .group\/card {
+    background: #FFFFFF !important;
+    border-color: rgba(0,0,0,0.1) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
+}
+
+.admin-light input,
+.admin-light select,
+.admin-light textarea {
+    background-color: #F3F4F6 !important;
+    color: #1A1A1A !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+
+.admin-light input:focus,
+.admin-light select:focus,
+.admin-light textarea:focus {
+    background-color: #FFFFFF !important;
+}
+
+.admin-light .placeholder-white\/30::placeholder {
+    color: #9CA3AF !important;
+}

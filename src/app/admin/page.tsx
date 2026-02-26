@@ -7,7 +7,7 @@ import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
     Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
-    Sparkles, Wand2, Loader2, Upload, LogOut
+    Sparkles, Wand2, Loader2, Upload, LogOut, Sun, Moon, Home
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -79,6 +79,7 @@ export default function AdminDashboard() {
     const [passwordInput, setPasswordInput] = useState('');
 
     // UI State
+    const [isLightMode, setIsLightMode] = useState(false);
     const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -300,18 +301,20 @@ export default function AdminDashboard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#020202] text-gray-200 font-sans selection:bg-[#D4AF37]/30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/20 via-[#020202] to-[#020202]">
+        <div className={`min-h-screen bg-[#020202] text-gray-200 font-sans selection:bg-[#D4AF37]/30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/20 via-[#020202] to-[#020202] transition-colors duration-500 overflow-x-hidden ${isLightMode ? 'admin-light' : ''}`}>
             {/* --- Top Bar --- */}
-            <header className="sticky top-0 z-50 bg-[#020202]/70 backdrop-blur-2xl border-b border-white/5 px-6 md:px-12 py-5 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#8C7320] rounded-xl flex items-center justify-center text-black font-serif font-bold text-2xl shadow-[0_0_20px_rgba(212,175,55,0.3)]">S</div>
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-[family-name:var(--font-playfair)] bg-gradient-to-r from-[#D4AF37] via-[#F2D06B] to-[#D4AF37] bg-clip-text text-transparent">Admin Console</h1>
-                        <p className="text-white/40 text-xs md:text-sm mt-0.5 tracking-wide">Manage your boutique inventory and orders</p>
+            <header className="sticky top-0 z-50 bg-[#020202]/70 backdrop-blur-2xl border-b border-white/5 px-6 md:px-12 py-5 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4 transition-colors duration-500">
+                <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#8C7320] rounded-xl flex items-center justify-center text-black font-serif font-bold text-2xl shadow-[0_0_20px_rgba(212,175,55,0.3)]">S</div>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-[family-name:var(--font-playfair)] bg-gradient-to-r from-[#D4AF37] via-[#F2D06B] to-[#D4AF37] bg-clip-text text-transparent">Admin Console</h1>
+                            <p className="text-white/40 text-xs md:text-sm mt-0.5 tracking-wide">Manage your boutique inventory and orders</p>
+                        </div>
                     </div>
                 </div>
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-lg mb-6 flex items-center gap-3">
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-lg flex items-center gap-3">
                         <LogOut size={20} />
                         <div>
                             <p className="font-bold">System Error</p>
@@ -320,12 +323,25 @@ export default function AdminDashboard() {
                         <button onClick={fetchData} className="ml-auto bg-red-500/20 px-3 py-1 rounded text-sm hover:bg-red-500/40">Retry</button>
                     </div>
                 )}
-                <nav className="flex gap-2">
-                    <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inventory' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Inventory</button>
-                    <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'orders' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Orders</button>
-                    <div className="h-6 w-px bg-white/10 mx-2"></div>
-                    <Link href="/" className="px-4 py-2 rounded-lg text-sm font-medium text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2">
-                        <LogOut size={16} /> Exit
+                <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-center w-full md:w-auto">
+                    {/* Theme Toggle */}
+                    <button onClick={() => setIsLightMode(!isLightMode)} className="p-2 mr-2 rounded-full hover:bg-white/10 transition-colors text-[#D4AF37]" title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}>
+                        {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+                    </button>
+
+                    <button onClick={() => setActiveTab('inventory')} className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'inventory' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Inventory</button>
+                    <button onClick={() => setActiveTab('orders')} className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'orders' ? 'bg-white/10 text-[#D4AF37]' : 'text-gray-400 hover:text-white'}`}>Orders</button>
+
+                    <div className="hidden md:block h-6 w-px bg-white/10 mx-2"></div>
+
+                    {/* Home Link */}
+                    <Link href="/" className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-emerald-400/80 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all flex items-center gap-2">
+                        <Home size={16} /> <span className="hidden sm:inline">Storefront</span>
+                    </Link>
+
+                    {/* Exit Link */}
+                    <Link href="/" className="px-3 md:px-4 py-2 rounded-lg text-sm font-medium text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2">
+                        <LogOut size={16} /> <span className="hidden sm:inline">Exit</span>
                     </Link>
                 </nav>
             </header>
