@@ -25,7 +25,7 @@ export const metadata: Metadata = {
         template: "%s | The Srivari"
     },
     description: "Exclusive collection of premium handwoven Kanjivaram, Banarasi, and pure silk sarees. Experience the ether of high fashion with The Srivari.",
-    keywords: ["Silk Sarees", "Kanjivaram Silk", "Banarasi Sarees", "Handwoven Silk", "Indian Ethnic Wear", "Royal Silk Sarees", "The Srivari", "Pure Silk Saree", "Bridal Silk Sarees", "Premium Sarees Online", "Luxury Indian Wear"],
+    keywords: ["kanjivaram silk", "banarasi silk", "luxury sarees", "indian bridal wear", "pure silk sarees", "handwoven sarees"],
     authors: [{ name: "The Srivari" }],
     creator: "The Srivari",
     publisher: "The Srivari",
@@ -90,6 +90,7 @@ export const viewport: Viewport = {
 
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export default function RootLayout({
     children,
@@ -98,12 +99,32 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className={`${outfit.variable} ${cormorant.variable}`}>
+            <head>
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            if ('serviceWorker' in navigator) {
+                                window.addEventListener('load', function() {
+                                    navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                                    }, function(err) {
+                                        console.log('ServiceWorker registration failed: ', err);
+                                    });
+                                });
+                            }
+                        `
+                    }}
+                />
+            </head>
             <body className="font-sans bg-obsidian text-marble antialiased selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
                 <CartProvider>
                     <WishlistProvider>
                         <ParticleBackground />
                         <Navbar />
                         {children}
+                        <InstallPrompt />
                         <SocialFloating />
                     </WishlistProvider>
                 </CartProvider>
