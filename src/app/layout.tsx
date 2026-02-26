@@ -39,7 +39,9 @@ export const metadata: Metadata = {
     },
 };
 
-export const viewport = {
+import { Viewport } from "next";
+
+export const viewport: Viewport = {
     themeColor: "#1A1A1A",
     width: "device-width",
     initialScale: 1,
