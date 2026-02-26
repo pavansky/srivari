@@ -18,9 +18,9 @@ export async function POST(req: Request) {
         console.log("DEBUG: Chat API Hit (GenerateText)");
         const { messages, prompt } = body;
 
-        // Use gemini-3.1-flash (latest model)
+        // Use gemini-3-flash (latest model)
         const result = await generateText({
-            model: google('gemini-3.1-flash'),
+            model: google('gemini-3-flash'),
             messages: messages || [{ role: 'user', content: prompt }],
             system: "You are a professional luxury fashion copywriter for 'The Srivari'. Write elegant, sophisticated, and shorter product descriptions.",
         });
