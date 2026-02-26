@@ -28,6 +28,7 @@ export default function ParticleBackground() {
 
         let animationFrameId: number;
         let particles: Particle[] = [];
+        let time = 0;
 
         const handleMouseMove = (e: MouseEvent) => {
             mouseRef.current.x = e.clientX;
@@ -91,23 +92,30 @@ export default function ParticleBackground() {
                     }
                 }
 
-                // Friction to prevent infinite acceleration
-                p.vx *= 0.98;
-                p.vy *= 0.98;
+                // --- Flow Field Physics (The "Saree Drape" / Wave Effect) ---
+                // Calculate an angle based on the particle's position and time
+                // This creates invisible flowing "currents" on the screen
+                const scale = 0.002; // How tight the waves are
+                const angle = Math.sin(p.x * scale + time) * Math.cos(p.y * scale + time) * Math.PI * 2;
+
+                // Add velocity based on the flow field angle
+                const flowSpeed = 0.4;
+                p.vx += Math.cos(angle) * flowSpeed;
+                p.vy += Math.sin(angle) * flowSpeed;
+
+                // Friction to prevent infinite acceleration (slightly less friction for flow)
+                p.vx *= 0.85;
+                p.vy *= 0.85;
 
                 // Move
                 p.x += p.vx;
                 p.y += p.vy;
 
-                // Constant ambient movement (so they don't stop completely)
-                if (Math.abs(p.vx) < 0.2) p.vx += (Math.random() - 0.5) * 0.05;
-                if (Math.abs(p.vy) < 0.2) p.vy += (Math.random() - 0.5) * 0.05;
-
-                // Wrap around edges
-                if (p.x < -20) p.x = canvas.width + 20;
-                if (p.x > canvas.width + 20) p.x = -20;
-                if (p.y < -20) p.y = canvas.height + 20;
-                if (p.y > canvas.height + 20) p.y = -20;
+                // Wrap around edges smoothly
+                if (p.x < -50) p.x = canvas.width + 50;
+                if (p.x > canvas.width + 50) p.x = -50;
+                if (p.y < -50) p.y = canvas.height + 50;
+                if (p.y > canvas.height + 50) p.y = -50;
 
                 // Draw Particle
                 ctx.save();
@@ -146,6 +154,7 @@ export default function ParticleBackground() {
                 ctx.restore();
             });
 
+            time += 0.005; // Advance time for flowing animation
             animationFrameId = requestAnimationFrame(animate);
         };
 
