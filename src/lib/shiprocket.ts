@@ -86,12 +86,8 @@ export async function getShiprocketToken(): Promise<string> {
     }
 
     // 2. Authenticate
-    // HARDCODED DEBUG
-    const email = "dispatch@thesrivari.com";
-    const password = "N!k$sS!J1pb!cLpWiKXX!6Roa&frl&Qk";
-
-    // const email = process.env.SHIPROCKET_EMAIL;
-    // const password = process.env.SHIPROCKET_PASSWORD;
+    const email = process.env.SHIPROCKET_EMAIL;
+    const password = process.env.SHIPROCKET_PASSWORD;
 
     if (!email || !password) {
         console.error("SR Error: Credentials missing");
