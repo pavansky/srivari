@@ -67,31 +67,43 @@ export default function ParticleBackground() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach((p) => {
-                // Mouse interaction physics
+                // Mouse interaction physics (Antigravity & Flowing Orbit)
                 const dx = mouseRef.current.x - p.x;
                 const dy = mouseRef.current.y - p.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 400; // Massively increased grab radius
+                const maxDistance = 350; // Size of the interactive field
 
-                if (distance < maxDistance) {
-                    // Attraction force (gets stronger as you bring mouse closer, but smooths out)
-                    const force = Math.pow((maxDistance - distance) / maxDistance, 2);
+                if (distance < maxDistance && distance > 0) {
+                    const force = Math.pow((maxDistance - distance) / maxDistance, 1.5);
                     const angle = Math.atan2(dy, dx);
 
-                    // The user "commands" the particles to fly towards the cursor
-                    const pullStrength = 3.0;
-                    const pushX = Math.cos(angle) * force * pullStrength;
-                    const pushY = Math.sin(angle) * force * pullStrength;
+                    // 1. Orbital velocity (creates a flowing swirl around cursor)
+                    const orbitAngle = angle + Math.PI / 2;
+                    const orbitStrength = 1.2 * force;
+                    p.vx += Math.cos(orbitAngle) * orbitStrength;
+                    p.vy += Math.sin(orbitAngle) * orbitStrength;
 
-                    p.vx += pushX;
-                    p.vy += pushY;
+                    // 2. Prevent clustering: gentle pull into field, but push away from exact center
+                    const minDistance = 100; // The "eye" of the field
+                    let radialForce = 0;
+                    if (distance > minDistance) {
+                        radialForce = 0.5 * force; // Very gentle pull to keep them in the neighborhood
+                    } else {
+                        radialForce = -1.5 * (1 - distance / minDistance); // Soft repulse to prevent exact point concentration
+                    }
 
-                    // Grow significantly when under user control
-                    p.size = p.baseSize + (force * 5);
+                    p.vx += Math.cos(angle) * radialForce;
+                    p.vy += Math.sin(angle) * radialForce;
+
+                    // 3. Antigravity lift (particles float upwards gracefully near cursor)
+                    p.vy -= 1.0 * force;
+
+                    // Smooth size fluctuation
+                    p.size = p.baseSize + (force * 2.5);
                 } else {
                     // Return to normal size smoothly when released
                     if (p.size > p.baseSize) {
-                        p.size -= 0.15;
+                        p.size -= 0.1;
                     }
                 }
 
@@ -99,16 +111,16 @@ export default function ParticleBackground() {
                 // Calculate an angle based on the particle's position and time
                 // This creates invisible flowing "currents" on the screen
                 const scale = 0.002; // How tight the waves are
-                const angle = Math.sin(p.x * scale + time) * Math.cos(p.y * scale + time) * Math.PI * 2;
+                const flowAngle = Math.sin(p.x * scale + time) * Math.cos(p.y * scale + time) * Math.PI * 2;
 
                 // Add velocity based on the flow field angle
-                const flowSpeed = 0.4;
-                p.vx += Math.cos(angle) * flowSpeed;
-                p.vy += Math.sin(angle) * flowSpeed;
+                const flowSpeed = 0.35;
+                p.vx += Math.cos(flowAngle) * flowSpeed;
+                p.vy += Math.sin(flowAngle) * flowSpeed;
 
-                // Friction to prevent infinite acceleration (slightly less friction for flow)
-                p.vx *= 0.85;
-                p.vy *= 0.85;
+                // Friction to prevent infinite acceleration (tuned for smooth, airy floating)
+                p.vx *= 0.90;
+                p.vy *= 0.90;
 
                 // Move
                 p.x += p.vx;
