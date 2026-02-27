@@ -13,9 +13,8 @@ export default function AboutPage() {
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-obsidian text-marble">
                 <div className="absolute inset-0 opacity-40">
                     <SrivariImage
-                        // Using a majestic South Indian Temple (Tirumala vibe) instead of Taj Mahal
-                        src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?q=80&w=1920&auto=format&fit=crop"
-                        alt="Tirumala Temple Heritage"
+                        src="/tirumala-temple.png"
+                        alt="Tirumala Venkateswara Temple - The Golden Gopuram of Lord Srivaru"
                         fill
                         className="object-cover"
                         priority
