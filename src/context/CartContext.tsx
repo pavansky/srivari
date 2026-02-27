@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Product } from "@/types";
 import { products as initialProducts } from "@/data/products";
+import { useAudio } from "@/context/AudioContext";
 
 // We only store the ID and quantity in localStorage to save space
 interface StoredCartItem {
@@ -29,6 +30,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
+    const { playBell } = useAudio();
 
     // Helper to find a product by ID from localStorage or static data
     const getProductById = (id: string, allProducts: Product[]): Product | undefined => {
@@ -109,6 +111,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, [cart, isLoaded]);
 
     const addToCart = (product: Product, quantity: number = 1) => {
+        playBell();
         setCart((prev) => {
             const existingItem = prev.find(item => item.id === product.id);
             if (existingItem) {

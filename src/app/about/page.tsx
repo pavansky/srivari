@@ -13,8 +13,9 @@ export default function AboutPage() {
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-obsidian text-marble">
                 <div className="absolute inset-0 opacity-40">
                     <SrivariImage
-                        src="https://images.unsplash.com/photo-1576487248805-cf45f6bcc67f?q=80&w=1920&auto=format&fit=crop"
-                        alt="Weaving Loom"
+                        // Using a majestic South Indian Temple (Tirumala vibe) instead of Taj Mahal
+                        src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?q=80&w=1920&auto=format&fit=crop"
+                        alt="Tirumala Temple Heritage"
                         fill
                         className="object-cover"
                         priority

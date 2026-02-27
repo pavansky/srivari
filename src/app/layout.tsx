@@ -100,6 +100,7 @@ export const viewport: Viewport = {
 
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { AudioProvider } from "@/context/AudioContext";
 import InstallPrompt from "@/components/InstallPrompt";
 
 export default function RootLayout({
@@ -127,17 +128,46 @@ export default function RootLayout({
                         `
                     }}
                 />
+
+                {/* Advanced SEO: JSON-LD Structured Data */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": ["Organization", "Store"],
+                            "name": "The Srivari",
+                            "url": "https://thesrivari.com",
+                            "logo": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
+                            "description": "Exclusive collection of premium handwoven Kanjivaram, Banarasi, and pure silk sarees. Traditional Indian bridal wear and luxury ethnic fashion.",
+                            "brand": "The Srivari",
+                            "contactPoint": {
+                                "@type": "ContactPoint",
+                                "telephone": "+91-XXXXXXXXXX",
+                                "contactType": "Customer Service",
+                                "areaServed": "IN",
+                                "availableLanguage": ["en", "hi", "te", "ta"]
+                            },
+                            "sameAs": [
+                                "https://www.instagram.com/thesrivari/",
+                                "https://www.facebook.com/thesrivari/"
+                            ]
+                        })
+                    }}
+                />
             </head>
             <body className="font-sans bg-obsidian text-marble antialiased selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
-                <CartProvider>
-                    <WishlistProvider>
-                        <ParticleBackground />
-                        <Navbar />
-                        {children}
-                        <InstallPrompt />
-                        <SocialFloating />
-                    </WishlistProvider>
-                </CartProvider>
+                <AudioProvider>
+                    <CartProvider>
+                        <WishlistProvider>
+                            <ParticleBackground />
+                            <Navbar />
+                            {children}
+                            <InstallPrompt />
+                            <SocialFloating />
+                        </WishlistProvider>
+                    </CartProvider>
+                </AudioProvider>
             </body>
         </html>
     );

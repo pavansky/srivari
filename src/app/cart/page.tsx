@@ -4,11 +4,13 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useAudio } from '@/context/AudioContext';
 import { useState, useEffect } from 'react';
 import SrivariImage from '@/components/SrivariImage';
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
+    const { playBell } = useAudio();
 
     const calculateTotal = () => {
         const total = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -230,6 +232,9 @@ export default function CartPage() {
             }
 
             const orderId = data.orderId;
+
+            // Ring the temple bell on successful order placement!
+            playBell();
 
             // 2. Redirect to WhatsApp with Order ID
             const phoneNumber = "919739988771";
