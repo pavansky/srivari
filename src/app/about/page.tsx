@@ -1,13 +1,11 @@
 "use client";
 
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SrivariImage from '@/components/SrivariImage';
 
 export default function AboutPage() {
     return (
         <main className="bg-[#FDFBF7] text-[#1A1A1A] font-sans">
-            <Navbar />
 
             {/* Hero Section */}
             <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-obsidian text-marble">

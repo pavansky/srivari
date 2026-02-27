@@ -1,9 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+
+// Components
 import Navbar from "@/components/Navbar";
 import { SocialFloating } from "@/components/SocialFloating";
 import ParticleBackground from "@/components/ParticleBackground";
+import InstallPrompt from "@/components/InstallPrompt";
+
+// Context Providers
+import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
+import { AudioProvider } from "@/context/AudioContext";
 
 const outfit = Outfit({
     subsets: ["latin"],
@@ -88,8 +96,6 @@ export const metadata: Metadata = {
     },
 };
 
-import { Viewport } from "next";
-
 export const viewport: Viewport = {
     themeColor: "#1A1A1A",
     width: "device-width",
@@ -97,11 +103,6 @@ export const viewport: Viewport = {
     maximumScale: 1,
     userScalable: false,
 };
-
-import { CartProvider } from "@/context/CartContext";
-import { WishlistProvider } from "@/context/WishlistContext";
-import { AudioProvider } from "@/context/AudioContext";
-import InstallPrompt from "@/components/InstallPrompt";
 
 export default function RootLayout({
     children,

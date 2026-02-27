@@ -1,16 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import SrivariImage from "./SrivariImage";
 import Link from "next/link";
 import { Eye, ShoppingBag } from "lucide-react";
 import { Product } from "@/types";
+import { useCart } from "@/context/CartContext";
 
 interface ProductCardProps {
   product: Product;
 }
-
-import { useCart } from "@/context/CartContext";
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();

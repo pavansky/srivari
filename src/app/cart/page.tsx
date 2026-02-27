@@ -13,9 +13,7 @@ export default function CartPage() {
     const { playBell } = useAudio();
 
     const calculateTotal = () => {
-        const total = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-        console.log("Calculate Total:", total, "Cart Items:", cart);
-        return total;
+        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
     };
 
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -81,7 +79,6 @@ export default function CartPage() {
             const data = await res.json();
 
             if (data.success) {
-                console.log("Shipping API Success:", data);
                 setShippingCost(data.shipping);
                 setCourierName(data.courier);
                 setShippingDetails({
@@ -92,7 +89,6 @@ export default function CartPage() {
                 setUserDetails(prev => ({ ...prev, address: `${prev.address ? prev.address + ', ' : ''}Pincode: ${pincode}` }));
                 // Auto-append pincode to address if not there, or just useful for context
             } else {
-                console.log("Shipping API Failed or Unserviceable:", data);
                 if (!silent) alert("Shipping not serviceable to this pincode.");
                 setShippingCost(0);
                 setShippingDetails({ city: '', state: '', eta: '' });
