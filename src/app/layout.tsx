@@ -76,7 +76,7 @@ export const metadata: Metadata = {
         ],
     },
     verification: {
-        google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+        google: "fW1w0WabRamYYuXWDomXARml-A_LY8_A16QvAr1VJxs", // Or via process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     },
     manifest: "/manifest.json",
     appleWebApp: {
