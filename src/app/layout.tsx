@@ -8,6 +8,7 @@ import { SocialFloating } from "@/components/SocialFloating";
 import ParticleBackground from "@/components/ParticleBackground";
 import InstallPrompt from "@/components/InstallPrompt";
 import AIStylist from "@/components/AIStylist";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Context Providers
 import { CartProvider } from "@/context/CartContext";
@@ -171,18 +172,20 @@ export default function RootLayout({
                 />
             </head>
             <body className="font-sans bg-obsidian text-marble antialiased selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
-                <AudioProvider>
-                    <CartProvider>
-                        <WishlistProvider>
-                            <ParticleBackground />
-                            <Navbar />
-                            {children}
-                            <InstallPrompt />
-                            <SocialFloating />
-                            <AIStylist />
-                        </WishlistProvider>
-                    </CartProvider>
-                </AudioProvider>
+                <ErrorBoundary>
+                    <AudioProvider>
+                        <CartProvider>
+                            <WishlistProvider>
+                                <ParticleBackground />
+                                <Navbar />
+                                {children}
+                                <InstallPrompt />
+                                <SocialFloating />
+                                <AIStylist />
+                            </WishlistProvider>
+                        </CartProvider>
+                    </AudioProvider>
+                </ErrorBoundary>
             </body>
         </html>
     );
