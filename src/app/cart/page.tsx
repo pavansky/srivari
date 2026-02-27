@@ -2,7 +2,7 @@
 
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck, MessageCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAudio } from '@/context/AudioContext';
 import { useState, useEffect } from 'react';
@@ -617,12 +617,20 @@ export default function CartPage() {
                                     </div>
                                 </div>
 
+                                <Link
+                                    href="/checkout"
+                                    className="w-full py-4 bg-[#1A1A1A] text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-300 shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-lg hover:-translate-y-1 flex items-center justify-center gap-3 group ring-1 ring-[#1A1A1A]/5 mb-3"
+                                >
+                                    <span>Standard Checkout</span>
+                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                </Link>
+
                                 <button
                                     onClick={() => setIsCheckoutModalOpen(true)}
-                                    className="w-full py-4 bg-[#1A1A1A] text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-300 shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:shadow-lg hover:-translate-y-1 flex items-center justify-center gap-3 group ring-1 ring-[#1A1A1A]/5"
+                                    className="w-full py-4 bg-white border border-[#1A1A1A]/10 text-[#1A1A1A] rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-neutral-50 transition-all duration-300 flex items-center justify-center gap-3 group"
                                 >
-                                    <span>Secure Checkout</span>
-                                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    <span>WhatsApp Concierge</span>
+                                    <MessageCircle size={16} className="text-[#D4AF37]" />
                                 </button>
 
                                 <p className="text-[10px] text-center text-neutral-400 mt-6 leading-relaxed font-sans px-4">

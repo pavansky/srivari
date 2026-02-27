@@ -46,22 +46,24 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
           {onQuickView ? (
             <button
               onClick={handleQuickView}
+              aria-label={`Quick view of ${product.name}`}
               className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
             >
-              <Eye size={18} />
+              <Eye size={18} aria-hidden="true" />
             </button>
           ) : (
-            <Link href={`/product/${product.id}`} prefetch={true}>
+            <Link href={`/product/${product.id}`} prefetch={true} aria-label={`View details of ${product.name}`}>
               <button className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]">
-                <Eye size={18} />
+                <Eye size={18} aria-hidden="true" />
               </button>
             </Link>
           )}
           <button
             onClick={handleAddToCart}
+            aria-label={`Add ${product.name} to cart`}
             className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-50 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
           >
-            <ShoppingBag size={18} />
+            <ShoppingBag size={18} aria-hidden="true" />
           </button>
         </div>
 

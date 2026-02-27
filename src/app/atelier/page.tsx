@@ -138,10 +138,12 @@ export default function AtelierPage() {
                                 <input
                                     type="tel"
                                     required
+                                    pattern="[0-9]{10,12}"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     className="w-full bg-transparent border-b border-white/20 pb-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-white/20 font-serif text-lg"
-                                    placeholder="+91..."
+                                    placeholder="10-digit number"
+                                    title="Please enter a valid 10-12 digit phone number"
                                 />
                             </div>
                             <div>

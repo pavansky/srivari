@@ -21,7 +21,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-obsidian text-marble py-16 border-t border-gold/20 mt-auto">
+    <footer className="bg-obsidian text-marble py-16 border-t border-gold/20 mt-auto" role="contentinfo" aria-label="Site Footer">
       <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Brand Column */}
         <div className="space-y-6">
@@ -32,7 +32,7 @@ const Footer = () => {
         </div>
 
         {/* Collections */}
-        <div className="space-y-6">
+        <nav className="space-y-6" aria-label="Collections Footer Navigation">
           <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Collections</h4>
           <ul className="space-y-3 text-sm opacity-80">
             <li><a href="/shop?category=kanjivaram" className="hover:text-gold transition-colors">Kanjivaram Silk</a></li>
@@ -40,10 +40,10 @@ const Footer = () => {
             <li><a href="/shop?category=mysore" className="hover:text-gold transition-colors">Mysore Silk</a></li>
             <li><a href="/shop?category=tussar" className="hover:text-gold transition-colors">Tussar Georgette</a></li>
           </ul>
-        </div>
+        </nav>
 
         {/* Support */}
-        <div className="space-y-6">
+        <nav className="space-y-6" aria-label="Support Footer Navigation">
           <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Support</h4>
           <ul className="space-y-3 text-sm opacity-80">
             <li><a href="/order-tracking" className="hover:text-gold transition-colors">Order Tracking</a></li>
@@ -51,20 +51,23 @@ const Footer = () => {
             <li><a href="/returns" className="hover:text-gold transition-colors">Returns & Exchange</a></li>
             <li><a href="/contact" className="hover:text-gold transition-colors">Contact Us</a></li>
           </ul>
-        </div>
+        </nav>
 
         {/* Newsletter */}
         <div className="space-y-6">
-          <h4 className="text-lg font-bold text-gold uppercase tracking-widest">Newsletter</h4>
+          <h4 className="text-lg font-bold text-gold uppercase tracking-widest" id="newsletter-heading">Newsletter</h4>
           <p className="text-sm opacity-80">Subscribe for exclusive drops and heritage stories.</p>
-          <form onSubmit={handleSubscribe} className="space-y-3">
+          <form onSubmit={handleSubscribe} className="space-y-3" aria-labelledby="newsletter-heading">
+            <label htmlFor="newsletter-email" className="sr-only">Email Address</label>
             <input
+              id="newsletter-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your Email Address"
               required
               className="w-full px-4 py-3 bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-gold/50 transition-colors rounded-sm"
+              aria-required="true"
             />
             <button
               type="submit"
@@ -73,6 +76,7 @@ const Footer = () => {
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gold text-obsidian hover:bg-white"
                 }`}
+              aria-live="polite"
             >
               {status === "loading" ? "Subscribing..." : status === "success" ? "Welcome to the Family" : "Subscribe"}
             </button>

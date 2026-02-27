@@ -56,15 +56,17 @@ export default function Navbar() {
                 animate={{ y: 0 }}
                 transition={{ duration: 0.8, ease: "circOut" }}
                 className={navbarWrapper}
+                role="banner"
             >
-                <div className={`${navbarInner} transition-all duration-700 delay-75`}>
+                <nav className={`${navbarInner} transition-all duration-700 delay-75`} aria-label="Main Navigation">
                     {/* Logo Section */}
-                    <Link href="/" className="flex items-center gap-3 shrink-0 group">
+                    <Link href="/" className="flex items-center gap-3 shrink-0 group" aria-label="Srivari Home">
                         <div className="relative flex items-center justify-center">
                             {/* The missing logo image the user requested - falls back elegantly if missing */}
                             <img
                                 src="/logo.png"
-                                alt="Srivari Logo"
+                                alt=""
+                                role="presentation"
                                 className="w-8 h-8 md:w-10 md:h-10 object-contain absolute opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
                                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
@@ -83,17 +85,20 @@ export default function Navbar() {
                     </Link>
 
                     {/* Desktop Menu */}
-                    <div className={`hidden md:flex gap-4 lg:gap-8 items-center text-xs lg:text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/90' : 'text-marble/90'}`}>
-                        <Link href="/shop" className={`hover:${hoverColor} transition-colors`}>
+                    <div
+                        className={`hidden md:flex gap-4 lg:gap-8 items-center text-xs lg:text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/90' : 'text-marble/90'}`}
+                        role="menubar"
+                    >
+                        <Link href="/shop" className={`hover:${hoverColor} transition-colors`} role="menuitem">
                             COLLECTIONS
                         </Link>
-                        <Link href="/atelier" className={`text-[#D4AF37] hover:text-white transition-colors font-bold`}>
+                        <Link href="/atelier" className={`text-[#D4AF37] hover:text-white transition-colors font-bold`} role="menuitem">
                             ATELIER
                         </Link>
-                        <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
+                        <Link href="/about" className={`hover:${hoverColor} transition-colors`} role="menuitem">
                             ABOUT
                         </Link>
-                        <Link href="/contact" className={`hover:${hoverColor} transition-colors`}>
+                        <Link href="/contact" className={`hover:${hoverColor} transition-colors`} role="menuitem">
                             CONTACT
                         </Link>
                     </div>
@@ -101,10 +106,10 @@ export default function Navbar() {
                     {/* Actions */}
                     <div className="flex items-center gap-3 md:gap-5 shrink-0">
                         <UserButton />
-                        <Link href="/cart" className="relative group p-1">
+                        <Link href="/cart" className="relative group p-1" aria-label={`Shopping bag, ${cart.reduce((total, item) => total + item.quantity, 0)} items`}>
                             <ShoppingBag className={`w-5 h-5 transition-colors ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'}`} strokeWidth={1.5} />
                             {cart.length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] text-obsidian font-bold shadow-sm">
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] text-obsidian font-bold shadow-sm" aria-hidden="true">
                                     {cart.reduce((total, item) => total + item.quantity, 0)}
                                 </span>
                             )}
@@ -112,11 +117,13 @@ export default function Navbar() {
                         <button
                             className={`md:hidden p-1 transition-colors z-50 relative ${isLightPage ? 'text-[#1A1A1A] hover:text-[#D4AF37]' : 'text-[#D4AF37] hover:text-white'}`}
                             onClick={() => setIsMobileMenuOpen(true)}
+                            aria-label="Toggle mobile menu"
+                            aria-expanded={isMobileMenuOpen}
                         >
                             <Menu className="w-5 h-5" strokeWidth={1.5} />
                         </button>
                     </div>
-                </div>
+                </nav>
             </motion.div>
 
             {/* Mobile Sidebar Drawer */}
@@ -138,9 +145,16 @@ export default function Navbar() {
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="fixed top-0 right-0 h-full w-[80%] max-w-[300px] bg-[#0A0A0A] border-l border-gold/20 z-50 flex flex-col p-8 shadow-2xl md:hidden"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Mobile menu"
                     >
                         <div className="flex justify-end mb-12">
-                            <button onClick={() => setIsMobileMenuOpen(false)} className="text-gold">
+                            <button
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-gold"
+                                aria-label="Close mobile menu"
+                            >
                                 <Menu className="w-8 h-8 rotate-90" />
                             </button>
                         </div>

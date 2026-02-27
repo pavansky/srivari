@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 // --- Product API ---
 
@@ -9,8 +10,16 @@ import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
  * 
  * @returns {NextResponse} JSON array of products or 500 Error
  */
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        // Simple Rate Limiting (100 reqs/min)
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        const limiter = rateLimit(ip, 100);
+
+        if (!limiter.success) {
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
         const products = await getProducts();
         return NextResponse.json(products);
     } catch (e) {
