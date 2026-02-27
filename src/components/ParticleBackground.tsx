@@ -77,50 +77,56 @@ export default function ParticleBackground() {
                     const force = Math.pow((maxDistance - distance) / maxDistance, 1.5);
                     const angle = Math.atan2(dy, dx);
 
-                    // 1. Orbital velocity (creates a flowing swirl around cursor)
+                    // 1. Orbital velocity (creates a slow flowing swirl around cursor)
                     const orbitAngle = angle + Math.PI / 2;
-                    const orbitStrength = 1.2 * force;
+                    const orbitStrength = 0.5 * force; // Slower swirl
                     p.vx += Math.cos(orbitAngle) * orbitStrength;
                     p.vy += Math.sin(orbitAngle) * orbitStrength;
 
-                    // 2. Prevent clustering: gentle pull into field, but push away from exact center
-                    const minDistance = 100; // The "eye" of the field
+                    // 2. Prevent clustering: soft repulse to keep center open
+                    const minDistance = 120; // The "eye" of the field
                     let radialForce = 0;
                     if (distance > minDistance) {
-                        radialForce = 0.5 * force; // Very gentle pull to keep them in the neighborhood
+                        radialForce = 0.15 * force; // Very soft pull inward
                     } else {
-                        radialForce = -1.5 * (1 - distance / minDistance); // Soft repulse to prevent exact point concentration
+                        radialForce = -0.5 * (1 - distance / minDistance); // Soft push out
                     }
 
                     p.vx += Math.cos(angle) * radialForce;
                     p.vy += Math.sin(angle) * radialForce;
 
                     // 3. Antigravity lift (particles float upwards gracefully near cursor)
-                    p.vy -= 1.0 * force;
+                    p.vy -= 0.6 * force; // Softer lift
+
+                    // 4. Cursor push (moving the mouse through them sweeps them)
+                    // (we don't have accurate velocity in this simple setup so we add a raw directional push from the cursor's center)
+                    const pushStrength = 0.3 * force;
+                    p.vx -= Math.cos(angle) * pushStrength;
+                    p.vy -= Math.sin(angle) * pushStrength;
 
                     // Smooth size fluctuation
                     p.size = p.baseSize + (force * 2.5);
                 } else {
                     // Return to normal size smoothly when released
                     if (p.size > p.baseSize) {
-                        p.size -= 0.1;
+                        p.size -= 0.05; // Return slower to normal size
                     }
                 }
 
                 // --- Flow Field Physics (The "Saree Drape" / Wave Effect) ---
                 // Calculate an angle based on the particle's position and time
                 // This creates invisible flowing "currents" on the screen
-                const scale = 0.002; // How tight the waves are
+                const scale = 0.0015; // Looser waves
                 const flowAngle = Math.sin(p.x * scale + time) * Math.cos(p.y * scale + time) * Math.PI * 2;
 
-                // Add velocity based on the flow field angle
-                const flowSpeed = 0.35;
+                // Add velocity based on the flow field angle (much slower, ambient drift)
+                const flowSpeed = 0.15; // Slow ambient movement
                 p.vx += Math.cos(flowAngle) * flowSpeed;
                 p.vy += Math.sin(flowAngle) * flowSpeed;
 
                 // Friction to prevent infinite acceleration (tuned for smooth, airy floating)
-                p.vx *= 0.90;
-                p.vy *= 0.90;
+                p.vx *= 0.92; // More glide
+                p.vy *= 0.92;
 
                 // Move
                 p.x += p.vx;
