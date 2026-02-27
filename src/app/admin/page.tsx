@@ -7,7 +7,9 @@ import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
     Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
-    Sparkles, Wand2, Loader2, Upload, LogOut, Sun, Moon, Home
+    Sparkles, Wand2, Loader2, Upload, LogOut, Sun, Moon, Home,
+    BarChart3, AlertTriangle, Clock, Search, Command, Download,
+    Activity, Users, Repeat, ArrowUpRight, ArrowDownRight, Calendar
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -82,8 +84,10 @@ export default function AdminDashboard() {
 
     // UI State
     const [isLightMode, setIsLightMode] = useState(false);
-    const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'analytics'>('inventory');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const [commandQuery, setCommandQuery] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryInput, setNewCategoryInput] = useState("");
 
@@ -277,6 +281,121 @@ export default function AdminDashboard() {
         .reduce((sum, o) => sum + o.totalAmount, 0);
     const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Shipped').length;
     const stockValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
+    const lowStockProducts = products.filter(p => p.stock > 0 && p.stock < 5);
+    const outOfStockProducts = products.filter(p => p.stock === 0);
+    const todaysOrders = orders.filter(o => {
+        const d = new Date(o.date);
+        const now = new Date();
+        return d.toDateString() === now.toDateString();
+    });
+
+    // --- Analytics Computed ---
+    const categoryRevenue = orders
+        .filter(o => o.status !== 'Cancelled')
+        .reduce((acc, o) => {
+            o.items.forEach((item: any) => {
+                const product = products.find(p => p.id === item.productId);
+                const cat = product?.category || 'Unknown';
+                acc[cat] = (acc[cat] || 0) + (item.price * item.quantity);
+            });
+            return acc;
+        }, {} as Record<string, number>);
+
+    const topSellers = orders
+        .filter(o => o.status !== 'Cancelled')
+        .flatMap(o => o.items)
+        .reduce((acc, item: any) => {
+            acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+            return acc;
+        }, {} as Record<string, number>);
+    const topSellersSorted = Object.entries(topSellers)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5);
+
+    const orderFunnel = {
+        pending: orders.filter(o => o.status === 'Pending').length,
+        shipped: orders.filter(o => o.status === 'Shipped').length,
+        delivered: orders.filter(o => o.status === 'Delivered').length,
+        cancelled: orders.filter(o => o.status === 'Cancelled').length,
+    };
+
+    // --- Activity Feed (derived from orders + products) ---
+    const activityFeed = [
+        ...orders.slice(0, 5).map(o => ({
+            type: 'order' as const,
+            text: `Order #${o.id} — ${o.customerName} — ₹${o.totalAmount.toLocaleString()}`,
+            status: o.status,
+            time: new Date(o.date),
+        })),
+        ...lowStockProducts.map(p => ({
+            type: 'alert' as const,
+            text: `Low stock: ${p.name} (${p.stock} left)`,
+            status: 'Warning',
+            time: new Date(),
+        })),
+    ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 8);
+
+    // Revenue sparkline (last 7 days)
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d;
+    });
+    const dailyRevenue = last7Days.map(day => {
+        const dayStr = day.toDateString();
+        return orders
+            .filter(o => o.status !== 'Cancelled' && new Date(o.date).toDateString() === dayStr)
+            .reduce((sum, o) => sum + o.totalAmount, 0);
+    });
+    const maxDailyRevenue = Math.max(...dailyRevenue, 1);
+
+    // --- Command Palette ---
+    const commandActions = [
+        { label: 'Go to Inventory', action: () => { setActiveTab('inventory'); setIsCommandPaletteOpen(false); } },
+        { label: 'Go to Orders', action: () => { setActiveTab('orders'); setIsCommandPaletteOpen(false); } },
+        { label: 'Go to Analytics', action: () => { setActiveTab('analytics'); setIsCommandPaletteOpen(false); } },
+        { label: 'Add New Product', action: () => { setActiveTab('inventory'); resetForm(); setIsCommandPaletteOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+        { label: 'Toggle Dark/Light Mode', action: () => { setIsLightMode(!isLightMode); setIsCommandPaletteOpen(false); } },
+        { label: 'Export Products CSV', action: () => { exportCSV('products'); setIsCommandPaletteOpen(false); } },
+        { label: 'Export Orders CSV', action: () => { exportCSV('orders'); setIsCommandPaletteOpen(false); } },
+        { label: 'Go to Storefront', action: () => { window.location.href = '/'; } },
+    ];
+    const filteredCommands = commandActions.filter(c =>
+        c.label.toLowerCase().includes(commandQuery.toLowerCase())
+    );
+
+    // Keyboard shortcut for command palette
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsCommandPaletteOpen(prev => !prev);
+                setCommandQuery('');
+            }
+            if (e.key === 'Escape') setIsCommandPaletteOpen(false);
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, []);
+
+    // --- CSV Export ---
+    const exportCSV = (type: 'products' | 'orders') => {
+        let csv = '';
+        if (type === 'products') {
+            csv = 'Name,Category,Price,Stock,Featured\n' +
+                products.map(p => `"${p.name}","${p.category}",${p.price},${p.stock},${p.isFeatured}`).join('\n');
+        } else {
+            csv = 'OrderID,Customer,Phone,Amount,Status,Date\n' +
+                orders.map(o => `"${o.id}","${o.customerName}","${o.customerPhone}",${o.totalAmount},"${o.status}","${o.date}"`).join('\n');
+        }
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `srivari-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     // --- Markup Helpers ---
     const calculateMargin = (selling: number, cost: number = 0, shipping: number = 0) => {
@@ -338,6 +457,7 @@ export default function AdminDashboard() {
 
                     <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'inventory' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Inventory</button>
                     <button onClick={() => setActiveTab('orders')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'orders' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Orders</button>
+                    <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'analytics' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><BarChart3 size={14} className="inline mr-1.5 -mt-0.5" />Analytics</button>
 
                     <div className="hidden md:block h-6 w-px bg-white/[0.06] mx-2"></div>
 
@@ -350,25 +470,32 @@ export default function AdminDashboard() {
                     <Link href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2 border border-transparent hover:border-red-500/20">
                         <LogOut size={15} /> <span className="hidden sm:inline">Exit</span>
                     </Link>
+
+                    {/* Command Palette Hint */}
+                    <button onClick={() => { setIsCommandPaletteOpen(true); setCommandQuery(''); }} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-white/60 hover:bg-white/[0.04] border border-white/[0.06] transition-all ml-1">
+                        <Command size={12} /> <span>Ctrl+K</span>
+                    </button>
                 </nav>
             </header>
 
             <main className="max-w-7xl mx-auto p-6 md:p-12 space-y-12">
 
                 {/* --- Stats Row --- */}
-                <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {[
                         { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-500/5", border: "border-emerald-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(52,211,153,0.12)]" },
                         { label: "Active Orders", value: activeOrders, icon: ShoppingCart, color: "text-sky-400", bg: "from-sky-500/20 to-sky-500/5", border: "border-sky-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(56,189,248,0.12)]" },
-                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37]", bg: "from-[#D4AF37]/20 to-[#D4AF37]/5", border: "border-[#D4AF37]/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(212,175,55,0.12)]" }
+                        { label: "Stock Value", value: `₹${stockValue.toLocaleString()}`, icon: Package, color: "text-[#D4AF37]", bg: "from-[#D4AF37]/20 to-[#D4AF37]/5", border: "border-[#D4AF37]/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(212,175,55,0.12)]" },
+                        { label: "Low Stock", value: `${lowStockProducts.length + outOfStockProducts.length}`, icon: AlertTriangle, color: lowStockProducts.length + outOfStockProducts.length > 0 ? "text-amber-400" : "text-green-400", bg: lowStockProducts.length + outOfStockProducts.length > 0 ? "from-amber-500/20 to-amber-500/5" : "from-green-500/20 to-green-500/5", border: lowStockProducts.length + outOfStockProducts.length > 0 ? "border-amber-500/20" : "border-green-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(251,191,36,0.12)]" },
+                        { label: "Today's Orders", value: todaysOrders.length, icon: Calendar, color: "text-violet-400", bg: "from-violet-500/20 to-violet-500/5", border: "border-violet-500/20", glow: "group-hover/card:shadow-[0_0_40px_rgba(139,92,246,0.12)]" },
                     ].map((stat, idx) => (
-                        <GlassCard key={idx} className={`p-7 flex items-center gap-5 hover:border-white/15 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
-                            <div className={`p-3.5 rounded-xl bg-gradient-to-br ${stat.bg} border ${stat.border} ${stat.color} shadow-lg`}>
-                                <stat.icon size={24} strokeWidth={1.5} />
+                        <GlassCard key={idx} className={`p-5 flex items-center gap-4 hover:border-white/15 transition-all duration-500 ease-out cursor-default ${stat.glow}`}>
+                            <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.bg} border ${stat.border} ${stat.color} shadow-lg shrink-0`}>
+                                <stat.icon size={20} strokeWidth={1.5} />
                             </div>
                             <div>
-                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5">{stat.label}</p>
-                                <p className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${stat.color}`}>{stat.value}</p>
+                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.15em] mb-1">{stat.label}</p>
+                                <p className={`text-xl md:text-2xl font-bold tracking-tight font-sans ${stat.color}`}>{stat.value}</p>
                             </div>
                         </GlassCard>
                     ))}
@@ -690,9 +817,14 @@ export default function AdminDashboard() {
                                 <h2 className="text-3xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent">Order Ledger</h2>
                                 <p className="text-sm text-white/40 mt-1">Track and manage boutique fulfillment</p>
                             </div>
-                            <button onClick={() => setIsOrderModalOpen(true)} className="bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
-                                <Plus size={20} /> Record Manual Order
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => exportCSV('orders')} className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white/50 hover:text-white border border-white/10 hover:border-white/20 transition-all flex items-center gap-2 hover:bg-white/[0.04]">
+                                    <Download size={14} /> Export CSV
+                                </button>
+                                <button onClick={() => setIsOrderModalOpen(true)} className="bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                                    <Plus size={20} /> Record Manual Order
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-6">
@@ -706,6 +838,21 @@ export default function AdminDashboard() {
                                                 <span className="text-xs text-white/40">{new Date(order.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                                 {order.customerPhone && <span className="text-xs text-white/30 px-2 py-0.5 rounded-full border border-white/10">{order.customerPhone}</span>}
                                             </div>
+                                            {/* Customer Insights */}
+                                            {(() => {
+                                                const customerOrders = orders.filter(o => o.customerPhone === order.customerPhone && o.status !== 'Cancelled');
+                                                const totalSpend = customerOrders.reduce((s, o) => s + o.totalAmount, 0);
+                                                return customerOrders.length > 1 ? (
+                                                    <div className="flex items-center gap-2 mt-3">
+                                                        <span className="text-[10px] px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                                            <Repeat size={10} /> Repeat Buyer
+                                                        </span>
+                                                        <span className="text-[10px] text-white/30">
+                                                            {customerOrders.length} orders · ₹{totalSpend.toLocaleString()} lifetime
+                                                        </span>
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
                                         <div className="text-left md:text-right">
                                             <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Total Amount</p>
@@ -717,20 +864,17 @@ export default function AdminDashboard() {
                                                     onChange={async (e) => {
                                                         const newStatus = e.target.value as any;
                                                         const updatedOrder = { ...order, status: newStatus };
-
-                                                        // Optimistic Update
                                                         setOrders(orders.map(o => o.id === order.id ? updatedOrder : o));
-
                                                         try {
                                                             await fetch('/api/orders', {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify(updatedOrder)
                                                             });
-                                                            fetchData(); // Sync fully
+                                                            fetchData();
                                                         } catch (err) {
                                                             alert("Failed to update order");
-                                                            fetchData(); // Revert
+                                                            fetchData();
                                                         }
                                                     }}
                                                     className={`appearance-none text-xs font-bold py-2 pl-4 pr-10 rounded-full border bg-[#050505]/80 outline-none cursor-pointer shadow-inner transition-colors ${order.status === 'Delivered' ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' :
@@ -748,6 +892,34 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Order Timeline */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center justify-between relative">
+                                            <div className="absolute top-3 left-0 right-0 h-0.5 bg-white/10" />
+                                            {['Pending', 'Shipped', 'Delivered'].map((step, i) => {
+                                                const steps = ['Pending', 'Shipped', 'Delivered'];
+                                                const currentIdx = steps.indexOf(order.status);
+                                                const isCancelled = order.status === 'Cancelled';
+                                                const isActive = !isCancelled && i <= currentIdx;
+                                                const isCurrent = !isCancelled && i === currentIdx;
+                                                return (
+                                                    <div key={step} className="relative z-10 flex flex-col items-center gap-1.5">
+                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${isCancelled ? 'border-red-500/50 bg-red-500/10' :
+                                                            isActive ? 'border-[#D4AF37] bg-[#D4AF37]/20' :
+                                                                'border-white/20 bg-white/5'
+                                                            } ${isCurrent ? 'shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-110' : ''}`}>
+                                                            {isActive && !isCancelled && <Check size={12} className="text-[#D4AF37]" />}
+                                                            {isCancelled && i === 0 && <X size={12} className="text-red-400" />}
+                                                        </div>
+                                                        <span className={`text-[9px] uppercase tracking-wider font-bold ${isActive && !isCancelled ? 'text-[#D4AF37]' : 'text-white/30'
+                                                            }`}>{step}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-3 bg-white/[0.02] p-6 rounded-xl border border-white/5">
                                         <h4 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-4">Line Items</h4>
                                         {order.items.map((item, i) => (
@@ -764,6 +936,132 @@ export default function AdminDashboard() {
                                 </GlassCard>
                             ))}
                         </div>
+                    </motion.div>
+                )}
+
+                {/* --- Analytics Tab --- */}
+                {activeTab === 'analytics' && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                        <div className="border-b border-white/10 pb-6">
+                            <h2 className="text-3xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent">Business Intelligence</h2>
+                            <p className="text-sm text-white/40 mt-1">Revenue trends, top performers, and order analytics</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Revenue Sparkline */}
+                            <GlassCard className="p-8">
+                                <h3 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-6 font-bold flex items-center gap-2"><TrendingUp size={14} /> 7-Day Revenue</h3>
+                                <div className="flex items-end gap-2 h-40">
+                                    {dailyRevenue.map((rev, i) => (
+                                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                                            <span className="text-[9px] text-white/40 font-mono">{rev > 0 ? `₹${(rev / 1000).toFixed(0)}k` : ''}</span>
+                                            <div
+                                                className="w-full rounded-t-lg bg-gradient-to-t from-[#D4AF37]/80 to-[#F2D06B]/60 transition-all duration-700 hover:from-[#D4AF37] hover:to-[#F2D06B] cursor-default relative group"
+                                                style={{ height: `${Math.max((rev / maxDailyRevenue) * 100, 4)}%`, minHeight: '4px' }}
+                                            >
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/90 text-[#D4AF37] text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-[#D4AF37]/30">
+                                                    ₹{rev.toLocaleString()}
+                                                </div>
+                                            </div>
+                                            <span className="text-[9px] text-white/30">{last7Days[i].toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </GlassCard>
+
+                            {/* Order Funnel */}
+                            <GlassCard className="p-8">
+                                <h3 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-6 font-bold flex items-center gap-2"><Activity size={14} /> Order Funnel</h3>
+                                <div className="space-y-4">
+                                    {[
+                                        { label: 'Pending', count: orderFunnel.pending, color: 'bg-[#D4AF37]', total: orders.length },
+                                        { label: 'Shipped', count: orderFunnel.shipped, color: 'bg-blue-500', total: orders.length },
+                                        { label: 'Delivered', count: orderFunnel.delivered, color: 'bg-emerald-500', total: orders.length },
+                                        { label: 'Cancelled', count: orderFunnel.cancelled, color: 'bg-red-500', total: orders.length },
+                                    ].map(f => (
+                                        <div key={f.label} className="space-y-1.5">
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-white/60">{f.label}</span>
+                                                <span className="text-white/80 font-bold">{f.count}</span>
+                                            </div>
+                                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                                <div className={`h-full ${f.color} rounded-full transition-all duration-700`} style={{ width: `${f.total > 0 ? (f.count / f.total) * 100 : 0}%` }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </GlassCard>
+
+                            {/* Top Sellers */}
+                            <GlassCard className="p-8">
+                                <h3 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-6 font-bold flex items-center gap-2"><ArrowUpRight size={14} /> Top Sellers</h3>
+                                {topSellersSorted.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {topSellersSorted.map(([name, qty], i) => (
+                                            <div key={name} className="flex items-center gap-3">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-[#D4AF37] text-black' : 'bg-white/10 text-white/60'}`}>{i + 1}</span>
+                                                <span className="flex-1 text-sm text-white/80 truncate">{name}</span>
+                                                <span className="text-xs font-bold text-[#D4AF37]">{qty} sold</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-white/30 text-sm">No sales data yet.</p>
+                                )}
+                            </GlassCard>
+
+                            {/* Category Breakdown */}
+                            <GlassCard className="p-8">
+                                <h3 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-6 font-bold flex items-center gap-2"><BarChart3 size={14} /> Revenue by Category</h3>
+                                {Object.keys(categoryRevenue).length > 0 ? (
+                                    <div className="space-y-3">
+                                        {Object.entries(categoryRevenue)
+                                            .sort(([, a], [, b]) => b - a)
+                                            .map(([cat, rev]) => {
+                                                const maxCatRev = Math.max(...Object.values(categoryRevenue), 1);
+                                                return (
+                                                    <div key={cat} className="space-y-1.5">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-white/60">{cat}</span>
+                                                            <span className="text-white/80 font-bold">₹{rev.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] rounded-full transition-all duration-700" style={{ width: `${(rev / maxCatRev) * 100}%` }} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                ) : (
+                                    <p className="text-white/30 text-sm">No categorized revenue yet.</p>
+                                )}
+                            </GlassCard>
+                        </div>
+
+                        {/* Activity Feed */}
+                        <GlassCard className="p-8">
+                            <h3 className="text-xs uppercase tracking-widest text-[#D4AF37] mb-6 font-bold flex items-center gap-2"><Clock size={14} /> Recent Activity</h3>
+                            <div className="space-y-4">
+                                {activityFeed.length > 0 ? activityFeed.map((event, i) => (
+                                    <div key={i} className="flex items-start gap-3 group">
+                                        <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${event.type === 'alert' ? 'bg-amber-400' : event.status === 'Delivered' ? 'bg-emerald-400' : event.status === 'Cancelled' ? 'bg-red-400' : 'bg-[#D4AF37]'}`} />
+                                        <div className="flex-1">
+                                            <p className="text-sm text-white/70 group-hover:text-white/90 transition-colors">{event.text}</p>
+                                            <p className="text-[10px] text-white/30 mt-0.5">{event.time.toLocaleString()}</p>
+                                        </div>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider shrink-0 ${event.type === 'alert' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
+                                            event.status === 'Delivered' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
+                                                event.status === 'Cancelled' ? 'text-red-400 border-red-500/30 bg-red-500/10' :
+                                                    'text-[#D4AF37] border-[#D4AF37]/30 bg-[#D4AF37]/10'
+                                            }`}>
+                                            {event.status}
+                                        </span>
+                                    </div>
+                                )) : (
+                                    <p className="text-white/30 text-sm">No recent activity.</p>
+                                )}
+                            </div>
+                        </GlassCard>
                     </motion.div>
                 )}
             </main>
@@ -988,6 +1286,60 @@ export default function AdminDashboard() {
                     </GlassCard>
                 </div>
             )}
+
+            {/* Command Palette (Ctrl+K) */}
+            <AnimatePresence>
+                {isCommandPaletteOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-start justify-center pt-[20vh] bg-black/70 backdrop-blur-md"
+                        onClick={() => setIsCommandPaletteOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            onClick={e => e.stopPropagation()}
+                            className="w-full max-w-lg bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden"
+                        >
+                            <div className="flex items-center gap-3 p-4 border-b border-white/10">
+                                <Search size={18} className="text-white/30" />
+                                <input
+                                    autoFocus
+                                    value={commandQuery}
+                                    onChange={e => setCommandQuery(e.target.value)}
+                                    placeholder="Type a command..."
+                                    className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && filteredCommands.length > 0) {
+                                            filteredCommands[0].action();
+                                        }
+                                    }}
+                                />
+                                <kbd className="text-[10px] text-white/20 border border-white/10 px-1.5 py-0.5 rounded">ESC</kbd>
+                            </div>
+                            <div className="max-h-64 overflow-y-auto">
+                                {filteredCommands.map((cmd, i) => (
+                                    <button
+                                        key={cmd.label}
+                                        onClick={cmd.action}
+                                        className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${i === 0 ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'}`}
+                                    >
+                                        <Command size={14} className="shrink-0 opacity-40" />
+                                        {cmd.label}
+                                    </button>
+                                ))}
+                                {filteredCommands.length === 0 && (
+                                    <p className="px-4 py-6 text-sm text-white/30 text-center">No matching commands</p>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
