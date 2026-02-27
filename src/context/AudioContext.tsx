@@ -14,7 +14,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         // We use a high-quality temple bell sound commonly used for Tirupati/Tirumala vibes
         // A clear, resonant brass bell sound. Replace with a specific file if you have one.
-        audioRef.current = new Audio('/audio/temple-bell.mp3');
+        audioRef.current = new Audio('/audio/bell_temple.mp3');
         audioRef.current.volume = 0.5; // Start at 50% volume so it's not jarring
     }, []);
 
