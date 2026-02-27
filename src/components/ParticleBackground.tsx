@@ -17,7 +17,8 @@ interface Particle {
 
 export default function ParticleBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const mouseRef = useRef({ x: 0, y: 0 });
+    const mouseRef = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
+    const lastMouseRef = useRef({ x: 0, y: 0, time: 0 });
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -30,9 +31,45 @@ export default function ParticleBackground() {
         let particles: Particle[] = [];
         let time = 0;
 
-        const handleMouseMove = (e: MouseEvent) => {
-            mouseRef.current.x = e.clientX;
-            mouseRef.current.y = e.clientY;
+        const handlePointerMove = (e: MouseEvent | TouchEvent) => {
+            let clientX, clientY;
+            if ('touches' in e) {
+                if (e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    return;
+                }
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const now = performance.now();
+            const dt = Math.max(1, now - lastMouseRef.current.time); // avoid division by zero
+
+            // Calculate velocity (pixels per millisecond)
+            const vx = (clientX - lastMouseRef.current.x) / dt;
+            const vy = (clientY - lastMouseRef.current.y) / dt;
+
+            // Update refs
+            mouseRef.current = {
+                x: clientX,
+                y: clientY,
+                vx: vx * 10, // Scale up velocity for better effect 
+                vy: vy * 10
+            };
+
+            lastMouseRef.current = { x: clientX, y: clientY, time: now };
+        };
+
+        const handlePointerLeave = () => {
+            // Gently decay pointer velocity to zero when leaving screen
+            mouseRef.current.vx = 0;
+            mouseRef.current.vy = 0;
+            // Move target way off screen so particles stop following
+            mouseRef.current.x = -1000;
+            mouseRef.current.y = -1000;
         };
 
         const resizeCanvas = () => {
@@ -180,14 +217,20 @@ export default function ParticleBackground() {
         };
 
         window.addEventListener("resize", resizeCanvas);
-        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("touchmove", handlePointerMove, { passive: true });
+        window.addEventListener("pointerleave", handlePointerLeave);
+        window.addEventListener("touchend", handlePointerLeave);
 
         resizeCanvas();
         animate();
 
         return () => {
             window.removeEventListener("resize", resizeCanvas);
-            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("touchmove", handlePointerMove);
+            window.removeEventListener("pointerleave", handlePointerLeave);
+            window.removeEventListener("touchend", handlePointerLeave);
             cancelAnimationFrame(animationFrameId);
         };
     }, []);
