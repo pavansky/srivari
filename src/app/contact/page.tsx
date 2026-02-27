@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
 import WAButton from "@/components/WAButton";
@@ -8,7 +7,6 @@ import WAButton from "@/components/WAButton";
 export default function ContactPage() {
     return (
         <main className="bg-[#FDFBF7] min-h-screen text-[#1A1A1A] font-sans">
-            <Navbar />
 
             {/* Hero Section */}
             <section className="relative h-[50vh] flex items-center justify-center overflow-hidden bg-obsidian text-marble">

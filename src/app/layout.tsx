@@ -66,6 +66,18 @@ export const metadata: Metadata = {
             'max-snippet': -1,
         },
     },
+    icons: {
+        icon: [
+            { url: '/favicon.ico', sizes: '48x48' },
+            { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+            { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
+    },
+    verification: {
+        google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    },
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
@@ -79,10 +91,10 @@ export const metadata: Metadata = {
         siteName: "The Srivari",
         images: [
             {
-                url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop", // Using the beautiful saree image we added earlier
+                url: "/og-image.png",
                 width: 1200,
                 height: 630,
-                alt: "The Srivari Royal Silk Sarees"
+                alt: "The Srivari — Premium Silk & Bridal Sarees"
             },
         ],
         locale: "en_IN",
@@ -92,7 +104,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: "The Srivari | Premium Silk & Bridal Sarees",
         description: "Experience the ether of high fashion with our premium collection of authentic handwoven silk sarees.",
-        images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop"],
+        images: ["/og-image.png"],
     },
 };
 
@@ -139,7 +151,7 @@ export default function RootLayout({
                             "@type": ["Organization", "Store"],
                             "name": "The Srivari",
                             "url": "https://thesrivari.com",
-                            "logo": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
+                            "logo": "https://thesrivari.com/icon.png",
                             "description": "Exclusive collection of premium handwoven Kanjivaram, Banarasi, and pure silk sarees. Traditional Indian bridal wear and luxury ethnic fashion.",
                             "brand": "The Srivari",
                             "contactPoint": {
