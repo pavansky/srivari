@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, ShoppingBag } from "lucide-react";
+import { CreditCard, Truck, ShieldCheck, ArrowLeft, ShoppingBag, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
@@ -30,24 +31,89 @@ export default function CheckoutPage() {
     const shipping = 0; // VIP Free Shipping for Srivari
     const total = subtotal + shipping;
 
+    const [user, setUser] = useState<any>(null);
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                setUser(session.user);
+                fetchAddresses(session.access_token);
+                setFormData(prev => ({ ...prev, email: session.user.email || "" }));
+            }
+        };
+        loadUser();
+    }, []);
+
+    const fetchAddresses = async (token: string) => {
+        try {
+            const res = await fetch("/api/user/addresses", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setSavedAddresses(data);
+                // Auto-select default
+                const def = data.find((a: any) => a.isDefault);
+                if (def) applyAddress(def);
+            }
+        } catch (e) {
+            console.error("Failed to load addresses");
+        }
+    };
+
+    const applyAddress = (addr: any) => {
+        setSelectedAddressId(addr.id);
+        setFormData({
+            email: user?.email || "",
+            firstName: addr.firstName,
+            lastName: addr.lastName,
+            address: `${addr.addressLine1}${addr.addressLine2 ? ', ' + addr.addressLine2 : ''}${addr.landmark ? ' (Landmark: ' + addr.landmark + ')' : ''}`,
+            city: addr.city,
+            state: addr.state,
+            pincode: addr.pincode,
+            phone: addr.phone
+        });
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (selectedAddressId) setSelectedAddressId(""); // Unselect if modified
     };
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
 
-        // Simulate Order Processing
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        try {
+            const orderPayload = {
+                ...formData,
+                items: cart,
+                total: total,
+                userId: user?.id,
+                paymentMethod: "Razorpay"
+            };
 
-        // In a real app, we would call an API here to create a Razorpay order
-        // and handle the payment gateway response.
+            const response = await fetch("/api/orders/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderPayload)
+            });
 
-        setIsProcessing(false);
-        clearCart();
-        alert("Thank you for your purchase from The Srivari! Your order has been placed successfully.");
-        router.push("/");
+            if (response.ok) {
+                const { orderId } = await response.json();
+                clearCart();
+                router.push(`/order-tracking?id=${orderId}`);
+            } else {
+                throw new Error("Failed to create order");
+            }
+        } catch (error) {
+            alert("Checkout failed. Please try again.");
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (cart.length === 0 && !isProcessing) {
@@ -81,9 +147,35 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                    {/* Checkout Form */}
+                    {/* Checkout Form Form */}
                     <div className="lg:col-span-7">
                         <form onSubmit={handleCheckout} className="space-y-10">
+
+                            {user && savedAddresses.length > 0 && (
+                                <section className="bg-white border border-gold/10 p-6 rounded-sm shadow-sm">
+                                    <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-4 flex items-center gap-2">
+                                        <MapPin size={14} /> Select Registered Residence
+                                    </h3>
+                                    <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                                        {savedAddresses.map((addr) => (
+                                            <button
+                                                key={addr.id}
+                                                type="button"
+                                                onClick={() => applyAddress(addr)}
+                                                className={`shrink-0 text-left p-4 border rounded-sm transition-all w-48 ${selectedAddressId === addr.id
+                                                    ? "border-gold bg-gold/5 shadow-inner"
+                                                    : "border-neutral-100 hover:border-gold/30"
+                                                    }`}
+                                            >
+                                                <p className="text-[10px] uppercase font-bold text-neutral-400 mb-1">{addr.type}</p>
+                                                <p className="text-xs font-bold truncate">{addr.addressLine1}</p>
+                                                <p className="text-[10px] text-neutral-500">{addr.city}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
                             <section>
                                 <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Delivery Information</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -94,7 +186,7 @@ export default function CheckoutPage() {
                                             name="firstName"
                                             value={formData.firstName}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -104,7 +196,7 @@ export default function CheckoutPage() {
                                             name="lastName"
                                             value={formData.lastName}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                         />
                                     </div>
                                 </div>
@@ -115,7 +207,7 @@ export default function CheckoutPage() {
                                         name="address"
                                         value={formData.address}
                                         onChange={handleInputChange}
-                                        className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                        className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                     />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -126,7 +218,7 @@ export default function CheckoutPage() {
                                             name="city"
                                             value={formData.city}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -137,7 +229,7 @@ export default function CheckoutPage() {
                                             name="pincode"
                                             value={formData.pincode}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                             placeholder="6-digit PIN"
                                         />
                                     </div>
@@ -150,7 +242,7 @@ export default function CheckoutPage() {
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleInputChange}
-                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm"
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                         />
                                     </div>
                                 </div>

@@ -158,16 +158,18 @@ export async function createOrder(order: Order) {
         const newOrder = await tx.order.create({
             data: {
                 id: order.id,
+                userId: (order as any).userId, // Add userId link
                 customer: {
                     name: order.customerName,
                     phone: order.customerPhone,
-                    email: order.customerEmail
+                    email: order.customerEmail,
+                    address: (order as any).address // Store full address string in JSON for history
                 },
                 items: order.items,
                 amount: order.totalAmount, // Assuming logic
                 total: order.totalAmount,
                 status: order.status,
-                payment_method: "Razorpay" // Default
+                payment_method: (order as any).paymentMethod || "Razorpay"
             }
         });
 

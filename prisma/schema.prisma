@@ -23,16 +23,55 @@ model Product {
   updatedAt   DateTime @updatedAt
 }
 
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  avatar        String?
+  loyaltyPoints Int       @default(0)
+  preferences   Json? // Style preferences, fabric interests
+  addresses     Address[]
+  orders        Order[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  type         String   @default("Home") // Home, Work, etc.
+  firstName    String
+  lastName     String
+  addressLine1 String
+  addressLine2 String?
+  landmark     String?
+  city         String
+  state        String
+  pincode      String
+  phone        String
+  isDefault    Boolean  @default(false)
+  isBusiness   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Order {
   id                String   @id
   razorpay_order_id String?  @unique
-  customer          Json
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id])
+  customer          Json // Fallback for guest or historical data
   items             Json
   amount            Float
   shipping_cost     Float    @default(0)
   total             Float
   status            String   @default("Pending")
   payment_method    String   @default("Razorpay")
+  tracking_number   String?
+  tracking_url      String?
+  delivery_eta      String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
