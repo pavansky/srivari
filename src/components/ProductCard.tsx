@@ -8,45 +8,60 @@ import { useCart } from "@/context/CartContext";
 
 interface ProductCardProps {
   product: Product;
+  onQuickView?: (product: Product) => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent Link navigation if wrapped
     e.stopPropagation();
     addToCart(product);
-    alert("Added to cart!");
+  };
+
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onQuickView) onQuickView(product);
   };
 
   // Find first valid image
   const displayImage = product.images.find(img => img && img.trim() !== "") || "";
 
   return (
-    <div className="group relative bg-white border border-[#E5E5E5] hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl">
+    <div className="group relative bg-white border border-[#E5E5E5]/60 hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-sm">
       {/* Image Container */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F5F0]">
         <SrivariImage
           src={displayImage}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+          className="object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110"
         />
 
         {/* Overlay Actions */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
-          <Link href={`/product/${product.id}`}>
-            <button className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100 hover:bg-[#D4AF37] hover:text-white">
-              <Eye size={20} />
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-3">
+          {onQuickView ? (
+            <button
+              onClick={handleQuickView}
+              className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
+            >
+              <Eye size={18} />
             </button>
-          </Link>
+          ) : (
+            <Link href={`/product/${product.id}`}>
+              <button className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]">
+                <Eye size={18} />
+              </button>
+            </Link>
+          )}
           <button
             onClick={handleAddToCart}
-            className="bg-white text-[#4A0404] p-3 rounded-full transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-200 hover:bg-[#D4AF37] hover:text-white"
+            className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-50 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
           >
-            <ShoppingBag size={20} />
+            <ShoppingBag size={18} />
           </button>
         </div>
 
