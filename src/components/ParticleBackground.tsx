@@ -5,8 +5,9 @@ import { useEffect, useRef } from "react";
 interface Particle {
     x: number;
     y: number;
-    vx: number;
-    vy: number;
+    baseX: number;
+    baseY: number;
+    baseZ: number;
     baseSize: number;
     size: number;
     alpha: number;
@@ -17,8 +18,7 @@ interface Particle {
 
 export default function ParticleBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const mouseRef = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
-    const lastMouseRef = useRef({ x: 0, y: 0, time: 0 });
+    const mouseRef = useRef({ x: -1000, y: -1000, isOffScreen: true });
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -30,6 +30,7 @@ export default function ParticleBackground() {
         let animationFrameId: number;
         let particles: Particle[] = [];
         let time = 0;
+        let sphereCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             let clientX, clientY;
@@ -41,58 +42,49 @@ export default function ParticleBackground() {
                     return;
                 }
             } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
+                clientX = (e as MouseEvent).clientX;
+                clientY = (e as MouseEvent).clientY;
             }
 
-            const now = performance.now();
-            const dt = Math.max(1, now - lastMouseRef.current.time); // avoid division by zero
-
-            // Calculate velocity (pixels per millisecond)
-            const vx = (clientX - lastMouseRef.current.x) / dt;
-            const vy = (clientY - lastMouseRef.current.y) / dt;
-
-            // Update refs
             mouseRef.current = {
                 x: clientX,
                 y: clientY,
-                vx: vx * 10, // Scale up velocity for better effect 
-                vy: vy * 10
+                isOffScreen: false
             };
-
-            lastMouseRef.current = { x: clientX, y: clientY, time: now };
         };
 
         const handlePointerLeave = () => {
-            // Gently decay pointer velocity to zero when leaving screen
-            mouseRef.current.vx = 0;
-            mouseRef.current.vy = 0;
-            // Move target way off screen so particles stop following
-            mouseRef.current.x = -1000;
-            mouseRef.current.y = -1000;
-        };
-
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initParticles();
+            mouseRef.current.isOffScreen = true;
         };
 
         const initParticles = () => {
-            const particleCount = Math.min(window.innerWidth * 0.1, 150); // Increased density
+            // About 250 particles for a good dense sphere
+            const particleCount = Math.min(window.innerWidth * 0.15, 250);
             particles = [];
             const types = ['heart', 'butterfly', 'circle'] as const;
 
+            // Use Fibonacci sphere algorithm for even distribution
+            const radius = Math.min(canvas.width, canvas.height) * 0.4;
+
             for (let i = 0; i < particleCount; i++) {
-                const size = Math.random() * 4 + 2; // Slightly larger for intricate shapes
+                const phi = Math.acos(1 - 2 * (i + 0.5) / particleCount);
+                const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+
+                const baseX = radius * Math.sin(phi) * Math.cos(theta);
+                const baseY = radius * Math.sin(phi) * Math.sin(theta);
+                const baseZ = radius * Math.cos(phi);
+
+                const size = Math.random() * 3 + 1.5;
                 particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
+                    // Start particles scattered or at center
+                    x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+                    y: canvas.height / 2 + (Math.random() - 0.5) * 200,
+                    baseX,
+                    baseY,
+                    baseZ,
                     baseSize: size,
                     size: size,
-                    alpha: Math.random() * 0.6 + 0.2, // Higher opacity
+                    alpha: Math.random() * 0.5 + 0.3,
                     type: types[Math.floor(Math.random() * types.length)],
                     rotation: Math.random() * Math.PI * 2,
                     rotationSpeed: (Math.random() - 0.5) * 0.05
@@ -100,80 +92,56 @@ export default function ParticleBackground() {
             }
         };
 
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Always reset to center on resize
+            sphereCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            initParticles();
+        };
+
         const animate = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Determine target center for the sphere
+            // If mouse is off screen, drift back toward the center of the window
+            const targetX = mouseRef.current.isOffScreen ? canvas.width / 2 : mouseRef.current.x;
+            const targetY = mouseRef.current.isOffScreen ? canvas.height / 2 : mouseRef.current.y;
+
+            // Ease the entire sphere towards the cursor
+            sphereCenter.x += (targetX - sphereCenter.x) * 0.06;
+            sphereCenter.y += (targetY - sphereCenter.y) * 0.06;
+
+            // Calculate rotation based on time (constant spin) and cursor position (tilt)
+            const rotationX = time * 0.4 + (targetY - canvas.height / 2) * 0.001;
+            const rotationY = time * 0.4 + (targetX - canvas.width / 2) * 0.001;
+
             particles.forEach((p) => {
-                // Mouse interaction physics (Antigravity & Flowing Orbit)
-                const dx = mouseRef.current.x - p.x;
-                const dy = mouseRef.current.y - p.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 350; // Size of the interactive field
+                // 1. Rotate the 3D coordinates
+                // Rotate around X-axis
+                const y1 = p.baseY * Math.cos(rotationX) - p.baseZ * Math.sin(rotationX);
+                const z1 = p.baseY * Math.sin(rotationX) + p.baseZ * Math.cos(rotationX);
 
-                if (distance < maxDistance && distance > 0) {
-                    const force = Math.pow((maxDistance - distance) / maxDistance, 1.5);
-                    const angle = Math.atan2(dy, dx);
+                // Rotate around Y-axis
+                const x2 = p.baseX * Math.cos(rotationY) + z1 * Math.sin(rotationY);
+                const z2 = -p.baseX * Math.sin(rotationY) + z1 * Math.cos(rotationY);
 
-                    // 1. Orbital velocity (creates a slow flowing swirl around cursor)
-                    const orbitAngle = angle + Math.PI / 2;
-                    const orbitStrength = 0.5 * force; // Slower swirl
-                    p.vx += Math.cos(orbitAngle) * orbitStrength;
-                    p.vy += Math.sin(orbitAngle) * orbitStrength;
+                // 2. Project to 2D
+                // Add a perspective divide (objects further away appear smaller/move less)
+                const depth = 600; // Perspective strength
+                const scale = depth / (depth + z2);
 
-                    // 2. Prevent clustering: soft repulse to keep center open
-                    const minDistance = 120; // The "eye" of the field
-                    let radialForce = 0;
-                    if (distance > minDistance) {
-                        radialForce = 0.15 * force; // Very soft pull inward
-                    } else {
-                        radialForce = -0.5 * (1 - distance / minDistance); // Soft push out
-                    }
+                const targetPx = sphereCenter.x + x2 * scale;
+                const targetPy = sphereCenter.y + y1 * scale;
 
-                    p.vx += Math.cos(angle) * radialForce;
-                    p.vy += Math.sin(angle) * radialForce;
+                // 3. Ease particle towards its targeted spot (gives a fluid, trailing swarm feel)
+                p.x += (targetPx - p.x) * 0.15;
+                p.y += (targetPy - p.y) * 0.15;
 
-                    // 3. Antigravity lift (particles float upwards gracefully near cursor)
-                    p.vy -= 0.6 * force; // Softer lift
-
-                    // 4. Cursor push (moving the mouse through them sweeps them)
-                    // (we don't have accurate velocity in this simple setup so we add a raw directional push from the cursor's center)
-                    const pushStrength = 0.3 * force;
-                    p.vx -= Math.cos(angle) * pushStrength;
-                    p.vy -= Math.sin(angle) * pushStrength;
-
-                    // Smooth size fluctuation
-                    p.size = p.baseSize + (force * 2.5);
-                } else {
-                    // Return to normal size smoothly when released
-                    if (p.size > p.baseSize) {
-                        p.size -= 0.05; // Return slower to normal size
-                    }
-                }
-
-                // --- Flow Field Physics (The "Saree Drape" / Wave Effect) ---
-                // Calculate an angle based on the particle's position and time
-                // This creates invisible flowing "currents" on the screen
-                const scale = 0.0015; // Looser waves
-                const flowAngle = Math.sin(p.x * scale + time) * Math.cos(p.y * scale + time) * Math.PI * 2;
-
-                // Add velocity based on the flow field angle (much slower, ambient drift)
-                const flowSpeed = 0.15; // Slow ambient movement
-                p.vx += Math.cos(flowAngle) * flowSpeed;
-                p.vy += Math.sin(flowAngle) * flowSpeed;
-
-                // Friction to prevent infinite acceleration (tuned for smooth, airy floating)
-                p.vx *= 0.92; // More glide
-                p.vy *= 0.92;
-
-                // Move
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // Wrap around edges smoothly
-                if (p.x < -50) p.x = canvas.width + 50;
-                if (p.x > canvas.width + 50) p.x = -50;
-                if (p.y < -50) p.y = canvas.height + 50;
-                if (p.y > canvas.height + 50) p.y = -50;
+                // 4. Update visuals based on depth
+                p.size = Math.max(0.5, p.baseSize * scale);
+                // Particles in the back of the sphere fade out
+                p.alpha = Math.max(0.1, Math.min(0.8, (0.4 + scale * 0.5) - 0.2));
 
                 // Draw Particle
                 ctx.save();
@@ -212,7 +180,7 @@ export default function ParticleBackground() {
                 ctx.restore();
             });
 
-            time += 0.005; // Advance time for flowing animation
+            time += 0.01; // Advance time for rotation
             animationFrameId = requestAnimationFrame(animate);
         };
 
