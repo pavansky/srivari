@@ -58,18 +58,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Dynamic product pages
     let productPages: MetadataRoute.Sitemap = [];
     try {
-        const res = await fetch(`${baseUrl}/api/products`, { next: { revalidate: 3600 } });
-        if (res.ok) {
-            const products = await res.json();
-            productPages = products.map((product: any) => ({
-                url: `${baseUrl}/product/${product.id}`,
-                lastModified: new Date(product.updatedAt || product.createdAt || new Date()),
-                changeFrequency: 'weekly' as const,
-                priority: 0.8,
-            }));
-        }
-    } catch {
-        // If API is unavailable during build, skip product pages
+        // MUST import dynamically or at the top. Let's import at top.
+        const { getProducts } = await import('@/lib/db');
+        const products = await getProducts();
+
+        productPages = products.map((product) => ({
+            url: `${baseUrl}/product/${product.id}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.8,
+        }));
+    } catch (e) {
+        console.error("Sitemap generation error:", e);
+        // If DB is unavailable, skip product pages gracefully
     }
 
     return [...staticPages, ...productPages];
