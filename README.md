@@ -37,6 +37,33 @@
 
 ---
 
+## The Srivari Platform Custom Features
+
+A catalog of the bespoke engineering implemented to ensure elite performance, a luxurious customer journey, and powerful administrative control.
+
+### 1. The Luxury Customer Experience
+
+*   **"The Atelier" Reservation System:** A dedicated, dark-mode portal (`/atelier`) for reserving exclusive, high-value handloom masterpieces. Integrated directly via WhatsApp to a senior stylist.
+*   **The Royal Stylist (Floating AI Concierge):** A custom-built floating chat interface simulating a white-glove stylist that parses user intent and recommends products directly in the chat UI.
+*   **Provenance Storytelling ("Journey of the Saree"):** An editorial section injected into product pages highlighting "The Loom", "The Zari", and "The Time" to elevate perceived value.
+*   **Virtual Try-On:** AI-powered visualizer allowing users to see themselves draped in the sarees.
+*   **World-Class Shop Filters:** Slide-out filter drawers, sticky command bars, view toggles (grid/list), and glassmorphism "Quick View" modals.
+
+### 2. Elite Performance Architecture
+
+*   **React Suspense & Streaming SSR:** `loading.tsx` shell skeleton UI pages permit the main container to load instantly from the CDN edge while complex database queries resolve in the background.
+*   **Smart Edge Prefetching:** Configured `<Link prefetch={true}>` on product cards to proactively download JSON data when scrolled into the viewport. Navigation is instant.
+*   **Blur-Up High-Res Images:** Next.js `placeholder="blur"` coupled with a brand-aligned base64-encoded SVG `blurDataURL` eliminates Cumulative Layout Shift (CLS).
+*   **SEO Mastery:** Comprehensive JSON-LD structured data, dynamic sitemap generation fetching all DB products, and hardcoded Google Site Verification.
+
+### 3. The Command Center (Admin Dashboard)
+
+*   **Dynamic Command Palette (Cmd+K):** A unified search bar to instantly jump to orders, products, or customers.
+*   **Live Analytics & Inventory Health:** Real-time metrics on revenue, low stock alerts, and customer insights.
+*   **Activity Feed:** A chronological ledger of all significant actions.
+
+---
+
 ## Architecture
 
 ```
