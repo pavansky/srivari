@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Hero from "@/components/Hero";
 import AntiGravityGallery from "@/components/AntiGravityGallery";
+
+export const metadata: Metadata = {
+  title: "Shop Authentic Kanjivaram & Banarasi Silk Sarees | The Srivari",
+  description: "Discover our breathtaking collection of premium handwoven pure silk sarees. The Srivari specializes in bridal kanjivaram, exquisite banarasi, and traditional pattu sarees.",
+};
 
 export default function Home() {
   return (

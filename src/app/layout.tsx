@@ -21,11 +21,21 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
     metadataBase: new URL('https://thesrivari.com'),
     title: {
-        default: "The Srivari | Royal Silk Sarees",
+        default: "The Srivari | Premium Silk & Bridal Sarees",
         template: "%s | The Srivari"
     },
-    description: "Exclusive collection of premium handwoven Kanjivaram, Banarasi, and pure silk sarees. Experience the ether of high fashion with The Srivari.",
-    keywords: ["kanjivaram silk", "banarasi silk", "luxury sarees", "indian bridal wear", "pure silk sarees", "handwoven sarees"],
+    description: "Shop authentic Kanjivaram, Banarasi, and pure silk sarees. The Srivari offers an exclusive collection of traditional Indian bridal wear, handloom silks, and designer sarees for modern royalty.",
+    keywords: [
+        // Primary
+        "sarees", "saree", "silk sarees", "bridal sarees", "wedding sarees",
+        // Varieties
+        "kanjivaram silk", "kanchipuram silk", "banarasi silk", "pattu sarees", "soft silk sarees",
+        "handloom sarees", "pure silk sarees", "designer sarees", "traditional sarees",
+        // Use cases
+        "indian bridal wear", "party wear sarees", "festive sarees", "luxury sarees",
+        // Locations / specific intent
+        "buy silk sarees online", "authentic kanjivaram", "premium indian ethnic wear"
+    ],
     authors: [{ name: "The Srivari" }],
     creator: "The Srivari",
     publisher: "The Srivari",
@@ -55,7 +65,7 @@ export const metadata: Metadata = {
         title: "The Srivari",
     },
     openGraph: {
-        title: "The Srivari | Royal Silk Sarees",
+        title: "The Srivari | Premium Silk & Bridal Sarees",
         description: "Weaving legacy into every thread. Authentic Kanjivaram and Banarasi silks for modern royalty. Explore our premium collection.",
         url: "https://thesrivari.com",
         siteName: "The Srivari",
@@ -72,7 +82,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: "summary_large_image",
-        title: "The Srivari | Royal Silk Sarees",
+        title: "The Srivari | Premium Silk & Bridal Sarees",
         description: "Experience the ether of high fashion with our premium collection of authentic handwoven silk sarees.",
         images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop"],
     },
