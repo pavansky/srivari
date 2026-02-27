@@ -12,6 +12,8 @@ export interface Product {
     priceCps?: number; // Cost Price from Seller
     shipping?: number; // Shipping cost paid
     weight?: number; // Weight in kg
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
 }
 
 export interface Collection {

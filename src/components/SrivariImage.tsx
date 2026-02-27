@@ -40,6 +40,9 @@ export default function SrivariImage({ src, alt, className, fallbackLabel = "The
         );
     }
 
+    // A simple, elegant solid color #F9F5F0 placeholder encoded in base64
+    const shimmer = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDBwJSIgaGVpZ2h0PSIxMDBwJSI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2Y5ZjVmMCIvPjwvc3ZnPg==`;
+
     return (
         <Image
             {...props}
@@ -47,6 +50,8 @@ export default function SrivariImage({ src, alt, className, fallbackLabel = "The
             alt={alt}
             className={className}
             onError={handleError}
+            placeholder="blur"
+            blurDataURL={shimmer}
         />
     );
 }

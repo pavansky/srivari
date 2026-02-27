@@ -87,8 +87,11 @@ export default function Navbar() {
                         <Link href="/shop" className={`hover:${hoverColor} transition-colors`}>
                             COLLECTIONS
                         </Link>
-                        <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
+                        <Link href="/atelier" className={`text-[#D4AF37] hover:text-white transition-colors font-bold`}>
                             ATELIER
+                        </Link>
+                        <Link href="/about" className={`hover:${hoverColor} transition-colors`}>
+                            ABOUT
                         </Link>
                         <Link href="/contact" className={`hover:${hoverColor} transition-colors`}>
                             CONTACT
@@ -149,8 +152,11 @@ export default function Navbar() {
                             <Link href="/shop" onClick={() => setIsMobileMenuOpen(false)} className="text-lg tracking-widest text-marble/80 hover:text-gold transition-colors border-b border-white/5 pb-4">
                                 COLLECTIONS
                             </Link>
-                            <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="text-lg tracking-widest text-marble/80 hover:text-gold transition-colors border-b border-white/5 pb-4">
+                            <Link href="/atelier" onClick={() => setIsMobileMenuOpen(false)} className="text-lg tracking-widest text-[#D4AF37] hover:text-white transition-colors border-b border-white/5 pb-4">
                                 ATELIER
+                            </Link>
+                            <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="text-lg tracking-widest text-marble/80 hover:text-gold transition-colors border-b border-white/5 pb-4">
+                                ABOUT
                             </Link>
                             <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="text-lg tracking-widest text-marble/80 hover:text-gold transition-colors border-b border-white/5 pb-4">
                                 CONTACT

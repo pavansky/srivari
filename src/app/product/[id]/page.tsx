@@ -368,6 +368,49 @@ export default function ProductPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Journey of the Saree / Provenance Section */}
+            <div className="bg-[#050505] text-[#FDFBF7] py-24 mt-20 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
+
+                {/* Diagonal abstract silk line decoration */}
+                <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div className="container mx-auto px-6 relative z-10">
+                    <div className="max-w-3xl mx-auto text-center mb-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                        <span className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.4em] mb-6 block">Provenance</span>
+                        <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">The Journey of the Saree</h2>
+                        <p className="font-light text-white/70 leading-relaxed text-sm md:text-base">
+                            Every masterpiece in our collection carries the legacy of centuries. From the careful selection of pure silk threads to the intricate winding of the authentic gold zari, witness the dedication woven into every inch.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-20 text-center max-w-5xl mx-auto">
+                        <div className="group">
+                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
+                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">I</span>
+                            </div>
+                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Loom</h3>
+                            <p className="text-sm font-light text-white/50 leading-loose">Woven on ancestral pit looms traversing generations of master artisan families in Kanchipuram.</p>
+                        </div>
+                        <div className="group">
+                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
+                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">II</span>
+                            </div>
+                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Zari</h3>
+                            <p className="text-sm font-light text-white/50 leading-loose">Authentic silver wire delicately electroplated with pure gold, defining the classic lustrous borders.</p>
+                        </div>
+                        <div className="group">
+                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
+                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">III</span>
+                            </div>
+                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Time</h3>
+                            <p className="text-sm font-light text-white/50 leading-loose">Taking upwards of 45 days, each complex motif is painstakingly hand-woven without jacquard machines.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <Footer />
             <WAButton />
         </main>

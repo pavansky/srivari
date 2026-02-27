@@ -51,7 +51,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
               <Eye size={18} />
             </button>
           ) : (
-            <Link href={`/product/${product.id}`}>
+            <Link href={`/product/${product.id}`} prefetch={true}>
               <button className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]">
                 <Eye size={18} />
               </button>
@@ -84,7 +84,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
         <p className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-sans">
           {product.category}
         </p>
-        <Link href={`/product/${product.id}`}>
+        <Link href={`/product/${product.id}`} prefetch={true}>
           <h3 className="text-lg font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors line-clamp-1 mb-2">
             {product.name}
           </h3>

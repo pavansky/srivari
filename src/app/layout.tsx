@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import { SocialFloating } from "@/components/SocialFloating";
 import ParticleBackground from "@/components/ParticleBackground";
 import InstallPrompt from "@/components/InstallPrompt";
+import AIStylist from "@/components/AIStylist";
 
 // Context Providers
 import { CartProvider } from "@/context/CartContext";
@@ -178,6 +179,7 @@ export default function RootLayout({
                             {children}
                             <InstallPrompt />
                             <SocialFloating />
+                            <AIStylist />
                         </WishlistProvider>
                     </CartProvider>
                 </AudioProvider>
