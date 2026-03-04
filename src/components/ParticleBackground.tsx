@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Particle {
     x: number;
@@ -16,7 +16,7 @@ interface Particle {
     rotationSpeed: number;
 }
 
-export default function ParticleBackground() {
+function ParticleCanvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const mouseRef = useRef({ x: -1000, y: -1000, isOffScreen: true });
 
@@ -209,4 +209,27 @@ export default function ParticleBackground() {
             className="fixed inset-0 pointer-events-none z-[40]"
         />
     );
+}
+
+export default function ParticleBackground() {
+    const [isVisible, setIsVisible] = useState(true);
+
+    useEffect(() => {
+        const handleToggle = (e: Event) => {
+            const customEvent = e as CustomEvent<{ hide: boolean }>;
+            if (customEvent && customEvent.detail && typeof customEvent.detail.hide === 'boolean') {
+                setIsVisible(!customEvent.detail.hide);
+            }
+        };
+
+        window.addEventListener('toggleParticles', handleToggle);
+
+        return () => {
+            window.removeEventListener('toggleParticles', handleToggle);
+        };
+    }, []);
+
+    if (!isVisible) return null;
+
+    return <ParticleCanvas />;
 }

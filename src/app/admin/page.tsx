@@ -196,6 +196,21 @@ export default function AdminDashboard() {
         checkAdminAuth();
     }, []);
 
+    // Control Particle Background visibility
+    useEffect(() => {
+        const toggleParticles = new CustomEvent('toggleParticles', {
+            detail: { hide: activeTab === 'inventory' }
+        });
+        window.dispatchEvent(toggleParticles);
+
+        return () => {
+            const resetParticles = new CustomEvent('toggleParticles', {
+                detail: { hide: false }
+            });
+            window.dispatchEvent(resetParticles);
+        };
+    }, [activeTab]);
+
     // Remove legacy localstorage sync
     /* 
     useEffect(() => {
