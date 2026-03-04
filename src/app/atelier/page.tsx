@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { Sparkles, Calendar, Phone, ArrowRight, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export default function AtelierPage() {
@@ -24,7 +23,6 @@ export default function AtelierPage() {
 
     return (
         <main className="bg-[#050505] min-h-screen text-[#FDFBF7]">
-            <Navbar />
 
             {/* Hero Section */}
             <section className="relative h-screen flex items-center justify-center overflow-hidden">

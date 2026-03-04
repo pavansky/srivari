@@ -205,7 +205,8 @@ export default function CartPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: userDetails.name,
+                    firstName: userDetails.name.split(' ')[0] || userDetails.name,
+                    lastName: userDetails.name.split(' ').slice(1).join(' ') || "",
                     phone: userDetails.phone,
                     email: userDetails.email,
                     address: userDetails.address,
@@ -213,9 +214,10 @@ export default function CartPage() {
                         name: i.name,
                         price: i.price,
                         quantity: i.quantity,
-                        productId: i.id
+                        id: i.id
                     })),
-                    total: calculateTotal()
+                    total: calculateTotal(),
+                    paymentMethod: 'WhatsApp'
                 })
             });
 

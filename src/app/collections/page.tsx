@@ -1,4 +1,3 @@
-import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { products } from '@/data/products';
@@ -6,7 +5,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: "Saree Collections | Kanjivaram, Banarasi, Silk & More",
-    description: "Explore The Srivari's complete range of authentic Indian sarees. From Kanjivaram silks to Banarasi brocades, find the perfect saree for every occasion \u2014 weddings, festivals, and celebrations.",
+    description: "Explore The Srivari's complete range of authentic Indian sarees. From Kanjivaram silks to Banarasi brocades, find the perfect saree for every occasion — weddings, festivals, and celebrations.",
     alternates: { canonical: "/collections" },
     openGraph: {
         title: "Saree Collections | The Srivari",
@@ -17,23 +16,31 @@ export const metadata: Metadata = {
 
 export default function Collections() {
     return (
-        <main>
-            <Header />
-            <div className="section-header" style={{ marginTop: '4rem' }}>
-                <h2>All Collections</h2>
-                <p>Explore our complete range of authentic sarees</p>
-            </div>
+        <main className="bg-[#FDFBF7] min-h-screen">
+            {/* Premium Hero Banner */}
+            <section className="relative bg-obsidian text-marble pt-32 pb-20 overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#D4AF37_1px,transparent_1px)] bg-[size:24px_24px]" />
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[100px] pointer-events-none" />
+                <div className="container mx-auto px-6 relative z-10 text-center">
+                    <span className="text-gold text-xs font-sans font-bold uppercase tracking-[0.4em] mb-4 block">Curated Collection</span>
+                    <h1 className="text-5xl md:text-7xl font-serif mb-4 text-white">All Collections</h1>
+                    <p className="text-xl max-w-2xl mx-auto font-light tracking-wide text-white/60 font-serif italic">
+                        Explore our complete range of authentic sarees
+                    </p>
+                    <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-8" />
+                </div>
+            </section>
 
-            <div className="container" style={{ marginBottom: '6rem' }}>
-                <div className="product-grid">
+            {/* Product Grid */}
+            <section className="container mx-auto px-6 py-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {products.map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>
-            </div>
+            </section>
+
             <Footer />
-
-
         </main>
     );
 }

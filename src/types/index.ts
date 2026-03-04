@@ -25,6 +25,7 @@ export interface Collection {
 
 export interface Order {
     id: string;
+    userId?: string;
     customerName: string;
     customerPhone: string;
     customerEmail?: string;
@@ -37,5 +38,8 @@ export interface Order {
     }[];
     totalAmount: number;
     date: string;
-    status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
+    status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Placed' | 'Paid';
+    paymentMethod?: 'Razorpay' | 'COD' | 'WhatsApp';
+    paymentStatus?: 'Pending' | 'Paid' | 'Failed';
+    razorpayOrderId?: string;
 }

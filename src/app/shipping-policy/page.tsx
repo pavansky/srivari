@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowLeft, Truck } from "lucide-react";
@@ -8,7 +7,6 @@ import { ArrowLeft, Truck } from "lucide-react";
 export default function ShippingPolicyPage() {
     return (
         <main className="bg-[#FFFFFA] min-h-screen flex flex-col">
-            <Navbar />
 
             <div className="flex-grow pt-32 pb-20 px-6">
                 <div className="max-w-4xl mx-auto">

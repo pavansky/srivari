@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { motion } from "framer-motion";
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, ShoppingBag, MapPin } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, Truck, ShieldCheck, ArrowLeft, ShoppingBag, MapPin, CheckCircle2, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import Script from "next/script";
 
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'COD'>('Razorpay');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -93,7 +94,7 @@ export default function CheckoutPage() {
                 items: cart,
                 total: total,
                 userId: user?.id,
-                paymentMethod: "Razorpay"
+                paymentMethod: paymentMethod
             };
 
             const response = await fetch("/api/orders/create", {
@@ -102,16 +103,54 @@ export default function CheckoutPage() {
                 body: JSON.stringify(orderPayload)
             });
 
-            if (response.ok) {
-                const { orderId } = await response.json();
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.message || "Checkout failed");
+
+            if (paymentMethod === 'COD') {
                 clearCart();
-                router.push(`/order-tracking?id=${orderId}`);
+                router.push(`/order-tracking?id=${data.orderId}`);
             } else {
-                throw new Error("Failed to create order");
+                // Initialize Razorpay
+                const options = {
+                    key: data.key,
+                    amount: data.amount,
+                    currency: "INR",
+                    name: "The Srivari",
+                    description: "Luxury Heirloom Purchase",
+                    order_id: data.razorpayOrderId,
+                    handler: async function (response: any) {
+                        const verifyRes = await fetch("/api/payment/verify", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+
+                        if (verifyRes.ok) {
+                            clearCart();
+                            router.push(`/order-tracking?id=${data.orderId}`);
+                        } else {
+                            alert("Payment verification failed. Please contact support.");
+                        }
+                    },
+                    prefill: {
+                        name: `${formData.firstName} ${formData.lastName}`,
+                        email: formData.email,
+                        contact: formData.phone,
+                    },
+                    theme: { color: "#4A0404" },
+                };
+
+                const rzp = new (window as any).Razorpay(options);
+                rzp.open();
+                setIsProcessing(false);
             }
-        } catch (error) {
-            alert("Checkout failed. Please try again.");
-        } finally {
+        } catch (error: any) {
+            alert(error.message || "Checkout failed. Please try again.");
             setIsProcessing(false);
         }
     };
@@ -119,7 +158,6 @@ export default function CheckoutPage() {
     if (cart.length === 0 && !isProcessing) {
         return (
             <main className="bg-[#FDFBF7] min-h-screen">
-                <Navbar />
                 <div className="container mx-auto px-6 py-32 text-center">
                     <ShoppingBag className="mx-auto w-16 h-16 text-[#D4AF37]/20 mb-6" />
                     <h1 className="text-3xl font-serif text-[#1A1A1A] mb-4">Your bag is empty</h1>
@@ -135,7 +173,7 @@ export default function CheckoutPage() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen text-[#1A1A1A] font-sans">
-            <Navbar />
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
             <div className="container mx-auto px-6 py-24 md:py-32">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-400 mb-8 border-b border-black/5 pb-4">
@@ -249,6 +287,47 @@ export default function CheckoutPage() {
                             </section>
 
                             <section>
+                                <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Payment Method</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMethod('Razorpay')}
+                                        className={`flex items-center justify-between p-5 border rounded-sm transition-all group ${paymentMethod === 'Razorpay'
+                                            ? "border-gold bg-gold/5 shadow-inner"
+                                            : "border-neutral-100 hover:border-gold/30"
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <WalletCards className={paymentMethod === 'Razorpay' ? "text-gold" : "text-neutral-400"} />
+                                            <div className="text-left">
+                                                <p className="text-xs font-bold uppercase tracking-wider">Online Payment</p>
+                                                <p className="text-[10px] text-neutral-500">UPI, Cards, NetBanking</p>
+                                            </div>
+                                        </div>
+                                        {paymentMethod === 'Razorpay' && <CheckCircle2 size={16} className="text-gold" />}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMethod('COD')}
+                                        className={`flex items-center justify-between p-5 border rounded-sm transition-all group ${paymentMethod === 'COD'
+                                            ? "border-gold bg-gold/5 shadow-inner"
+                                            : "border-neutral-100 hover:border-gold/30"
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Truck className={paymentMethod === 'COD' ? "text-gold" : "text-neutral-400"} />
+                                            <div className="text-left">
+                                                <p className="text-xs font-bold uppercase tracking-wider">Cash on Delivery</p>
+                                                <p className="text-[10px] text-neutral-500">Pay at your doorstep</p>
+                                            </div>
+                                        </div>
+                                        {paymentMethod === 'COD' && <CheckCircle2 size={16} className="text-gold" />}
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section>
                                 <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Contact</h2>
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Email Address</label>
@@ -275,7 +354,7 @@ export default function CheckoutPage() {
                                             <span className="w-4 h-4 border-2 border-[#D4AF37]/20 border-t-[#D4AF37] rounded-full animate-spin"></span>
                                             Processing...
                                         </span>
-                                    ) : "Complete Secure Order"}
+                                    ) : paymentMethod === 'COD' ? "Place COD Order" : "Proceed to Secure Payment"}
                                 </button>
                                 <div className="mt-6 flex items-center justify-center gap-6 opacity-30">
                                     <ShieldCheck size={20} />

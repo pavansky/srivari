@@ -168,8 +168,10 @@ export async function createOrder(order: Order) {
                 items: order.items,
                 amount: order.totalAmount, // Assuming logic
                 total: order.totalAmount,
-                status: order.status,
-                payment_method: (order as any).paymentMethod || "Razorpay"
+                status: order.status || 'Pending',
+                payment_method: (order as any).paymentMethod || "Razorpay",
+                payment_status: (order as any).paymentStatus || "Pending",
+                razorpay_order_id: (order as any).razorpayOrderId
             }
         });
 
@@ -204,18 +206,34 @@ export async function getOrder(id: string): Promise<Order | null> {
         customerName: customer?.name || "",
         customerPhone: customer?.phone || "",
         customerEmail: customer?.email || "",
+        customerAddress: customer?.address || "",
         totalAmount: order.total,
         status: order.status as any,
         date: order.createdAt.toISOString(),
-        items: order.items as any[]
+        items: order.items as any[],
+        paymentMethod: order.payment_method as any,
+        paymentStatus: order.payment_status as any,
+        razorpayOrderId: order.razorpay_order_id || undefined
     };
 }
 
-export async function updateOrder(order: Order) {
+export async function updateOrderPayment(razorpayOrderId: string, paymentId: string) {
+    return await prisma.order.update({
+        where: { razorpay_order_id: razorpayOrderId },
+        data: {
+            status: 'Paid',
+            payment_status: 'Paid',
+            // Store payment ID in metadata if needed
+        }
+    });
+}
+
+export async function updateOrder(order: Partial<Order> & { id: string }) {
     return await prisma.order.update({
         where: { id: order.id },
         data: {
             status: order.status,
+            payment_status: order.paymentStatus
         }
     });
 }

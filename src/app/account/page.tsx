@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -67,7 +66,6 @@ export default function AccountPage() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen text-[#1A1A1A] font-sans">
-            <Navbar />
 
             {/* Header */}
             <section className="bg-obsidian text-marble pt-32 pb-20 relative overflow-hidden">
@@ -210,7 +208,8 @@ function OrderCard({ order }: any) {
         "Shipped": "bg-blue-50 text-blue-700 border-blue-200",
         "Delivered": "bg-gold/10 text-gold border-gold/20",
         "Cancelled": "bg-red-50 text-red-700 border-red-200",
-        "Pending": "bg-neutral-50 text-neutral-700 border-neutral-200"
+        "Pending": "bg-amber-50 text-amber-700 border-amber-200",
+        "Placed": "bg-neutral-50 text-neutral-700 border-neutral-200"
     };
 
     return (
@@ -219,12 +218,18 @@ function OrderCard({ order }: any) {
                 <div>
                     <span className="text-[10px] text-neutral-400 font-bold tracking-widest uppercase block mb-1">Order ID</span>
                     <h4 className="font-bold text-lg">{order.id}</h4>
-                    <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
-                        <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                        <p className="text-[10px] text-neutral-500 flex items-center gap-1">
+                            <Clock size={10} /> {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                        <span className="w-1 h-1 rounded-full bg-neutral-300"></span>
+                        <p className="text-[10px] font-bold text- gold uppercase tracking-tighter">
+                            {order.payment_method === 'COD' ? 'Cash on Delivery' : order.payment_method}
+                        </p>
+                    </div>
                 </div>
                 <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColors[order.status] || statusColors.Pending}`}>
-                    {order.status}
+                    {order.status === 'Pending' && order.payment_method === 'Razorpay' ? 'Payment Pending' : order.status}
                 </div>
             </div>
 

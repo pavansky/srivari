@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Upload, Sparkles, Loader2, RefreshCw, Shirt, Camera } from "lucide-react";
 import { products } from "@/data/products"; // Using mock data directly for reliability
@@ -236,7 +235,6 @@ function TryOnContent() {
 export default function TryOnPage() {
     return (
         <main className="bg-[#FDFBF7] min-h-screen">
-            <Navbar />
             <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>
                 <TryOnContent />
             </Suspense>

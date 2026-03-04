@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Search, ShieldCheck, Truck, Package, CheckCircle, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,7 +73,6 @@ export default function OrderTrackingPage() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen flex flex-col font-sans">
-            <Navbar />
 
             <div className="flex-grow pt-32 pb-20 px-6 max-w-2xl mx-auto w-full">
 
