@@ -12,6 +12,8 @@ export interface Product {
     priceCps?: number; // Cost Price from Seller
     shipping?: number; // Shipping cost paid
     weight?: number; // Weight in kg
+    supplierId?: string;
+    supplierName?: string; // Convenience field for display
     createdAt?: string | Date;
     updatedAt?: string | Date;
 }
@@ -42,4 +44,16 @@ export interface Order {
     paymentMethod?: 'Razorpay' | 'COD' | 'WhatsApp';
     paymentStatus?: 'Pending' | 'Paid' | 'Failed';
     razorpayOrderId?: string;
+}
+
+export interface Supplier {
+    id: string;
+    name: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
 }

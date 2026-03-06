@@ -78,7 +78,7 @@ export default function AIStylist() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(true)}
-                className={`fixed bottom-6 lg:bottom-10 right-6 lg:right-10 z-[60] w-14 h-14 bg-[#1A1A1A] text-[#D4AF37] rounded-full shadow-2xl flex items-center justify-center border border-[#D4AF37] ${isOpen ? 'hidden' : 'flex'}`}
+                className={`fixed bottom-24 lg:bottom-28 right-6 lg:right-10 z-[60] w-14 h-14 bg-[#1A1A1A] text-[#D4AF37] rounded-full shadow-2xl flex items-center justify-center border border-[#D4AF37] ${isOpen ? 'hidden' : 'flex'}`}
             >
                 <div className="relative">
                     <Sparkles size={24} className="animate-pulse" />
@@ -97,7 +97,7 @@ export default function AIStylist() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.9 }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed bottom-6 lg:bottom-10 right-6 lg:right-10 z-[70] w-full max-w-[360px] md:max-w-[400px] h-[600px] max-h-[85vh] bg-[#FDFBF7] rounded-2xl shadow-2xl border border-[#D4AF37]/30 flex flex-col overflow-hidden"
+                        className="fixed bottom-24 lg:bottom-28 right-6 lg:right-10 z-[70] w-full max-w-[360px] md:max-w-[400px] h-[600px] max-h-[85vh] bg-[#FDFBF7] rounded-2xl shadow-2xl border border-[#D4AF37]/30 flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="bg-[#1A1A1A] p-4 flex items-center justify-between border-b border-[#D4AF37]/20">
@@ -120,8 +120,8 @@ export default function AIStylist() {
                             {messages.map((msg) => (
                                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.sender === 'user'
-                                            ? 'bg-[#1A1A1A] text-white rounded-tr-none'
-                                            : 'bg-white border border-[#D4AF37]/20 text-[#1A1A1A] rounded-tl-none'
+                                        ? 'bg-[#1A1A1A] text-white rounded-tr-none'
+                                        : 'bg-white border border-[#D4AF37]/20 text-[#1A1A1A] rounded-tl-none'
                                         }`}>
                                         <p className="text-sm font-sans leading-relaxed">{msg.text}</p>
 

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Product {
@@ -19,8 +20,23 @@ model Product {
   isFeatured  Boolean  @default(false)
   priceCps    Float?
   shipping    Float?
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Supplier {
+  id          String    @id @default(uuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+  notes       String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model User {

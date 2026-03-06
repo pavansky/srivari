@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCompletion } from '@ai-sdk/react';
-import { Product, Order } from '@/types';
+import { Product, Order, Supplier } from '@/types';
 import { products as initialProducts } from '@/data/products';
 import {
     Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
@@ -46,6 +46,7 @@ const GlassSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
 export default function AdminDashboard() {
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [categories, setCategories] = useState<string[]>(["Silk", "Banarasi", "Cotton", "Mysore Silk", "Tussar"]);
 
     // AI Integration (Standard Fetch)
@@ -84,7 +85,14 @@ export default function AdminDashboard() {
 
     // UI State
     const [isLightMode, setIsLightMode] = useState(false);
-    const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'analytics'>('inventory');
+    const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'analytics' | 'suppliers'>('inventory');
+
+    // Supplier Form State
+    const [isSupplierEditing, setIsSupplierEditing] = useState<string | null>(null);
+    const [supplierFormData, setSupplierFormData] = useState<Partial<Supplier>>({
+        name: '', contactName: '', email: '', phone: '', address: '', notes: ''
+    });
+    const [supplierSearch, setSupplierSearch] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [commandQuery, setCommandQuery] = useState('');
@@ -157,9 +165,10 @@ export default function AdminDashboard() {
     const fetchData = async () => {
         setError(null);
         try {
-            const [pRes, oRes] = await Promise.all([
+            const [pRes, oRes, sRes] = await Promise.all([
                 fetch('/api/products'),
-                fetch('/api/orders')
+                fetch('/api/orders'),
+                fetch('/api/admin/suppliers')
             ]);
 
             if (pRes.ok) {
@@ -171,6 +180,7 @@ export default function AdminDashboard() {
             }
 
             if (oRes.ok) setOrders(await oRes.json());
+            if (sRes.ok) setSuppliers(await sRes.json());
 
         } catch (error) {
             console.error("Failed to load data", error);
@@ -369,6 +379,7 @@ export default function AdminDashboard() {
         { label: 'Go to Inventory', action: () => { setActiveTab('inventory'); setIsCommandPaletteOpen(false); } },
         { label: 'Go to Orders', action: () => { setActiveTab('orders'); setIsCommandPaletteOpen(false); } },
         { label: 'Go to Analytics', action: () => { setActiveTab('analytics'); setIsCommandPaletteOpen(false); } },
+        { label: 'Go to Suppliers', action: () => { setActiveTab('suppliers'); setIsCommandPaletteOpen(false); } },
         { label: 'Add New Product', action: () => { setActiveTab('inventory'); resetForm(); setIsCommandPaletteOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
         { label: 'Toggle Dark/Light Mode', action: () => { setIsLightMode(!isLightMode); setIsCommandPaletteOpen(false); } },
         { label: 'Export Products CSV', action: () => { exportCSV('products'); setIsCommandPaletteOpen(false); } },
@@ -473,6 +484,7 @@ export default function AdminDashboard() {
                     <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'inventory' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Inventory</button>
                     <button onClick={() => setActiveTab('orders')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'orders' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Orders</button>
                     <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'analytics' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><BarChart3 size={14} className="inline mr-1.5 -mt-0.5" />Analytics</button>
+                    <button onClick={() => setActiveTab('suppliers')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'suppliers' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><Users size={14} className="inline mr-1.5 -mt-0.5" />Suppliers</button>
 
                     <div className="hidden md:block h-6 w-px bg-white/[0.06] mx-2"></div>
 
@@ -711,6 +723,19 @@ export default function AdminDashboard() {
                                                 </>
                                             )}
                                         </div>
+                                    </div>
+
+                                    {/* Supplier Dropdown */}
+                                    <div className="pt-2">
+                                        <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Supplier</label>
+                                        <div className="relative">
+                                            <GlassSelect value={formData.supplierId || ''} onChange={e => setFormData({ ...formData, supplierId: e.target.value || undefined })}>
+                                                <option value="" className="bg-[#0f0f0f]">No Supplier</option>
+                                                {suppliers.map(s => <option key={s.id} value={s.id} className="bg-[#0f0f0f]">{s.name}</option>)}
+                                            </GlassSelect>
+                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[#D4AF37] pointer-events-none" size={18} />
+                                        </div>
+                                        <p className="text-[10px] text-white/30 mt-1.5">Link this product to a supplier for tracking</p>
                                     </div>
 
                                     {/* Featured Toggle */}
@@ -1300,6 +1325,157 @@ export default function AdminDashboard() {
                         </div>
                     </GlassCard>
                 </div>
+            )}
+
+            {/* --- Suppliers Tab --- */}
+            {activeTab === 'suppliers' && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                    {/* Supplier Form */}
+                    <GlassCard className="p-8 md:p-10 border-[#D4AF37]/20">
+                        <h2 className="text-2xl md:text-3xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent mb-8 flex items-center gap-4 border-b border-white/10 pb-6">
+                            {isSupplierEditing ? <Edit2 size={28} className="text-[#D4AF37]" /> : <Plus size={28} className="text-[#D4AF37]" />}
+                            {isSupplierEditing ? 'Edit Supplier' : 'Add New Supplier'}
+                        </h2>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            try {
+                                const res = await fetch('/api/admin/suppliers', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        ...supplierFormData,
+                                        id: isSupplierEditing || undefined
+                                    })
+                                });
+                                if (res.ok) {
+                                    await fetchData();
+                                    setSupplierFormData({ name: '', contactName: '', email: '', phone: '', address: '', notes: '' });
+                                    setIsSupplierEditing(null);
+                                    const toast = document.createElement('div');
+                                    toast.className = 'fixed bottom-10 right-10 bg-[#D4AF37] text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)] z-50 animate-bounce';
+                                    toast.textContent = '✓ Supplier Saved';
+                                    document.body.appendChild(toast);
+                                    setTimeout(() => toast.remove(), 3000);
+                                } else {
+                                    const errData = await res.json();
+                                    alert(`Failed: ${errData.error}`);
+                                }
+                            } catch { alert('Error saving supplier'); }
+                        }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Company / Supplier Name *</label>
+                                <GlassInput placeholder="e.g. Kanjivaram Weavers Co-op" value={supplierFormData.name || ''} onChange={e => setSupplierFormData({ ...supplierFormData, name: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Contact Person</label>
+                                <GlassInput placeholder="e.g. Ramesh Kumar" value={supplierFormData.contactName || ''} onChange={e => setSupplierFormData({ ...supplierFormData, contactName: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Phone</label>
+                                <GlassInput placeholder="+91 98765 43210" value={supplierFormData.phone || ''} onChange={e => setSupplierFormData({ ...supplierFormData, phone: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Email</label>
+                                <GlassInput type="email" placeholder="supplier@example.com" value={supplierFormData.email || ''} onChange={e => setSupplierFormData({ ...supplierFormData, email: e.target.value })} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Address</label>
+                                <GlassInput placeholder="Full postal address" value={supplierFormData.address || ''} onChange={e => setSupplierFormData({ ...supplierFormData, address: e.target.value })} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Notes</label>
+                                <textarea
+                                    placeholder="Any internal notes about this supplier..."
+                                    rows={3}
+                                    value={supplierFormData.notes || ''}
+                                    onChange={e => setSupplierFormData({ ...supplierFormData, notes: e.target.value })}
+                                    className="w-full bg-black/50 border border-white/[0.08] p-4 rounded-xl text-white placeholder-white/25 focus:border-[#D4AF37]/60 focus:ring-2 focus:ring-[#D4AF37]/20 hover:border-white/15 outline-none transition-all duration-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] font-sans text-sm resize-none"
+                                />
+                            </div>
+                            <div className="md:col-span-2 flex justify-end gap-4 pt-4 border-t border-white/10">
+                                {isSupplierEditing && (
+                                    <button type="button" onClick={() => { setSupplierFormData({ name: '', contactName: '', email: '', phone: '', address: '', notes: '' }); setIsSupplierEditing(null); }} className="px-8 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all font-medium">Cancel</button>
+                                )}
+                                <button type="submit" className="bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] text-black font-bold px-10 py-3.5 rounded-xl hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                                    <Save size={18} /> {isSupplierEditing ? 'Update Supplier' : 'Add Supplier'}
+                                </button>
+                            </div>
+                        </form>
+                    </GlassCard>
+
+                    {/* Supplier List */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xl font-serif text-white">Supplier Directory</h3>
+                            <GlassInput className="w-64 py-2" placeholder="Search suppliers..." value={supplierSearch} onChange={e => setSupplierSearch(e.target.value)} />
+                        </div>
+
+                        {suppliers.length === 0 ? (
+                            <GlassCard className="p-12 text-center">
+                                <Users size={48} className="mx-auto text-white/20 mb-4" />
+                                <h4 className="text-lg font-serif text-white/60 mb-2">No Suppliers Yet</h4>
+                                <p className="text-sm text-white/30">Add your first supplier using the form above.</p>
+                            </GlassCard>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                                <AnimatePresence>
+                                    {suppliers
+                                        .filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()) || (s.contactName || '').toLowerCase().includes(supplierSearch.toLowerCase()))
+                                        .map(supplier => {
+                                            const linkedProducts = products.filter(p => p.supplierId === supplier.id);
+                                            return (
+                                                <motion.div key={supplier.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} layout>
+                                                    <div className="p-5 rounded-xl bg-gradient-to-r from-white/[0.04] to-transparent border border-white/[0.06] hover:border-[#D4AF37]/30 backdrop-blur-md flex flex-col md:flex-row items-start md:items-center gap-4 group transition-all duration-500">
+                                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#D4AF37]/5 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] shrink-0 font-serif text-xl font-bold">
+                                                            {supplier.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{supplier.name}</h4>
+                                                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                                                                {supplier.contactName && <span className="text-xs text-white/40">{supplier.contactName}</span>}
+                                                                {supplier.phone && <span className="text-xs text-white/30 px-2 py-0.5 rounded-full border border-white/10">{supplier.phone}</span>}
+                                                                {supplier.email && <span className="text-xs text-white/30">{supplier.email}</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-center px-4">
+                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Products</p>
+                                                            <span className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border ${linkedProducts.length > 0 ? 'border-[#D4AF37]/30 text-[#D4AF37] bg-[#D4AF37]/10' : 'border-white/10 text-white/30 bg-white/5'}`}>
+                                                                {linkedProducts.length}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSupplierFormData(supplier);
+                                                                    setIsSupplierEditing(supplier.id);
+                                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                }}
+                                                                className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]" aria-label="Edit supplier"
+                                                            ><Edit2 size={18} /></button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!confirm(`Delete supplier "${supplier.name}"? Products linked to this supplier will be unlinked.`)) return;
+                                                                    try {
+                                                                        await fetch('/api/admin/suppliers', {
+                                                                            method: 'DELETE',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ id: supplier.id })
+                                                                        });
+                                                                        fetchData();
+                                                                    } catch { alert('Delete failed'); }
+                                                                }}
+                                                                className="p-2 hover:bg-red-500/20 rounded-lg text-red-500" aria-label="Delete supplier"
+                                                            ><Trash2 size={18} /></button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
+                                </AnimatePresence>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
             )}
 
             {/* Command Palette (Ctrl+K) */}

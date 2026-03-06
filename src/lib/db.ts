@@ -1,5 +1,5 @@
 import prisma from './prisma';
-import { Product, Order } from '@/types';
+import { Product, Order, Supplier } from '@/types';
 import { products as initialProducts } from '@/data/products';
 
 // --- Products ---
@@ -13,7 +13,8 @@ import { products as initialProducts } from '@/data/products';
 export async function getProducts(): Promise<Product[]> {
     try {
         let products = await prisma.product.findMany({
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            include: { supplier: true }
         });
 
         // Auto-seed if empty (so Admin isn't blank for the user)
@@ -39,10 +40,10 @@ export async function getProducts(): Promise<Product[]> {
                 });
             }
             // Re-fetch after seeding
-            products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+            products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' }, include: { supplier: true } });
         }
 
-        return products.map(p => ({
+        return products.map((p: any) => ({
             id: p.id,
             name: p.name,
             description: p.description,
@@ -56,6 +57,8 @@ export async function getProducts(): Promise<Product[]> {
             video: p.video || undefined,
             priceCps: p.priceCps || undefined,
             shipping: p.shipping || undefined,
+            supplierId: p.supplierId || undefined,
+            supplierName: p.supplier?.name || undefined,
         }));
     } catch (error) {
         console.error("DB Error (Falling back to Mock Data):", error);
@@ -81,8 +84,7 @@ export async function getProducts(): Promise<Product[]> {
  * @returns {Promise<Product>} The saved product
  */
 export async function saveProduct(product: Product) {
-    if (product.id && product.id.length > 10) {
-        // Likely a UUID or existing ID
+    if (product.id) {
         // Check if exists
         const exists = await prisma.product.findUnique({ where: { id: product.id } });
         if (exists) {
@@ -96,9 +98,9 @@ export async function saveProduct(product: Product) {
                     stock: product.stock,
                     images: product.images,
                     isFeatured: product.isFeatured,
-                    // hashtags removed (not in schema)
                     priceCps: product.priceCps,
-                    shipping: product.shipping
+                    shipping: product.shipping,
+                    supplierId: product.supplierId || null
                 }
             });
         }
@@ -107,7 +109,7 @@ export async function saveProduct(product: Product) {
     // Create new
     return await prisma.product.create({
         data: {
-            id: product.id,
+            id: product.id || undefined,
             name: product.name,
             description: product.description,
             price: product.price,
@@ -115,9 +117,9 @@ export async function saveProduct(product: Product) {
             stock: product.stock,
             images: product.images,
             isFeatured: product.isFeatured,
-            // hashtags removed (not in schema)
             priceCps: product.priceCps,
-            shipping: product.shipping
+            shipping: product.shipping,
+            supplierId: product.supplierId || null
         }
     });
 }
@@ -170,7 +172,6 @@ export async function createOrder(order: Order) {
                 total: order.totalAmount,
                 status: order.status || 'Pending',
                 payment_method: (order as any).paymentMethod || "Razorpay",
-                payment_status: (order as any).paymentStatus || "Pending",
                 razorpay_order_id: (order as any).razorpayOrderId
             }
         });
@@ -212,7 +213,6 @@ export async function getOrder(id: string): Promise<Order | null> {
         date: order.createdAt.toISOString(),
         items: order.items as any[],
         paymentMethod: order.payment_method as any,
-        paymentStatus: order.payment_status as any,
         razorpayOrderId: order.razorpay_order_id || undefined
     };
 }
@@ -222,7 +222,6 @@ export async function updateOrderPayment(razorpayOrderId: string, paymentId: str
         where: { razorpay_order_id: razorpayOrderId },
         data: {
             status: 'Paid',
-            payment_status: 'Paid',
             // Store payment ID in metadata if needed
         }
     });
@@ -232,8 +231,71 @@ export async function updateOrder(order: Partial<Order> & { id: string }) {
     return await prisma.order.update({
         where: { id: order.id },
         data: {
-            status: order.status,
-            payment_status: order.paymentStatus
+            status: order.status
         }
     });
+}
+
+// --- Suppliers ---
+
+export async function getSuppliers(): Promise<Supplier[]> {
+    try {
+        const suppliers = await prisma.supplier.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: { _count: { select: { products: true } } }
+        });
+        return suppliers.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            contactName: s.contactName || undefined,
+            email: s.email || undefined,
+            phone: s.phone || undefined,
+            address: s.address || undefined,
+            notes: s.notes || undefined,
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt,
+            productCount: s._count?.products || 0,
+        }));
+    } catch (error) {
+        console.error("DB Error (Suppliers):", error);
+        return [];
+    }
+}
+
+export async function saveSupplier(supplier: Supplier) {
+    if (supplier.id) {
+        const exists = await prisma.supplier.findUnique({ where: { id: supplier.id } });
+        if (exists) {
+            return await prisma.supplier.update({
+                where: { id: supplier.id },
+                data: {
+                    name: supplier.name,
+                    contactName: supplier.contactName,
+                    email: supplier.email,
+                    phone: supplier.phone,
+                    address: supplier.address,
+                    notes: supplier.notes,
+                }
+            });
+        }
+    }
+    return await prisma.supplier.create({
+        data: {
+            name: supplier.name,
+            contactName: supplier.contactName,
+            email: supplier.email,
+            phone: supplier.phone,
+            address: supplier.address,
+            notes: supplier.notes,
+        }
+    });
+}
+
+export async function deleteSupplier(id: string) {
+    // Unlink products first, then delete
+    await prisma.product.updateMany({
+        where: { supplierId: id },
+        data: { supplierId: null }
+    });
+    await prisma.supplier.delete({ where: { id } });
 }
