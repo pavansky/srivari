@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useAudio } from '@/context/AudioContext';
 import { useState, useEffect } from 'react';
 import SrivariImage from '@/components/SrivariImage';
+import { SITE_CONFIG } from '@/config/site';
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
@@ -235,7 +236,6 @@ export default function CartPage() {
             playBell();
 
             // 2. Redirect to WhatsApp with Order ID
-            const phoneNumber = "919739988771";
             let message = "Namaste Srivari! \uD83C\uDF38\n";
             message += `I have placed Order #${orderId} via the website.\n`;
             message += "I am writing to confirm availability and finalize the payment.\n\n";
@@ -254,7 +254,7 @@ export default function CartPage() {
 
             message += `\n*\uD83D\uDCB0 Total Amount: \u20B9${calculateTotal().toLocaleString('en-IN')}*`;
 
-            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            const whatsappUrl = SITE_CONFIG.links.whatsapp(message);
             window.open(whatsappUrl, '_blank');
 
             // Close modal / Clear cart if needed (optional, keeping cart for now in case user comes back)

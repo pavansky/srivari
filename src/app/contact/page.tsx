@@ -2,7 +2,7 @@
 
 import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
-import WAButton from "@/components/WAButton";
+import { SITE_CONFIG } from "@/config/site";
 
 export default function ContactPage() {
     return (
@@ -35,14 +35,14 @@ export default function ContactPage() {
                         </div>
 
                         <div className="space-y-8">
-                            <a href="tel:+919739988771" className="block group">
+                            <a href={`tel:+${SITE_CONFIG.contact.phone}`} className="block group">
                                 <div className="flex items-start gap-4 p-6 bg-white border border-[#D4AF37]/20 rounded-xl shadow-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-[#D4AF37] hover:-translate-y-1">
                                     <div className="p-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full group-hover:bg-[#D4AF37] group-hover:text-[#1A1A1A] transition-colors">
                                         <Phone size={24} />
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold mb-1 font-serif text-[#1A1A1A]">Phone & WhatsApp</h3>
-                                        <p className="text-[#595959] font-sans group-hover:text-[#D4AF37] transition-colors">+91 97399 88771</p>
+                                        <p className="text-[#595959] font-sans group-hover:text-[#D4AF37] transition-colors">+{SITE_CONFIG.contact.phone.replace(/(\d{2})(\d{5})(\d{5})/, '$1 $2 $3')}</p>
                                         <p className="text-xs text-neutral-400 mt-1 uppercase tracking-wider">Mon - Sat, 10:00 AM - 7:00 PM</p>
                                     </div>
                                 </div>
@@ -111,7 +111,7 @@ export default function ContactPage() {
             </section>
 
             <Footer />
-            <WAButton />
+
         </main>
     );
 }

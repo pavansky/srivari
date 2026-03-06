@@ -4,7 +4,7 @@ import "./globals.css";
 
 // Components
 import Navbar from "@/components/Navbar";
-import { SocialFloating } from "@/components/SocialFloating";
+import WAButton from "@/components/WAButton";
 import ParticleBackground from "@/components/ParticleBackground";
 import InstallPrompt from "@/components/InstallPrompt";
 import AIStylist from "@/components/AIStylist";
@@ -180,7 +180,7 @@ export default function RootLayout({
                                 <Navbar />
                                 {children}
                                 <InstallPrompt />
-                                <SocialFloating />
+                                <WAButton />
                                 <AIStylist />
                             </WishlistProvider>
                         </CartProvider>

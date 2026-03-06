@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
-import WAButton from "@/components/WAButton";
+import { SITE_CONFIG } from "@/config/site";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
@@ -163,9 +163,8 @@ export default function ProductPage() {
     }
 
     // WhatsApp Order Logic
-    const phoneNumber = "919739988771";
     const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Qty: ${quantity}. Please confirm availability.`;
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = SITE_CONFIG.links.whatsapp(message);
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen">
@@ -417,7 +416,7 @@ export default function ProductPage() {
             </div>
 
             <Footer />
-            <WAButton />
+
         </main>
     );
 }
