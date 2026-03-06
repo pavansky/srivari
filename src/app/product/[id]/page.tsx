@@ -9,7 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import SrivariImage from "@/components/SrivariImage";
-import { Check, Truck, ShieldCheck, Share2, Heart, Sparkles } from "lucide-react";
+import { Check, Truck, ShieldCheck, Share2, Heart, Sparkles, X } from "lucide-react";
 import Accordion from "@/components/Accordion";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -245,9 +245,25 @@ export default function ProductPage() {
                                     <p className="text-3xl text-[#1A1A1A] font-[family-name:var(--font-playfair)]">
                                         ₹{product.price.toLocaleString('en-IN')}
                                     </p>
-                                    <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
-                                        <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">In Stock</span>
+                                    <div className="flex items-center gap-2">
+                                        {product.stock > 0 ? (
+                                            product.stock < 5 ? (
+                                                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/50">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></div>
+                                                    <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">Only {product.stock} left in stock</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200/50">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
+                                                    <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">In Stock</span>
+                                                </div>
+                                            )
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200/50">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-600"></div>
+                                                <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">Sold Out</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -267,44 +283,60 @@ export default function ProductPage() {
                             <div className="space-y-6">
                                 <div className="flex flex-col gap-3">
                                     {/* Quantity Selector */}
-                                    <div className="flex items-center gap-6 mb-4">
-                                        <span className="text-xs font-[family-name:var(--font-montserrat)] uppercase tracking-widest font-bold text-[#1A1A1A]">
-                                            Quantity
-                                        </span>
-                                        <div className="flex items-center border border-[#1A1A1A] bg-white">
-                                            <button
-                                                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
-                                                aria-label="Decrease quantity"
-                                            >-</button>
-                                            <span className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-playfair)] text-xl text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20">
-                                                {quantity}
+                                    {product.stock > 0 && (
+                                        <div className="flex items-center gap-6 mb-4">
+                                            <span className="text-xs font-[family-name:var(--font-montserrat)] uppercase tracking-widest font-bold text-[#1A1A1A]">
+                                                Quantity
                                             </span>
-                                            <button
-                                                onClick={() => setQuantity(q => q + 1)}
-                                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
-                                                aria-label="Increase quantity"
-                                            >+</button>
+                                            <div className="flex items-center border border-[#1A1A1A] bg-white">
+                                                <button
+                                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                                    className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                                    aria-label="Decrease quantity"
+                                                >-</button>
+                                                <span className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-playfair)] text-xl text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20">
+                                                    {quantity}
+                                                </span>
+                                                <button
+                                                    onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
+                                                    className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                                    aria-label="Increase quantity"
+                                                >+</button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    <a
-                                        href={whatsappUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full bg-[#1A1A1A] text-white h-14 flex items-center justify-center gap-4 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-500 shadow-xl shadow-black/5 group"
-                                    >
-                                        <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Acquire via WhatsApp</span>
-                                        <Share2 size={18} className="transition-transform group-hover:translate-x-1" />
-                                    </a>
+                                    {product.stock > 0 ? (
+                                        <>
+                                            <a
+                                                href={whatsappUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full bg-[#1A1A1A] text-white h-14 flex items-center justify-center gap-4 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-500 shadow-xl shadow-black/5 group"
+                                            >
+                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Acquire via WhatsApp</span>
+                                                <Share2 size={18} className="transition-transform group-hover:translate-x-1" />
+                                            </a>
 
-                                    <button
-                                        onClick={handleAddToCart}
-                                        className="w-full bg-transparent border border-[#1A1A1A] text-[#1A1A1A] h-14 flex items-center justify-center gap-4 hover:bg-[#1A1A1A] hover:text-white transition-all duration-500"
-                                    >
-                                        <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Add to Bag</span>
-                                        <Truck size={18} />
-                                    </button>
+                                            <button
+                                                onClick={handleAddToCart}
+                                                className="w-full bg-transparent border border-[#1A1A1A] text-[#1A1A1A] h-14 flex items-center justify-center gap-4 hover:bg-[#1A1A1A] hover:text-white transition-all duration-500"
+                                            >
+                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Add to Bag</span>
+                                                <Truck size={18} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="w-full bg-neutral-100 text-neutral-400 h-14 flex items-center justify-center gap-4 cursor-not-allowed border border-neutral-200">
+                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Currently Unavailable</span>
+                                                <X size={18} />
+                                            </div>
+                                            <p className="text-[10px] text-center text-neutral-400 font-medium tracking-wide">
+                                                This masterpiece has been acquired. <Link href="/shop" className="underline hover:text-[#D4AF37]">Explore similar treasures</Link>
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6">

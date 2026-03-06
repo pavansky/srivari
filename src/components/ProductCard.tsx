@@ -38,8 +38,16 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110"
+          className={`object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110 ${product.stock <= 0 ? 'grayscale opacity-70' : ''}`}
         />
+
+        {product.stock <= 0 && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
+            <div className="px-4 py-2 bg-white/90 backdrop-blur-sm border border-[#D4AF37]/30 shadow-xl">
+              <span className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-[0.3em]">Sold Out</span>
+            </div>
+          </div>
+        )}
 
         {/* Overlay Actions */}
         <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-3">
@@ -60,8 +68,9 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
           )}
           <button
             onClick={handleAddToCart}
+            disabled={product.stock <= 0}
             aria-label={`Add ${product.name} to cart`}
-            className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-50 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
+            className={`bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-50 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37] ${product.stock <= 0 ? 'cursor-not-allowed opacity-50 grayscale' : ''}`}
           >
             <ShoppingBag size={18} aria-hidden="true" />
           </button>

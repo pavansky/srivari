@@ -497,7 +497,8 @@ export default function CartPage() {
                                                     </span>
                                                     <button
                                                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                        className="w-10 h-10 flex items-center justify-center text-neutral-600 hover:bg-white hover:text-[#4A0404] transition-colors"
+                                                        disabled={item.quantity >= item.stock}
+                                                        className={`w-10 h-10 flex items-center justify-center text-neutral-600 transition-colors ${item.quantity >= item.stock ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white hover:text-[#4A0404]'}`}
                                                         aria-label="Increase quantity"
                                                     >+</button>
                                                 </div>

@@ -114,15 +114,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         playBell();
         setCart((prev) => {
             const existingItem = prev.find(item => item.id === product.id);
+            const currentQty = existingItem ? existingItem.quantity : 0;
+            const newTotalQty = currentQty + quantity;
+
+            // Strict Inventory Check
+            if (newTotalQty > (product.stock || 0)) {
+                console.warn(`Cannot add more than available stock (${product.stock})`);
+                const maxAddable = Math.max(0, product.stock - currentQty);
+                if (maxAddable <= 0) return prev; // Already at max
+
+                if (existingItem) {
+                    return prev.map(item =>
+                        item.id === product.id ? { ...item, quantity: product.stock } : item
+                    );
+                }
+                return [...prev, {
+                    ...product,
+                    uniqueId: Math.random().toString(36).substr(2, 9),
+                    quantity: product.stock
+                }];
+            }
+
             if (existingItem) {
-                // Update quantity if exists
                 return prev.map(item =>
                     item.id === product.id
                         ? { ...item, quantity: item.quantity + quantity }
                         : item
                 );
             }
-            // Add new item
             return [...prev, {
                 ...product,
                 uniqueId: Math.random().toString(36).substr(2, 9),
@@ -136,9 +155,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             removeFromCart(productId);
             return;
         }
-        setCart(prev => prev.map(item =>
-            item.id === productId ? { ...item, quantity } : item
-        ));
+
+        setCart(prev => prev.map(item => {
+            if (item.id === productId) {
+                // Ensure we don't exceed stock
+                const cappedQty = Math.min(quantity, item.stock || 0);
+                return { ...item, quantity: cappedQty };
+            }
+            return item;
+        }));
     };
 
     const removeFromCart = (productId: string) => {
