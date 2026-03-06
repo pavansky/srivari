@@ -93,11 +93,12 @@ export default function AIStylist() {
             setMessages(prev => [...prev, aiMsg]);
         } catch (error: any) {
             console.error("Stylist API Error:", error);
+            const detailText = error.message || "Unknown error";
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
                 sender: 'ai',
                 isError: true,
-                text: "Namaskaram. My apologies, the digital ink has blurred. Could you please rephrase your request so I can serve you better?"
+                text: `Namaskaram. My apologies, the digital ink has blurred (${detailText.substring(0, 50)}). Could you please rephrase your request?`
             }]);
         } finally {
             setIsTyping(false);
