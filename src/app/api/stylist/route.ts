@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 import { getProducts } from '@/lib/db';
 
 // Allow responses up to 30 seconds
@@ -28,49 +29,37 @@ export async function POST(req: Request) {
             name: p.name,
             category: p.category,
             price: p.price,
-            description: p.description.substring(0, 100) + "..."
+            description: p.description.substring(0, 150) + "..."
         }));
 
-        // 3. Prompt Gemini to recommend products
-        const systemPrompt = `
-            You are the "Royal Stylist" for 'The Srivari', a luxury saree boutique. 
-            Your goal is to provide elegant, sophisticated styling advice and recommend specific sarees from our collection.
-            
-            AVAILABLE COLLECTION:
-            ${JSON.stringify(productContext, null, 2)}
-            
-            INSTRUCTIONS:
-            - Be polite, warm, and use terms like "Namaskaram", "Atelier", "Masterpiece".
-            - Recommend between 1 to 3 products that best match the user's request.
-            - If no perfect match exists, suggest the closest luxury alternatives.
-            - YOUR RESPONSE MUST BE IN JSON FORMAT with the following structure:
-            {
-                "text": "Your elegant styling advice here...",
-                "recommendationIds": ["product-id-1", "product-id-2"]
-            }
-        `;
-
-        const result = await generateText({
-            model: google('gemini-1.5-pro'), // Use pro for better reasoning on product matching
-            system: systemPrompt,
+        // 3. Generate structured object with Gemini
+        const result = await generateObject({
+            model: google('gemini-1.5-flash'), // Flash is great for structured data extraction and faster
+            schema: z.object({
+                text: z.string().describe("Elegant styling advice and conversation"),
+                recommendations: z.array(z.object({
+                    id: z.string().describe("The product ID"),
+                    matchReason: z.string().describe("Short semantic reason why this product matches the query (e.g. 'Royal green silk matches your request for traditional elegance')"),
+                    confidence: z.number().min(0).max(1).describe("Semantic similarity score from 0 to 1")
+                })).max(3)
+            }),
+            system: `
+                You are the "Royal Stylist" for 'The Srivari', a luxury saree boutique. 
+                Your goal is to provide elegant, sophisticated styling advice.
+                
+                AVAILABLE COLLECTION:
+                ${JSON.stringify(productContext)}
+                
+                INSTRUCTIONS:
+                - Be polite, warm, and professional.
+                - Analyze the user's query for semantic intent (color, occasion, material, vibe).
+                - Recommend products that share high semantic similarity with the user's request.
+                - For each recommendation, provide a 'matchReason' that highlights the semantic connection.
+            `,
             prompt: userQuery,
         });
 
-        // Try to parse the AI response as JSON
-        let responseData;
-        try {
-            // Remove markdown code blocks if the AI included them
-            const cleanText = result.text.replace(/```json/g, '').replace(/```/g, '').trim();
-            responseData = JSON.parse(cleanText);
-        } catch (e) {
-            console.error("Failed to parse AI response as JSON:", result.text);
-            responseData = {
-                text: result.text,
-                recommendationIds: []
-            };
-        }
-
-        return Response.json(responseData);
+        return Response.json(result.object);
     } catch (error: any) {
         console.error("Stylist API Error:", error);
         return Response.json({ error: `API ERROR: ${error.message}` }, { status: 500 });

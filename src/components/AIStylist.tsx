@@ -1,17 +1,24 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, X, Send, Bot, User } from "lucide-react";
+import { Sparkles, X, Send, Bot, User, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SrivariImage from "./SrivariImage";
 import { Product } from "@/types";
 
+type Recommendation = {
+    id: string;
+    matchReason: string;
+    confidence: number;
+};
+
 type Message = {
     id: string;
     sender: 'ai' | 'user';
     text: string;
-    recommendationIds?: string[];
+    recommendations?: Recommendation[];
+    isError?: boolean;
 };
 
 export default function AIStylist() {
@@ -74,20 +81,23 @@ export default function AIStylist() {
 
             const data = await res.json();
 
+            if (data.error) throw new Error(data.error);
+
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 sender: 'ai',
                 text: data.text || "I apologize, I'm having a moment of reflection. How else can I assist you with our sacred collection?",
-                recommendationIds: data.recommendationIds || []
+                recommendations: data.recommendations || []
             };
 
             setMessages(prev => [...prev, aiMsg]);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Stylist API Error:", error);
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
                 sender: 'ai',
-                text: "Namaskaram. I am currently experiencing a brief connection issue with the Atelier. Please try again in a moment."
+                isError: true,
+                text: "Namaskaram. My apologies, the digital ink has blurred. Could you please rephrase your request so I can serve you better?"
             }]);
         } finally {
             setIsTyping(false);
@@ -146,29 +156,40 @@ export default function AIStylist() {
                                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.sender === 'user'
                                         ? 'bg-[#1A1A1A] text-white rounded-tr-none'
-                                        : 'bg-white border border-[#D4AF37]/20 text-[#1A1A1A] rounded-tl-none'
+                                        : msg.isError
+                                            ? 'bg-red-50 border border-red-200 text-red-800 rounded-tl-none'
+                                            : 'bg-white border border-[#D4AF37]/20 text-[#1A1A1A] rounded-tl-none'
                                         }`}>
                                         <p className="text-sm font-sans leading-relaxed">{msg.text}</p>
 
                                         {/* AI Recommendation Cards */}
-                                        {msg.recommendationIds && msg.recommendationIds.length > 0 && (
-                                            <div className="mt-4 pt-4 border-t border-black/10 space-y-3">
-                                                {msg.recommendationIds.map(id => {
-                                                    const recProduct = allProducts.find(p => p.id === id);
+                                        {msg.recommendations && msg.recommendations.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t border-black/10 space-y-4">
+                                                {msg.recommendations.map(rec => {
+                                                    const recProduct = allProducts.find(p => p.id === rec.id);
                                                     if (!recProduct) return null;
                                                     return (
-                                                        <Link key={id} href={`/product/${recProduct.id}`} onClick={() => setIsOpen(false)} className="block group bg-[#FDFBF7] p-3 rounded-xl border border-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-all">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="relative w-14 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0 border border-black/5">
-                                                                    <SrivariImage src={recProduct.images[0]} alt={recProduct.name} fill className="object-cover group-hover:scale-110 transition-transform" />
+                                                        <div key={rec.id} className="space-y-2">
+                                                            <Link href={`/product/${recProduct.id}`} onClick={() => setIsOpen(false)} className="block group bg-[#FDFBF7] p-3 rounded-xl border border-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-all">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="relative w-14 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0 border border-black/5">
+                                                                        <SrivariImage src={recProduct.images[0]} alt={recProduct.name} fill className="object-cover group-hover:scale-110 transition-transform" />
+                                                                    </div>
+                                                                    <div className="flex-1 overflow-hidden">
+                                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] mb-0.5 truncate">{recProduct.category}</p>
+                                                                        <p className="text-xs font-serif group-hover:text-[#4A0404] transition-colors line-clamp-1">{recProduct.name}</p>
+                                                                        <p className="text-[10px] font-bold text-gray-400 mt-1">₹{recProduct.price.toLocaleString('en-IN')}</p>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex-1 overflow-hidden">
-                                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] mb-0.5 truncate">{recProduct.category}</p>
-                                                                    <p className="text-xs font-serif group-hover:text-[#4A0404] transition-colors line-clamp-1">{recProduct.name}</p>
-                                                                    <p className="text-[10px] font-bold text-gray-400 mt-1">₹{recProduct.price.toLocaleString('en-IN')}</p>
-                                                                </div>
+                                                            </Link>
+                                                            {/* Semantic Similarity Reason */}
+                                                            <div className="flex items-start gap-1.5 px-2">
+                                                                <CheckCircle2 size={12} className="text-[#D4AF37] mt-0.5 flex-shrink-0" />
+                                                                <p className="text-[10px] font-medium text-gray-600 leading-tight italic">
+                                                                    {rec.matchReason}
+                                                                </p>
                                                             </div>
-                                                        </Link>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
