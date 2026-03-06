@@ -5,23 +5,40 @@ import { Sparkles, X, Send, Bot, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SrivariImage from "./SrivariImage";
-import { products } from "@/data/products";
+import { Product } from "@/types";
 
 type Message = {
     id: string;
     sender: 'ai' | 'user';
     text: string;
-    recommendationId?: string;
+    recommendationIds?: string[];
 };
 
 export default function AIStylist() {
     const [isOpen, setIsOpen] = useState(false);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [messages, setMessages] = useState<Message[]>([
         { id: "1", sender: "ai", text: "Namaskaram. I am the Royal Stylist of The Srivari. Are you seeking a bridal masterpiece, an authentic Banarasi, or something specific for an upcoming occasion?" }
     ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Fetch products once to use for rendering recommendations
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const res = await fetch('/api/products');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setAllProducts(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch products for stylist:", err);
+            }
+        };
+        fetchProducts();
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,7 +50,7 @@ export default function AIStylist() {
         }
     }, [messages, isOpen, isTyping]);
 
-    const handleSend = (e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputValue.trim()) return;
 
@@ -42,31 +59,39 @@ export default function AIStylist() {
         setInputValue("");
         setIsTyping(true);
 
-        // Simulate AI Response 
-        setTimeout(() => {
-            const query = userMsg.text.toLowerCase();
-            let aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "" };
+        try {
+            const res = await fetch('/api/stylist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: messages.map(m => ({
+                        role: m.sender === 'ai' ? 'assistant' : 'user',
+                        content: m.text
+                    })).concat({ role: 'user', content: userMsg.text }),
+                    prompt: userMsg.text
+                })
+            });
 
-            if (query.includes("wedding") || query.includes("bridal") || query.includes("bride")) {
-                aiMsg.text = "For a bride, a pure Kanjivaram zari is unparalleled. Here is my personal recommendation from our Atelier collection.";
-                // Find a bridal product
-                const bridalProduct = products.find(p => p.category === "Bridal Silk") || products[0];
-                if (bridalProduct) aiMsg.recommendationId = bridalProduct.id;
-            } else if (query.includes("party") || query.includes("light") || query.includes("organza")) {
-                aiMsg.text = "For effortless elegance, I suggest an exquisite soft silk or an organza masterpiece that flows beautifully.";
-                const partyProduct = products.find(p => p.category === "Soft Silk" || p.category === "Organza") || products[1];
-                if (partyProduct) aiMsg.recommendationId = partyProduct.id;
-            } else if (query.includes("budget") || query.includes("under")) {
-                aiMsg.text = "We have stunning authentic pieces across all ranges. This Banarasi silk offers regal splendor that is highly sought after.";
-                aiMsg.recommendationId = products[2]?.id;
-            } else {
-                aiMsg.text = "I have scanned our sacred collections. Based on classic aesthetics, this piece is universally admired and currently in our highest demand.";
-                aiMsg.recommendationId = products[Math.floor(Math.random() * products.length)]?.id;
-            }
+            const data = await res.json();
 
-            setIsTyping(false);
+            const aiMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                sender: 'ai',
+                text: data.text || "I apologize, I'm having a moment of reflection. How else can I assist you with our sacred collection?",
+                recommendationIds: data.recommendationIds || []
+            };
+
             setMessages(prev => [...prev, aiMsg]);
-        }, 1500);
+        } catch (error) {
+            console.error("Stylist API Error:", error);
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                sender: 'ai',
+                text: "Namaskaram. I am currently experiencing a brief connection issue with the Atelier. Please try again in a moment."
+            }]);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     return (
@@ -97,7 +122,7 @@ export default function AIStylist() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 50, scale: 0.9 }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed bottom-24 lg:bottom-28 right-6 lg:right-10 z-[70] w-full max-w-[360px] md:max-w-[400px] h-[600px] max-h-[85vh] bg-[#FDFBF7] rounded-2xl shadow-2xl border border-[#D4AF37]/30 flex flex-col overflow-hidden"
+                        className="fixed bottom-24 lg:bottom-28 right-6 lg:right-10 z-[70] w-full max-w-[360px] md:max-w-[400px] h-[600px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-[#D4AF37]/30 flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="bg-[#1A1A1A] p-4 flex items-center justify-between border-b border-[#D4AF37]/20">
@@ -125,27 +150,27 @@ export default function AIStylist() {
                                         }`}>
                                         <p className="text-sm font-sans leading-relaxed">{msg.text}</p>
 
-                                        {/* AI Recommendation Card */}
-                                        {msg.recommendationId && (
-                                            <div className="mt-4 pt-4 border-t border-black/10">
-                                                {(() => {
-                                                    const recProduct = products.find(p => p.id === msg.recommendationId);
+                                        {/* AI Recommendation Cards */}
+                                        {msg.recommendationIds && msg.recommendationIds.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t border-black/10 space-y-3">
+                                                {msg.recommendationIds.map(id => {
+                                                    const recProduct = allProducts.find(p => p.id === id);
                                                     if (!recProduct) return null;
                                                     return (
-                                                        <Link href={`/product/${recProduct.id}`} onClick={() => setIsOpen(false)} className="block group">
+                                                        <Link key={id} href={`/product/${recProduct.id}`} onClick={() => setIsOpen(false)} className="block group bg-[#FDFBF7] p-3 rounded-xl border border-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-all">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="relative w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                                                <div className="relative w-14 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0 border border-black/5">
                                                                     <SrivariImage src={recProduct.images[0]} alt={recProduct.name} fill className="object-cover group-hover:scale-110 transition-transform" />
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-xs font-bold uppercase tracking-wider text-[#4A0404] mb-1">{recProduct.category}</p>
-                                                                    <p className="text-sm font-serif group-hover:text-[#D4AF37] transition-colors line-clamp-2">{recProduct.name}</p>
-                                                                    <p className="text-xs font-bold text-gray-500 mt-1">₹{recProduct.price.toLocaleString()}</p>
+                                                                <div className="flex-1 overflow-hidden">
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] mb-0.5 truncate">{recProduct.category}</p>
+                                                                    <p className="text-xs font-serif group-hover:text-[#4A0404] transition-colors line-clamp-1">{recProduct.name}</p>
+                                                                    <p className="text-[10px] font-bold text-gray-400 mt-1">₹{recProduct.price.toLocaleString('en-IN')}</p>
                                                                 </div>
                                                             </div>
                                                         </Link>
-                                                    )
-                                                })()}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
