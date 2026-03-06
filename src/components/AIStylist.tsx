@@ -11,6 +11,7 @@ type Recommendation = {
     id: string;
     matchReason: string;
     confidence: number;
+    stylerTip?: string;
 };
 
 type Message = {
@@ -98,7 +99,7 @@ export default function AIStylist() {
                 id: (Date.now() + 1).toString(),
                 sender: 'ai',
                 isError: true,
-                text: `Namaskaram. My apologies, the digital ink has blurred (${detailText.substring(0, 50)}). Could you please rephrase your request?`
+                text: `Namaskaram. My apologies, our Atelier's digital records are briefly clouded (${detailText.substring(0, 50)}). Could you please rephrase your request so I may serve you with the excellence you deserve?`
             }]);
         } finally {
             setIsTyping(false);
@@ -161,7 +162,8 @@ export default function AIStylist() {
                                             ? 'bg-red-50 border border-red-200 text-red-800 rounded-tl-none'
                                             : 'bg-white border border-[#D4AF37]/20 text-[#1A1A1A] rounded-tl-none'
                                         }`}>
-                                        <p className="text-sm font-sans leading-relaxed">{msg.text}</p>
+                                        <p className="text-sm font-serif italic mb-1 opacity-60 uppercase tracking-[0.2em] text-[8px]">Royal Stylist Says</p>
+                                        <p className="text-sm font-serif leading-relaxed italic text-[#1A1A1A]">{msg.text}</p>
 
                                         {/* AI Recommendation Cards */}
                                         {msg.recommendations && msg.recommendations.length > 0 && (
@@ -184,11 +186,26 @@ export default function AIStylist() {
                                                                 </div>
                                                             </Link>
                                                             {/* Semantic Similarity Reason */}
-                                                            <div className="flex items-start gap-1.5 px-2">
-                                                                <CheckCircle2 size={12} className="text-[#D4AF37] mt-0.5 flex-shrink-0" />
-                                                                <p className="text-[10px] font-medium text-gray-600 leading-tight italic">
+                                                            <div className="flex flex-col gap-2 px-1">
+                                                                <div className="flex items-start gap-1.5 pt-1">
+                                                                    <div className="flex items-center gap-1 bg-[#D4AF37]/10 px-2 py-0.5 rounded-full border border-[#D4AF37]/20">
+                                                                        <CheckCircle2 size={10} className="text-[#D4AF37]" />
+                                                                        <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-tighter">
+                                                                            {Math.round(rec.confidence * 100)}% Match
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-[10px] font-medium text-gray-700 leading-tight">
                                                                     {rec.matchReason}
                                                                 </p>
+                                                                {rec.stylerTip && (
+                                                                    <div className="bg-[#1A1A1A]/5 p-2 rounded-lg border-l-2 border-[#D4AF37]">
+                                                                        <p className="text-[9px] font-bold text-[#1A1A1A]/40 uppercase tracking-widest mb-0.5">Styler's Tip</p>
+                                                                        <p className="text-[10px] italic text-gray-600 leading-snug">
+                                                                            {rec.stylerTip}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
