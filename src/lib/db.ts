@@ -84,42 +84,38 @@ export async function getProducts(): Promise<Product[]> {
  * @returns {Promise<Product>} The saved product
  */
 export async function saveProduct(product: Product) {
+    // Normalize data: ensure numbers are numbers and optional strings are handled
+    const normalizedData = {
+        name: product.name,
+        description: product.description,
+        price: Number(product.price) || 0,
+        category: product.category,
+        stock: Number(product.stock) || 0,
+        images: product.images,
+        isFeatured: Boolean(product.isFeatured),
+        priceCps: product.priceCps ? Number(product.priceCps) : null,
+        shipping: product.shipping ? Number(product.shipping) : null,
+        supplierId: (product.supplierId && product.supplierId.trim() !== "") ? product.supplierId : null
+    };
+
     if (product.id) {
         // Check if exists
         const exists = await prisma.product.findUnique({ where: { id: product.id } });
         if (exists) {
+            console.log(`Updating existing product: ${product.id}`);
             return await prisma.product.update({
                 where: { id: product.id },
-                data: {
-                    name: product.name,
-                    description: product.description,
-                    price: product.price,
-                    category: product.category,
-                    stock: product.stock,
-                    images: product.images,
-                    isFeatured: product.isFeatured,
-                    priceCps: product.priceCps,
-                    shipping: product.shipping,
-                    supplierId: product.supplierId || null
-                }
+                data: normalizedData
             });
         }
     }
 
     // Create new
+    console.log("Creating new product");
     return await prisma.product.create({
         data: {
+            ...normalizedData,
             id: product.id || undefined,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            category: product.category,
-            stock: product.stock,
-            images: product.images,
-            isFeatured: product.isFeatured,
-            priceCps: product.priceCps,
-            shipping: product.shipping,
-            supplierId: product.supplierId || null
         }
     });
 }
