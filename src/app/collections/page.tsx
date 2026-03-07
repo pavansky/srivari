@@ -3,6 +3,8 @@ import ProductCard from '@/components/ProductCard';
 import { getProducts } from '@/lib/db';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
     title: "Saree Collections | Kanjivaram, Banarasi, Silk & More",
     description: "Explore The Srivari's complete range of authentic Indian sarees. From Kanjivaram silks to Banarasi brocades, find the perfect saree for every occasion — weddings, festivals, and celebrations.",
