@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
+import { getProducts, saveProduct, deleteProduct, lastGetProductsError } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
             const prisma = (await import('@/lib/prisma')).default;
             try {
                 const count = await prisma.product.count();
-                return NextResponse.json({ debug: true, productCount: count, products, dbConnected: true });
+                return NextResponse.json({ debug: true, productCount: count, products, dbConnected: true, getProductsError: lastGetProductsError });
             } catch (dbError: any) {
                 return NextResponse.json({ 
                     debug: true, 

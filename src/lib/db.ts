@@ -8,7 +8,11 @@ import { Product, Order, Supplier } from '@/types';
  * 
  * @returns {Promise<any[]>} List of products
  */
+// Store last error for debug access
+export let lastGetProductsError: string | null = null;
+
 export async function getProducts(includeArchived: boolean = false): Promise<any[]> {
+    lastGetProductsError = null;
     try {
         let products;
         try {
@@ -19,20 +23,23 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
                 orderBy: { createdAt: 'desc' },
                 include: { supplier: true }
             });
-        } catch (tier1Error) {
-            console.warn("getProducts Tier1 failed (deletedAt+supplier):", tier1Error);
+        } catch (tier1Error: any) {
+            console.warn("getProducts Tier1 failed:", tier1Error?.message);
             try {
-                // Tier 2: Without deletedAt filter but with supplier
+                // Tier 2: No filter, just supplier relation
                 products = await prisma.product.findMany({
-                    orderBy: { createdAt: 'desc' },
                     include: { supplier: true }
                 });
-            } catch (tier2Error) {
-                console.warn("getProducts Tier2 failed (supplier):", tier2Error);
-                // Tier 3: Bare-bones query — no relations, no filters
-                products = await prisma.product.findMany({
-                    orderBy: { createdAt: 'desc' },
-                });
+            } catch (tier2Error: any) {
+                console.warn("getProducts Tier2 failed:", tier2Error?.message);
+                try {
+                    // Tier 3: Absolute bare-bones — no options at all
+                    products = await prisma.product.findMany();
+                } catch (tier3Error: any) {
+                    console.warn("getProducts Tier3 failed:", tier3Error?.message);
+                    lastGetProductsError = `T1:${tier1Error?.message} | T2:${tier2Error?.message} | T3:${tier3Error?.message}`;
+                    return [];
+                }
             }
         }
 
@@ -49,7 +56,7 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
             stock: p.stock,
             lowStockThreshold: p.lowStockThreshold ?? 5,
             locationBin: p.locationBin || undefined,
-            images: p.images as string[],
+            images: p.images as string[] || [],
             isFeatured: p.isFeatured,
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
@@ -60,8 +67,9 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
             supplierName: p.supplier?.name || undefined,
             isArchived: !!p.deletedAt,
         }));
-    } catch (error) {
-        console.error("getProducts FATAL - all tiers failed:", error);
+    } catch (error: any) {
+        console.error("getProducts FATAL:", error?.message);
+        lastGetProductsError = `FATAL: ${error?.message}`;
         return [];
     }
 }
