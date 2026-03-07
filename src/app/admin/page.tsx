@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useCompletion } from '@ai-sdk/react';
 import { Product, Order, Supplier } from '@/types';
-import { products as initialProducts } from '@/data/products';
 import { Plus, Search, MapPin, Check, PlusCircle, ArrowUpDown, ChevronDown, Save, X, Eye, Edit2, Trash2, Box, Users, Settings, LogOut, Package, TrendingUp, DollarSign, Clock, Calendar, BarChart3, Activity, Command, Layers, Truck, Filter, Download, ArrowUpRight, CheckSquare, Square, CheckCircle2, History, Link as LinkIcon, AlertCircle, ImageIcon, Copy, ExternalLink, Image as LucideImage, Zap, LayoutGrid, Paintbrush, Code, Loader2, PlayCircle, EyeOff, Tag, Upload, SearchCode, Sparkles, Repeat, Wand2, PlusSquare, MinusSquare, BoxSelect, Archive, FileText, Smartphone, AlignLeft, Bold, Italic, Link2, ListOrdered, List, Play, Type, AlignCenter, AlignRight, FileJson, Minus, Moon, Sun, Home, ShoppingCart, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';

@@ -1,53 +1,21 @@
 import prisma from './prisma';
 import { Product, Order, Supplier } from '@/types';
-import { products as initialProducts } from '@/data/products';
 
 // --- Products ---
 
 /**
  * Retrieves all products from the database, ordered by creation date (newest first).
- * If the database is empty, it seeds initial data from `@/data/products`.
  * 
- * @returns {Promise<Product[]>} List of products
+ * @returns {Promise<any[]>} List of products
  */
 export async function getProducts(includeArchived: boolean = false): Promise<any[]> {
     try {
         const whereClause = includeArchived ? {} : { deletedAt: null };
-        let products = await prisma.product.findMany({
+        const products = await prisma.product.findMany({
             where: whereClause as any,
             orderBy: { createdAt: 'desc' },
             include: { supplier: true }
         });
-
-        // Auto-seed if empty (so Admin isn't blank for the user)
-        if (products.length === 0) {
-            console.log("Seeding initial products...");
-            // We can't use createMany because of potential SQLite/Postgres differences in some envs, 
-            // but here we are on Postgres so createMany is fine.
-            // However, let's just map them.
-
-            for (const p of initialProducts) {
-                await prisma.product.create({
-                    data: {
-                        id: p.id,
-                        name: p.name,
-                        description: p.description,
-                        price: p.price,
-                        category: p.category,
-                        stock: p.stock,
-                        images: p.images,
-                        isFeatured: p.isFeatured,
-                        // hashtags removed
-                    }
-                });
-            }
-            // Re-fetch after seeding
-            products = await prisma.product.findMany({ 
-                where: whereClause as any,
-                orderBy: { createdAt: 'desc' }, 
-                include: { supplier: true } 
-            });
-        }
 
         return products.map((p: any) => ({
             id: p.id,
@@ -72,19 +40,8 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
             isArchived: !!p.deletedAt,
         }));
     } catch (error) {
-        console.error("DB Error (Falling back to Mock Data):", error);
-        // Fallback to initialProducts so the app works even offline/blocked
-        return initialProducts.map(p => ({
-            ...p,
-            images: p.images,
-            video: undefined,
-            priceCps: undefined,
-            shipping: undefined,
-            locationBin: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isArchived: false
-        }));
+        console.error("DB Error fetching products:", error);
+        return [];
     }
 }
 

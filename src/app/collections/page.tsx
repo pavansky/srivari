@@ -1,6 +1,6 @@
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { getProducts } from '@/lib/db';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,7 +14,9 @@ export const metadata: Metadata = {
     },
 };
 
-export default function Collections() {
+export default async function Collections() {
+    const products = await getProducts();
+
     return (
         <main className="bg-[#FDFBF7] min-h-screen">
             {/* Premium Hero Banner */}
