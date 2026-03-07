@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 // --- Product API ---
 
 /**

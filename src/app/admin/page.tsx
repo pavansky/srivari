@@ -853,7 +853,7 @@ export default function AdminDashboard() {
 
                                 {/* Right Column: Details */}
                                 <div className="md:col-span-6 space-y-8">
-                                    <div className="grid grid-cols-4 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                                         <div className="group col-span-1">
                                             <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium">Selling Price</label>
                                             <div className="relative">
@@ -1150,8 +1150,8 @@ export default function AdminDashboard() {
                                                         />
                                                     </div>
 
-                                                    <div className="flex-1 grid grid-cols-4 gap-4 items-center min-w-0">
-                                                        <div className="col-span-1 min-w-0">
+                                                    <div className="flex-1 grid grid-cols-6 gap-4 items-center min-w-0">
+                                                        <div className="col-span-3 min-w-0">
                                                             <div className="flex items-center gap-2">
                                                                 <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
                                                             </div>
