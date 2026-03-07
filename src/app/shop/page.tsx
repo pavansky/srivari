@@ -2,6 +2,8 @@ import { getProducts } from '@/lib/db';
 import ShopClient from './ShopClient';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
     title: "Shop Silk Sarees Online | Kanjivaram, Banarasi & Handloom",
     description: "Browse and buy authentic Kanjivaram silk, Banarasi, Mysore silk, and handloom sarees online. Free shipping on select orders. Curated collection of premium Indian bridal and festive sarees.",
