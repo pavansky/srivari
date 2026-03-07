@@ -13,10 +13,11 @@ export const dynamic = 'force-dynamic';
  * @returns {NextResponse} JSON array of products or 500 Error
  */
 export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const includeArchived = searchParams.get('archived') === 'true';
+    const { searchParams } = new URL(request.url);
+    const includeArchived = searchParams.get('archived') === 'true';
+    const debug = searchParams.get('debug') === 'true';
 
+    try {
         // Simple Rate Limiting (100 reqs/min)
         const ip = request.headers.get('x-forwarded-for') || 'anonymous';
         const limiter = rateLimit(ip, 100);
@@ -26,9 +27,32 @@ export async function GET(request: Request) {
         }
 
         const products = await getProducts(includeArchived);
+        
+        if (debug && products.length === 0) {
+            // Debug: Try a raw prisma query to see the exact error
+            const prisma = (await import('@/lib/prisma')).default;
+            try {
+                const count = await prisma.product.count();
+                return NextResponse.json({ debug: true, productCount: count, products, dbConnected: true });
+            } catch (dbError: any) {
+                return NextResponse.json({ 
+                    debug: true, 
+                    dbConnected: false, 
+                    error: dbError.message,
+                    code: dbError.code,
+                    meta: dbError.meta,
+                    hasDbUrl: !!process.env.DATABASE_URL,
+                    hasDirectUrl: !!process.env.DIRECT_URL
+                });
+            }
+        }
+
         return NextResponse.json(products);
-    } catch (e) {
+    } catch (e: any) {
         console.error(e);
+        if (debug) {
+            return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 });
+        }
         return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
     }
 }
