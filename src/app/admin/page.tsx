@@ -12,6 +12,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
 import Script from 'next/script';
 
+// --- Global Helpers ---
+const calculateMargin = (selling: number, cost: number = 0, shipping: number = 0) => {
+    const totalCost = cost + shipping;
+    const profit = selling - totalCost;
+    const margin = selling > 0 ? (profit / selling) * 100 : 0;
+    return { profit, margin };
+};
 // --- Reusable Glass Components ---
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
     <div className={`bg-gradient-to-br from-[#111111]/95 to-[#080808]/95 backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[0_8px_40px_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.05)] relative overflow-hidden group/card ${className}`}>
@@ -601,12 +608,6 @@ export default function AdminDashboard() {
     };
 
     // --- Markup Helpers ---
-    const calculateMargin = (selling: number, cost: number = 0, shipping: number = 0) => {
-        const totalCost = cost + shipping;
-        const profit = selling - totalCost;
-        const margin = selling > 0 ? (profit / selling) * 100 : 0;
-        return { profit, margin };
-    };
 
     if (!isAuthenticated) return (
         <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
