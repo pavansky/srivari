@@ -22,7 +22,8 @@ describe('Product API', () => {
             const mockData = [{ id: '1', name: 'Test' }];
             (getProducts as any).mockResolvedValue(mockData);
 
-            const response = await GET();
+            const req = new Request('http://localhost:3000/api/products');
+            const response = await GET(req);
             const json = await response.json();
 
             expect(response.status).toBe(200);
@@ -32,7 +33,8 @@ describe('Product API', () => {
         it('should return 500 on db error', async () => {
             (getProducts as any).mockRejectedValue(new Error('DB Failed'));
 
-            const response = await GET();
+            const req = new Request('http://localhost:3000/api/products');
+            const response = await GET(req);
 
             expect(response.status).toBe(500);
         });

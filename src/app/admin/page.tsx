@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react';
 import { useCompletion } from '@ai-sdk/react';
 import { Product, Order, Supplier } from '@/types';
 import { products as initialProducts } from '@/data/products';
-import {
-    Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Video,
-    Package, ShoppingCart, TrendingUp, DollarSign, Check, ChevronDown,
-    Sparkles, Wand2, Loader2, Upload, LogOut, Sun, Moon, Home,
-    BarChart3, AlertTriangle, Clock, Search, Command, Download,
-    Activity, Users, Repeat, ArrowUpRight, ArrowDownRight, Calendar
-} from 'lucide-react';
+import { Plus, Search, MapPin, Check, PlusCircle, ArrowUpDown, ChevronDown, Save, X, Eye, Edit2, Trash2, Box, Users, Settings, LogOut, Package, TrendingUp, DollarSign, Clock, Calendar, BarChart3, Activity, Command, Layers, Truck, Filter, Download, ArrowUpRight, CheckSquare, Square, CheckCircle2, History, Link as LinkIcon, AlertCircle, ImageIcon, Copy, ExternalLink, Image as LucideImage, Zap, LayoutGrid, Paintbrush, Code, Loader2, PlayCircle, EyeOff, Tag, Upload, SearchCode, Sparkles, Repeat, Wand2, PlusSquare, MinusSquare, BoxSelect, Archive, FileText, Smartphone, AlignLeft, Bold, Italic, Link2, ListOrdered, List, Play, Type, AlignCenter, AlignRight, FileJson, Minus, Moon, Sun, Home, ShoppingCart, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import SrivariImage from '@/components/SrivariImage';
@@ -86,6 +80,9 @@ export default function AdminDashboard() {
     // UI State
     const [isLightMode, setIsLightMode] = useState(false);
     const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'analytics' | 'suppliers'>('inventory');
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [selectedHistory, setSelectedHistory] = useState<any[]>([]);
+    const [selectedProductName, setSelectedProductName] = useState('');
 
     // Supplier Form State
     const [isSupplierEditing, setIsSupplierEditing] = useState<string | null>(null);
@@ -93,7 +90,18 @@ export default function AdminDashboard() {
         name: '', contactName: '', email: '', phone: '', address: '', notes: ''
     });
     const [supplierSearch, setSupplierSearch] = useState('');
+    
+    // Inventory Filtering & Sorting State
     const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [supplierFilter, setSupplierFilter] = useState('');
+    const [stockFilter, setStockFilter] = useState('all'); // 'all', 'in-stock', 'low-stock', 'out-of-stock'
+    const [sortBy, setSortBy] = useState('newest'); // 'newest', 'price-desc', 'price-asc', 'stock-desc', 'stock-asc', 'margin-desc'
+    
+    // Bulk Selection State
+    const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+    const [bulkSupplierId, setBulkSupplierId] = useState('');
+
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [commandQuery, setCommandQuery] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -102,7 +110,7 @@ export default function AdminDashboard() {
     // Form State
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Product>>({
-        name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false,
+        name: '', sku: '', barcode: '', price: 0, description: '', category: '', stock: 0, lowStockThreshold: 5, locationBin: '', images: [''], video: '', isFeatured: false,
         priceCps: 0, shipping: 0
     });
 
@@ -248,6 +256,7 @@ export default function AdminDashboard() {
             ...formData,
             price: Number(formData.price) || 0,
             stock: parseInt(String(formData.stock)) || 0,
+            lowStockThreshold: parseInt(String(formData.lowStockThreshold)) || 5,
             priceCps: Number(formData.priceCps) || 0,
             shipping: Number(formData.shipping) || 0,
             images: cleanedImages,
@@ -280,7 +289,7 @@ export default function AdminDashboard() {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', price: 0, description: '', category: '', stock: 0, images: [''], video: '', isFeatured: false, priceCps: 0, shipping: 0 });
+        setFormData({ name: '', sku: '', barcode: '', price: 0, description: '', category: '', stock: 0, lowStockThreshold: 5, locationBin: '', images: [''], video: '', isFeatured: false, priceCps: 0, shipping: 0 });
         setIsEditing(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -295,10 +304,113 @@ export default function AdminDashboard() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const viewHistory = async (id: string, name: string) => {
+        try {
+            const res = await fetch(`/api/products/history?id=${id}`);
+            if(res.ok) {
+                const data = await res.json();
+                setSelectedHistory(data);
+                setSelectedProductName(name);
+                setIsHistoryModalOpen(true);
+            }
+        } catch(e) { console.error(e) }
+    };
+
+    // Derived States
+    const filteredProducts = products
+        .filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = categoryFilter ? p.category === categoryFilter : true;
+            const matchesSupplier = supplierFilter ? p.supplierId === supplierFilter : true;
+            let matchesStock = true;
+            if (stockFilter === 'in-stock') matchesStock = p.stock > 0;
+            if (stockFilter === 'low-stock') matchesStock = p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5);
+            if (stockFilter === 'out-of-stock') matchesStock = p.stock === 0;
+
+            return matchesSearch && matchesCategory && matchesSupplier && matchesStock;
+        })
+        .sort((a, b) => {
+            const marginA = calculateMargin(a.price, a.priceCps, a.shipping).margin;
+            const marginB = calculateMargin(b.price, b.priceCps, b.shipping).margin;
+
+            switch (sortBy) {
+                case 'price-desc': return b.price - a.price;
+                case 'price-asc': return a.price - b.price;
+                case 'stock-desc': return b.stock - a.stock;
+                case 'stock-asc': return a.stock - b.stock;
+                case 'margin-desc': return marginB - marginA;
+                case 'newest':
+                default: {
+                    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return timeB - timeA;
+                }
+            }
+        });
+
+    // Helper for Bulk Actions
+    const handleBulkArchive = async () => {
+        if (!confirm(`Archive ${selectedProducts.length} items? They won't appear in the storefront but history remains.`)) return;
+        try {
+            await Promise.all(selectedProducts.map(id => fetch(`/api/products?id=${id}`, { method: 'DELETE' })));
+            setSelectedProducts([]);
+            fetchData();
+        } catch (err) { alert('Bulk archive failed'); }
+    };
+
+    const handleBulkSupplierAssign = async () => {
+        if (!bulkSupplierId) return alert('Select a supplier first');
+        try {
+            await Promise.all(selectedProducts.map(id => {
+                const p = products.find(prod => prod.id === id);
+                if (!p) return Promise.resolve();
+                return fetch('/api/products', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...p, supplierId: bulkSupplierId })
+                });
+            }));
+            setBulkSupplierId('');
+            setSelectedProducts([]);
+            fetchData();
+        } catch (err) { alert('Bulk assign failed'); }
+    };
+
+    const handleBulkFeatureToggle = async () => {
+        try {
+            await Promise.all(selectedProducts.map(id => {
+                const p = products.find(prod => prod.id === id);
+                if (!p) return Promise.resolve();
+                return fetch('/api/products', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...p, isFeatured: !p.isFeatured })
+                });
+            }));
+            setSelectedProducts([]);
+            fetchData();
+        } catch (err) { alert('Bulk feature toggle failed'); }
+    };
+
+    const updateInlineStock = async (productId: string, newStock: number) => {
+        if (newStock < 0) return;
+        const p = products.find(prod => prod.id === productId);
+        if (!p) return;
+        
+        // Optimistic UI Update
+        setProducts(products.map(prod => prod.id === productId ? { ...prod, stock: newStock } : prod));
+
+        try {
+            await fetch('/api/products', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...p, stock: newStock })
+            });
+        } catch (err) {
+            alert('Failed to update stock');
+            fetchData(); // Rollback
+        }
+    };
 
     // --- Stats Calculation ---
     const totalRevenue = orders
@@ -306,7 +418,7 @@ export default function AdminDashboard() {
         .reduce((sum, o) => sum + o.totalAmount, 0);
     const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Shipped').length;
     const stockValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
-    const lowStockProducts = products.filter(p => p.stock > 0 && p.stock < 5);
+    const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5));
     const outOfStockProducts = products.filter(p => p.stock === 0);
     const todaysOrders = orders.filter(o => {
         const d = new Date(o.date);
@@ -383,6 +495,7 @@ export default function AdminDashboard() {
         { label: 'Add New Product', action: () => { setActiveTab('inventory'); resetForm(); setIsCommandPaletteOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
         { label: 'Toggle Dark/Light Mode', action: () => { setIsLightMode(!isLightMode); setIsCommandPaletteOpen(false); } },
         { label: 'Export Products CSV', action: () => { exportCSV('products'); setIsCommandPaletteOpen(false); } },
+        { label: 'Import Products CSV', action: () => { document.getElementById('csv-import')?.click(); setIsCommandPaletteOpen(false); } },
         { label: 'Export Orders CSV', action: () => { exportCSV('orders'); setIsCommandPaletteOpen(false); } },
         { label: 'Go to Storefront', action: () => { window.location.href = '/'; } },
     ];
@@ -404,12 +517,12 @@ export default function AdminDashboard() {
         return () => window.removeEventListener('keydown', handler);
     }, []);
 
-    // --- CSV Export ---
+    // --- CSV Export & Import ---
     const exportCSV = (type: 'products' | 'orders') => {
         let csv = '';
         if (type === 'products') {
-            csv = 'Name,Category,Price,Stock,Featured\n' +
-                products.map(p => `"${p.name}","${p.category}",${p.price},${p.stock},${p.isFeatured}`).join('\n');
+            csv = 'SKU,Barcode,Name,Category,Price,Stock,Featured\n' +
+                products.map(p => `"${p.sku || ''}","${p.barcode || ''}","${p.name.replace(/"/g, '""')}","${p.category}",${p.price},${p.stock},${p.isFeatured}`).join('\n');
         } else {
             csv = 'OrderID,Customer,Phone,Amount,Status,Date\n' +
                 orders.map(o => `"${o.id}","${o.customerName}","${o.customerPhone}",${o.totalAmount},"${o.status}","${o.date}"`).join('\n');
@@ -421,6 +534,70 @@ export default function AdminDashboard() {
         a.download = `srivari-${type}-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const confirmImport = confirm("Are you sure you want to import this CSV? This will add or update products based on Name/SKU.");
+        if (!confirmImport) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target?.result as string;
+            if (!text) return;
+
+            // Simple CSV parser (doesn't handle commas inside quotes cleanly, but okay for basic use)
+            const rows = text.split('\\n');
+            const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+            
+            const importedProducts = rows.slice(1).filter(r => r.trim()).map(r => {
+                // Split by comma ignoring commas inside quotes
+                const values = r.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || [];
+                const p: any = {};
+                headers.forEach((h, i) => {
+                    p[h] = values[i];
+                });
+
+                return {
+                    sku: p.sku || undefined,
+                    barcode: p.barcode || undefined,
+                    name: p.name || 'Imported Product',
+                    category: p.category || 'Uncategorized',
+                    price: parseFloat(p.price) || 0,
+                    stock: parseInt(p.stock) || 0,
+                    description: p.description || 'Imported from CSV',
+                    isFeatured: p.featured?.toLowerCase() === 'true',
+                    images: [''] // Need an image field for validation downstream
+                };
+            });
+
+            if (importedProducts.length === 0) return alert("No valid products found in CSV.");
+
+            try {
+                // We'd ideally post in chunks for safety, but post the array for now
+                const res = await fetch('/api/products/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ products: importedProducts })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Import successful: ${data.successful} imported, ${data.failed} failed.`);
+                    if (data.errors?.length > 0) {
+                        console.error("Import errors:", data.errors);
+                    }
+                    fetchData();
+                } else {
+                    alert(`Import failed: ${data.error} - ${data.details || ''}`);
+                }
+            } catch (err) {
+                alert("Network error during import.");
+            }
+        };
+        reader.readAsText(file);
     };
 
     // --- Markup Helpers ---
@@ -553,6 +730,26 @@ export default function AdminDashboard() {
                                             <GlassInput placeholder="e.g. Royal Kanjivaram Silk" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="text-xl font-serif placeholder:font-sans" />
                                         </div>
 
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium flex justify-between">
+                                                    <span>SKU</span>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setFormData({...formData, sku: `SRI-${formData.category?.substring(0,3).toUpperCase() || 'GEN'}-${Math.floor(1000 + Math.random() * 9000)}`})}
+                                                        className="text-[9px] hover:text-white transition-colors"
+                                                    >
+                                                        Auto-Gen
+                                                    </button>
+                                                </label>
+                                                <GlassInput placeholder="Stock Keeping Unit" value={formData.sku || ''} onChange={e => setFormData({ ...formData, sku: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Barcode (UPC/EAN)</label>
+                                                <GlassInput placeholder="Scan or enter barcode" value={formData.barcode || ''} onChange={e => setFormData({ ...formData, barcode: e.target.value })} />
+                                            </div>
+                                        </div>
+
                                         <div className="relative pt-2">
                                             <div className="flex justify-between items-center mb-2">
                                                 <label className="text-xs text-white/50 uppercase tracking-widest font-medium">Curator's Description</label>
@@ -655,17 +852,25 @@ export default function AdminDashboard() {
 
                                 {/* Right Column: Details */}
                                 <div className="md:col-span-6 space-y-8">
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="group">
+                                    <div className="grid grid-cols-4 gap-6">
+                                        <div className="group col-span-1">
                                             <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium">Selling Price</label>
                                             <div className="relative">
                                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-serif">₹</span>
                                                 <GlassInput type="number" placeholder="0.00" value={formData.price || ''} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} required className="pl-10 text-lg font-medium" />
                                             </div>
                                         </div>
-                                        <div>
+                                        <div className="col-span-1">
                                             <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium">Inventory Stock</label>
                                             <GlassInput type="number" placeholder="Qty" value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} required className="text-lg" />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-xs text-[#D4AF37] uppercase tracking-widest block mb-2 font-medium" title="Alert when stock falls below this number">Low Stock at</label>
+                                            <GlassInput type="number" placeholder="5" value={formData.lowStockThreshold || ''} onChange={e => setFormData({ ...formData, lowStockThreshold: Number(e.target.value) })} className="text-lg" />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2 font-medium" title="Physical Warehouse Location">Location Bin</label>
+                                            <GlassInput placeholder="Aisle 4..." value={formData.locationBin || ''} onChange={e => setFormData({ ...formData, locationBin: e.target.value })} className="text-lg text-white" />
                                         </div>
                                     </div>
 
@@ -763,16 +968,140 @@ export default function AdminDashboard() {
                             </form>
                         </GlassCard>
 
-                        {/* Product Grid */}
+                        {/* Product Grid Header & Filters */}
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-xl font-serif text-white">Collection</h3>
-                                <GlassInput
-                                    className="w-64 py-2"
-                                    placeholder="Search collection..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-4">
+                                <div>
+                                    <h3 className="text-xl font-serif text-white">Collection ({filteredProducts.length})</h3>
+                                    <p className="text-xs text-white/40 mt-1">Manage your inventory and stock</p>
+                                </div>
+                                <div className="flex gap-3 items-center">
+                                    <input 
+                                        type="file" 
+                                        id="csv-import"
+                                        accept=".csv"
+                                        className="hidden"
+                                        onChange={handleImportCSV}
+                                    />
+                                    <button onClick={() => document.getElementById('csv-import')?.click()} className="px-3 py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/50 transition-all flex items-center gap-1.5 bg-white/[0.02] hover:bg-[#D4AF37]/5">
+                                        <Upload size={14} /> Import CSV
+                                    </button>
+                                    <button onClick={() => exportCSV('products')} className="px-3 py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white border border-white/10 hover:border-white/30 transition-all flex items-center gap-1.5 bg-white/[0.02]">
+                                        <Download size={14} /> Export
+                                    </button>
+                                </div>
+                                <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                                    <div className="relative shrink-0">
+                                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={14} />
+                                        <select
+                                            className="appearance-none bg-white/[0.03] border border-white/10 text-white text-xs py-2 pl-9 pr-8 rounded-lg outline-none focus:border-[#D4AF37]/50 focus:bg-white/[0.05] transition-all cursor-pointer"
+                                            value={categoryFilter}
+                                            onChange={(e) => setCategoryFilter(e.target.value)}
+                                        >
+                                            <option value="" className="bg-[#0f0f0f]">All Categories</option>
+                                            {categories.map(cat => <option key={cat} value={cat} className="bg-[#0f0f0f]">{cat}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={12} />
+                                    </div>
+                                    <div className="relative shrink-0">
+                                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={14} />
+                                        <select
+                                            className="appearance-none bg-white/[0.03] border border-white/10 text-white text-xs py-2 pl-9 pr-8 rounded-lg outline-none focus:border-[#D4AF37]/50 focus:bg-white/[0.05] transition-all cursor-pointer"
+                                            value={supplierFilter}
+                                            onChange={(e) => setSupplierFilter(e.target.value)}
+                                        >
+                                            <option value="" className="bg-[#0f0f0f]">All Suppliers</option>
+                                            {suppliers.map(s => <option key={s.id} value={s.id} className="bg-[#0f0f0f]">{s.name}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={12} />
+                                    </div>
+                                    <div className="relative shrink-0">
+                                        <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={14} />
+                                        <select
+                                            className="appearance-none bg-white/[0.03] border border-white/10 text-white text-xs py-2 pl-9 pr-8 rounded-lg outline-none focus:border-[#D4AF37]/50 focus:bg-white/[0.05] transition-all cursor-pointer"
+                                            value={stockFilter}
+                                            onChange={(e) => setStockFilter(e.target.value)}
+                                        >
+                                            <option value="all" className="bg-[#0f0f0f]">All Stock Status</option>
+                                            <option value="in-stock" className="bg-[#0f0f0f]">In Stock ({'>'}0)</option>
+                                            <option value="low-stock" className="bg-[#0f0f0f]">Low Stock ({'<'}5)</option>
+                                            <option value="out-of-stock" className="bg-[#0f0f0f]">Out of Stock (0)</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={12} />
+                                    </div>
+                                    <div className="relative shrink-0">
+                                        <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-[#D4AF37]/60" size={14} />
+                                        <select
+                                            className="appearance-none bg-white/[0.03] border border-white/10 text-white text-xs py-2 pl-9 pr-8 rounded-lg outline-none focus:border-[#D4AF37]/50 focus:bg-white/[0.05] transition-all cursor-pointer"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                        >
+                                            <option value="newest" className="bg-[#0f0f0f]">Newest First</option>
+                                            <option value="price-desc" className="bg-[#0f0f0f]">Price: High to Low</option>
+                                            <option value="price-asc" className="bg-[#0f0f0f]">Price: Low to High</option>
+                                            <option value="stock-desc" className="bg-[#0f0f0f]">Stock: High to Low</option>
+                                            <option value="stock-asc" className="bg-[#0f0f0f]">Stock: Low to High</option>
+                                            <option value="margin-desc" className="bg-[#0f0f0f]">Highest Margin</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={12} />
+                                    </div>
+                                    <GlassInput
+                                        className="w-48 py-2 shrink-0 border-white/10"
+                                        placeholder="Search..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Bulk Actions Header */}
+                            <div className="flex items-center gap-4 py-2 px-1">
+                                <button
+                                    onClick={() => {
+                                        if (selectedProducts.length === filteredProducts.length && filteredProducts.length > 0) {
+                                            setSelectedProducts([]);
+                                        } else {
+                                            setSelectedProducts(filteredProducts.map(p => p.id));
+                                        }
+                                    }}
+                                    className={`flex items-center gap-2 text-sm transition-colors ${selectedProducts.length > 0 && selectedProducts.length === filteredProducts.length ? 'text-[#D4AF37]' : 'text-white/50 hover:text-white'}`}
+                                >
+                                    {selectedProducts.length > 0 && selectedProducts.length === filteredProducts.length ? <CheckSquare size={16} /> : <Square size={16} />}
+                                    Select All
+                                </button>
+                                
+                                <AnimatePresence>
+                                    {selectedProducts.length > 0 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -10 }}
+                                            className="flex items-center gap-3 bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-4 py-1.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(212,175,55,0.1)]"
+                                        >
+                                            <span className="text-xs font-bold text-[#D4AF37] border-r border-[#D4AF37]/20 pr-3 mr-1">{selectedProducts.length} Selected</span>
+                                            
+                                            <button onClick={handleBulkArchive} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors px-2" title="Archive Selected">
+                                                <Archive size={12} /> Archive
+                                            </button>
+                                            
+                                            <button onClick={handleBulkFeatureToggle} className="text-xs text-white/70 hover:text-white flex items-center gap-1 transition-colors px-2 border-l border-[#D4AF37]/20" title="Toggle Featured Status">
+                                                <Sparkles size={12} /> Toggle Featured
+                                            </button>
+
+                                            <div className="flex items-center gap-1 border-l border-[#D4AF37]/20 pl-3">
+                                                <select
+                                                    className="appearance-none bg-black/40 border border-white/10 text-white text-xs py-1 pl-2 pr-6 rounded outline-none focus:border-[#D4AF37]/50"
+                                                    value={bulkSupplierId}
+                                                    onChange={(e) => setBulkSupplierId(e.target.value)}
+                                                >
+                                                    <option value="">Assign To Supplier...</option>
+                                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                </select>
+                                                <button onClick={handleBulkSupplierAssign} disabled={!bulkSupplierId} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-xs transition-colors disabled:opacity-50">Apply</button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -790,7 +1119,27 @@ export default function AdminDashboard() {
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 layout
                                             >
-                                                <div className="p-5 rounded-xl bg-gradient-to-r from-white/[0.04] to-transparent border border-white/[0.06] hover:border-[#D4AF37]/30 backdrop-blur-md flex items-center gap-6 group transition-all duration-500 shadow-lg hover:shadow-[0_8px_40px_rgba(212,175,55,0.06)]">
+                                                <div className="p-5 rounded-xl bg-gradient-to-r from-white/[0.04] to-transparent border border-white/[0.06] hover:border-[#D4AF37]/30 backdrop-blur-md flex items-center gap-6 group transition-all duration-500 shadow-lg hover:shadow-[0_8px_40px_rgba(212,175,55,0.06)] relative overflow-hidden">
+                                                    {product.isFeatured && (
+                                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#D4AF37]/20 to-transparent flex justify-end p-2 pointer-events-none">
+                                                            <Sparkles size={12} className="text-[#D4AF37]" />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Bulk Selection Checkbox */}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (selectedProducts.includes(product.id)) {
+                                                                setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                                                            } else {
+                                                                setSelectedProducts([...selectedProducts, product.id]);
+                                                            }
+                                                        }}
+                                                        className={`shrink-0 transition-colors ${selectedProducts.includes(product.id) ? 'text-[#D4AF37]' : 'text-white/20 hover:text-white/50'}`}
+                                                    >
+                                                        {selectedProducts.includes(product.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                                                    </button>
+
                                                     <div className="w-14 h-14 relative rounded-xl overflow-hidden bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] group-hover:shadow-[0_0_20px_rgba(212,175,55,0.15)] transition-all duration-500 border border-white/[0.05] shrink-0">
                                                         <SrivariImage
                                                             src={product.images.find(img => img && img.trim() !== "") || ""}
@@ -800,10 +1149,16 @@ export default function AdminDashboard() {
                                                         />
                                                     </div>
 
-                                                    <div className="flex-1 grid grid-cols-4 gap-4 items-center">
-                                                        <div className="col-span-1">
-                                                            <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
-                                                            <p className="text-[10px] tracking-widest uppercase text-[#D4AF37]/70 mt-1">{product.category}</p>
+                                                    <div className="flex-1 grid grid-cols-4 gap-4 items-center min-w-0">
+                                                        <div className="col-span-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                {product.sku && <span className="text-[9px] bg-[#D4AF37]/10 text-[#D4AF37] px-1.5 py-0.5 rounded border border-[#D4AF37]/20 font-mono tracking-wider">{product.sku}</span>}
+                                                                <p className="text-[10px] tracking-widest uppercase text-white/50 truncate border-l border-white/10 pl-2">{product.category}</p>
+                                                                {product.locationBin && <p className="text-[10px] tracking-widest uppercase text-amber-500/70 truncate border-l border-white/10 pl-2" title="Storage Location"><MapPin size={10} className="inline mr-1 -mt-0.5" />{product.locationBin}</p>}
+                                                            </div>
                                                         </div>
                                                         <div className="text-center">
                                                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Selling</p>
@@ -811,8 +1166,12 @@ export default function AdminDashboard() {
                                                         </div>
                                                         <div className="text-center">
                                                             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Stock</p>
-                                                            <div className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border ${product.stock < 5 ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
-                                                                {product.stock}
+                                                            <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                                <button onClick={() => updateInlineStock(product.id, product.stock - 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Decrease Stock"><Minus size={12} /></button>
+                                                                <div className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border transition-colors ${product.stock <= (product.lowStockThreshold ?? 5) ? 'border-red-500/30 text-red-400 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
+                                                                    {product.stock}
+                                                                </div>
+                                                                <button onClick={() => updateInlineStock(product.id, product.stock + 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Increase Stock"><Plus size={12} /></button>
                                                             </div>
                                                         </div>
                                                         <div className="text-center">
@@ -825,18 +1184,19 @@ export default function AdminDashboard() {
 
                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => { setFormData(product); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]" aria-label="Edit product"><Edit2 size={18} /></button>
+                                                        <button onClick={() => viewHistory(product.id, product.name)} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white" aria-label="View history"><History size={18} /></button>
                                                         <button
                                                             onClick={async () => {
-                                                                if (!confirm('Delete?')) return;
+                                                                if (!confirm('Archive this product? It will be hidden from the store but accounting records will remain safe.')) return;
                                                                 try {
                                                                     await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
                                                                     fetchData();
-                                                                } catch (err) { alert('Delete failed'); }
+                                                                } catch (err) { alert('Archive failed'); }
                                                             }}
-                                                            className="p-2 hover:bg-red-500/20 rounded-lg text-red-500"
-                                                            aria-label="Delete product"
+                                                            className="p-2 hover:bg-orange-500/20 rounded-lg text-orange-400"
+                                                            aria-label="Archive product"
                                                         >
-                                                            <Trash2 size={18} />
+                                                            <Archive size={18} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1476,6 +1836,51 @@ export default function AdminDashboard() {
                         )}
                     </div>
                 </motion.div>
+            )}
+
+            {/* History Modal */}
+            {isHistoryModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                    <GlassCard className="max-w-2xl w-full p-8 border-[#D4AF37]/50 shadow-[0_0_50px_rgba(212,175,55,0.15)] flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                            <div>
+                                <h3 className="text-xl text-[#D4AF37] font-serif flex items-center gap-2"><History size={20} /> Inventory Audit Log</h3>
+                                <p className="text-xs text-white/50 mt-1 uppercase tracking-widest">{selectedProductName}</p>
+                            </div>
+                            <button onClick={() => setIsHistoryModalOpen(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors" aria-label="Close history modal"><X className="text-white/50 hover:text-white" size={20} /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                            {selectedHistory.length === 0 ? (
+                                <p className="text-white/40 text-center py-8 text-sm">No transaction history found.</p>
+                            ) : (
+                                selectedHistory.map((log) => (
+                                    <div key={log.id} className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-start gap-4">
+                                        <div className={`mt-1 p-2 rounded-full ${log.quantity > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                            {log.quantity > 0 ? <TrendingUp size={14} /> : <Activity size={14} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h5 className="font-bold text-sm text-white flex items-center gap-2">
+                                                    {log.type} 
+                                                    <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${log.quantity > 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                        {log.quantity > 0 ? '+' : ''}{log.quantity}
+                                                    </span>
+                                                </h5>
+                                                <span className="text-[10px] text-white/40">{new Date(log.timestamp).toLocaleString()}</span>
+                                            </div>
+                                            <p className="text-xs text-white/60 mb-1">{log.notes || 'No description provided.'}</p>
+                                            <div className="flex items-center gap-3 text-[10px] text-white/30 uppercase tracking-wider font-mono">
+                                                <span>Actor: {log.actor}</span>
+                                                {log.reference && <span>Ref: {log.reference}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </GlassCard>
+                </div>
             )}
 
             {/* Command Palette (Ctrl+K) */}

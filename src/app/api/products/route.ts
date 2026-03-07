@@ -49,6 +49,21 @@ export async function POST(request: Request) {
 }
 
 /**
+ * PUT Handler
+ * Same as POST, handles updates for inline stock editing and bulk operations.
+ */
+export async function PUT(request: Request) {
+    try {
+        const body = await request.json();
+        const saved = await saveProduct(body);
+        return NextResponse.json({ success: true, product: saved });
+    } catch (e) {
+        console.error("PUT /api/products ERROR:", e);
+        return NextResponse.json({ error: 'Failed to update', details: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    }
+}
+
+/**
  * DELETE Handler
  * Deletes a product by ID (passed as query param).
  * 

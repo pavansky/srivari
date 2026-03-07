@@ -13,6 +13,7 @@ import { products as initialProducts } from '@/data/products';
 export async function getProducts(): Promise<Product[]> {
     try {
         let products = await prisma.product.findMany({
+            where: { deletedAt: null } as any,
             orderBy: { createdAt: 'desc' },
             include: { supplier: true }
         });
@@ -40,16 +41,24 @@ export async function getProducts(): Promise<Product[]> {
                 });
             }
             // Re-fetch after seeding
-            products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' }, include: { supplier: true } });
+            products = await prisma.product.findMany({ 
+                where: { deletedAt: null } as any,
+                orderBy: { createdAt: 'desc' }, 
+                include: { supplier: true } 
+            });
         }
 
         return products.map((p: any) => ({
             id: p.id,
+            sku: p.sku || undefined,
+            barcode: p.barcode || undefined,
             name: p.name,
             description: p.description,
             price: p.price,
             category: p.category,
             stock: p.stock,
+            lowStockThreshold: p.lowStockThreshold ?? 5,
+            locationBin: p.locationBin || undefined,
             images: p.images as string[],
             isFeatured: p.isFeatured,
             createdAt: p.createdAt,
@@ -69,6 +78,7 @@ export async function getProducts(): Promise<Product[]> {
             video: undefined,
             priceCps: undefined,
             shipping: undefined,
+            locationBin: undefined,
             createdAt: new Date(),
             updatedAt: new Date()
         }));
@@ -83,18 +93,22 @@ export async function getProducts(): Promise<Product[]> {
  * @param {Product} product - The product object to save
  * @returns {Promise<Product>} The saved product
  */
-export async function saveProduct(product: Product) {
+export async function saveProduct(product: any) {
     // Normalize data: ensure numbers are numbers and optional strings are handled
     const normalizedData = {
         name: product.name,
+        sku: (product.sku && product.sku.trim() !== "") ? product.sku : null,
+        barcode: (product.barcode && product.barcode.trim() !== "") ? product.barcode : null,
         description: product.description,
         price: Number(product.price) || 0,
         category: product.category,
         stock: Number(product.stock) || 0,
+        lowStockThreshold: Number(product.lowStockThreshold) || 5,
         images: product.images,
         isFeatured: Boolean(product.isFeatured),
         priceCps: product.priceCps ? Number(product.priceCps) : null,
         shipping: product.shipping ? Number(product.shipping) : null,
+        locationBin: (product.locationBin && product.locationBin.trim() !== "") ? product.locationBin : null,
         supplierId: (product.supplierId && product.supplierId.trim() !== "") ? product.supplierId : null
     };
 
@@ -103,25 +117,66 @@ export async function saveProduct(product: Product) {
         const exists = await prisma.product.findUnique({ where: { id: product.id } });
         if (exists) {
             console.log(`Updating existing product: ${product.id}`);
-            return await prisma.product.update({
-                where: { id: product.id },
-                data: normalizedData
+            
+            // Start transaction to log stock change if applicable
+            return await prisma.$transaction(async (tx) => {
+                const stockDiff = normalizedData.stock - exists.stock;
+                
+                const updatedProduct = await tx.product.update({
+                    where: { id: product.id },
+                    data: normalizedData
+                });
+
+                if (stockDiff !== 0) {
+                     await (tx as any).inventoryTransaction.create({
+                         data: {
+                             productId: product.id,
+                             quantity: stockDiff,
+                             type: "MANUAL",
+                             actor: product.actor || "System/Admin", // Pass 'actor' via payload if available
+                             notes: `Manual stock update: ${stockDiff > 0 ? '+' : ''}${stockDiff}`
+                         }
+                     });
+                }
+
+                return updatedProduct;
             });
         }
     }
 
     // Create new
     console.log("Creating new product");
-    return await prisma.product.create({
-        data: {
-            ...normalizedData,
-            id: product.id || undefined,
+    return await prisma.$transaction(async (tx) => {
+        const newProduct = await tx.product.create({
+            data: {
+                ...normalizedData,
+                id: product.id || undefined,
+            }
+        });
+
+        // Log initial stock if > 0
+        if (newProduct.stock > 0) {
+            await (tx as any).inventoryTransaction.create({
+                 data: {
+                     productId: newProduct.id,
+                     quantity: newProduct.stock,
+                     type: "RESTOCK",
+                     actor: product.actor || "System/Admin",
+                     notes: "Initial inventory setup"
+                 }
+            });
         }
+
+        return newProduct;
     });
 }
 
 export async function deleteProduct(id: string) {
-    await prisma.product.delete({ where: { id } });
+    // Soft delete instead of physical deletion
+    await prisma.product.update({ 
+        where: { id },
+        data: { deletedAt: new Date() } as any
+    });
 }
 
 // --- Orders ---
@@ -183,6 +238,18 @@ export async function createOrder(order: Order) {
                                 decrement: item.quantity
                             }
                         }
+                    });
+
+                    // Log InventoryTransaction
+                    await (tx as any).inventoryTransaction.create({
+                         data: {
+                             productId: item.productId,
+                             quantity: -item.quantity,
+                             type: "ORDER",
+                             actor: "Customer Order",
+                             reference: order.id,
+                             notes: `Order #${order.id}`
+                         }
                     });
                 }
             }

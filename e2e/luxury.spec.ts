@@ -21,7 +21,7 @@ test.describe('The Luxury Experience Flows', () => {
         // Evaluate interception before click
         await page.evaluate(() => {
             window.open = function (url, target) {
-                window.__interceptedUrl = url;
+                (window as any).__interceptedUrl = url;
                 return null; // Don't actually open it
             };
         });
@@ -29,7 +29,7 @@ test.describe('The Luxury Experience Flows', () => {
         await page.getByRole('button', { name: /Reserve via WhatsApp/i }).click();
 
         // Verify the URL constructed correctly
-        const interceptedUrl = await page.evaluate(() => window.__interceptedUrl);
+        const interceptedUrl = await page.evaluate(() => (window as any).__interceptedUrl);
         expect(interceptedUrl).toContain('wa.me');
         expect(interceptedUrl).toContain('Lady%20Diana');
         expect(interceptedUrl).toContain('Bridal%20Kanjivaram');

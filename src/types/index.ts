@@ -1,5 +1,7 @@
 export interface Product {
     id: string;
+    sku?: string;
+    barcode?: string;
     name: string;
     price: number;
     images: string[];
@@ -7,6 +9,8 @@ export interface Product {
     description: string;
     category: string;
     stock: number;
+    lowStockThreshold?: number;
+    locationBin?: string;
     isFeatured: boolean;
     hashtags?: string[];
     priceCps?: number; // Cost Price from Seller

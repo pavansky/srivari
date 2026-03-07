@@ -9,21 +9,39 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  price       Float
-  description String
-  category    String
-  stock       Int      @default(0)
-  images      String[]
-  video       String?
-  isFeatured  Boolean  @default(false)
-  priceCps    Float?
-  shipping    Float?
-  supplierId  String?
-  supplier    Supplier? @relation(fields: [supplierId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String                 @id @default(uuid())
+  sku               String?                @unique
+  barcode           String?
+  name              String
+  price             Float
+  description       String
+  category          String
+  stock             Int                    @default(0)
+  lowStockThreshold Int                    @default(5)
+  images            String[]
+  video             String?
+  isFeatured        Boolean                @default(false)
+  priceCps          Float?
+  shipping          Float?
+  locationBin       String?                // e.g., "Aisle 4, Shelf B"
+  supplierId        String?
+  supplier          Supplier?              @relation(fields: [supplierId], references: [id])
+  transactions      InventoryTransaction[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  deletedAt         DateTime?              // Soft-delete mechanism 
+}
+
+model InventoryTransaction {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      // Positive for restock, Negative for orders/deductions
+  type      String   // "MANUAL", "ORDER", "RESTOCK"
+  actor     String?  // The user/system who performed the transaction
+  reference String?  // Order ID, Import Batch ID, etc
+  notes     String?
+  createdAt DateTime @default(now())
 }
 
 model Supplier {
