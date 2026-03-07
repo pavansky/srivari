@@ -188,10 +188,11 @@ export default function AdminDashboard() {
     const fetchData = async () => {
         setError(null);
         try {
+            const t = Date.now();
             const [pRes, oRes, sRes] = await Promise.all([
-                fetch('/api/products?archived=true'),
-                fetch('/api/orders'),
-                fetch('/api/admin/suppliers')
+                fetch(`/api/products?archived=true&t=${t}`),
+                fetch(`/api/orders?t=${t}`),
+                fetch(`/api/admin/suppliers?t=${t}`)
             ]);
 
             if (pRes.ok) {

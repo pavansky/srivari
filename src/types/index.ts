@@ -20,6 +20,7 @@ export interface Product {
     supplierName?: string; // Convenience field for display
     createdAt?: string | Date;
     updatedAt?: string | Date;
+    isArchived?: boolean;
 }
 
 export interface Collection {
