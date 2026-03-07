@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { Upload, Sparkles, Loader2, RefreshCw, Shirt, Camera } from "lucide-react";
-import { products } from "@/data/products"; // Using mock data directly for reliability
+import { Product } from "@/types";
 
 function TryOnContent() {
     const searchParams = useSearchParams();
@@ -17,6 +17,14 @@ function TryOnContent() {
     const [selectedProduct, setSelectedProduct] = useState<string | null>(productParam);
     const [isGenerating, setIsGenerating] = useState(false);
     const [resultImage, setResultImage] = useState<string | null>(null);
+    const [products, setProducts] = useState<Product[]>([]);
+
+    useEffect(() => {
+        fetch(`/api/products?t=${Date.now()}`)
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setProducts(data))
+            .catch(() => setProducts([]));
+    }, []);
 
     // Helper: Convert File/Blob to Base64
     const toBase64 = (file: Blob): Promise<string> => {

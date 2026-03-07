@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { Product } from "@/types";
-import { products as initialProducts } from "@/data/products";
 import { useAudio } from "@/context/AudioContext";
 
 // We only store the ID and quantity in localStorage to save space
@@ -41,16 +40,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const loadCart = async () => {
             const storedCartJSON = localStorage.getItem('srivari_cart');
-            const storedProductsJSON = localStorage.getItem('srivari_products');
 
-            let allProducts = [...initialProducts];
-            if (storedProductsJSON) {
-                try {
-                    const localProducts = JSON.parse(storedProductsJSON);
-                    allProducts = localProducts.length > 0 ? localProducts : initialProducts;
-                } catch (e) {
-                    console.error("Failed to parse products", e);
-                }
+            // Fetch live products from the DB API
+            let allProducts: Product[] = [];
+            try {
+                const res = await fetch(`/api/products?t=${Date.now()}`);
+                if (res.ok) allProducts = await res.json();
+            } catch (e) {
+                console.error("Failed to fetch products for cart hydration", e);
             }
 
             if (storedCartJSON) {
@@ -61,19 +58,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     for (const item of storedItems) {
                         const pid = item.productId || (item as any).id;
                         let product = getProductById(pid, allProducts);
-
-                        // If not in local data, attempt to fetch from DB (graceful fallback)
-                        if (!product) {
-                            try {
-                                const res = await fetch('/api/products');
-                                if (res.ok) {
-                                    const dbProducts = await res.json();
-                                    product = dbProducts.find((p: Product) => p.id === pid);
-                                }
-                            } catch (e) {
-                                console.error("Could not fetch product for cart hydration", e);
-                            }
-                        }
 
                         if (product) {
                             hydratedCart.push({
