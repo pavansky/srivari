@@ -10,12 +10,23 @@ import { Product, Order, Supplier } from '@/types';
  */
 export async function getProducts(includeArchived: boolean = false): Promise<any[]> {
     try {
-        const whereClause = includeArchived ? {} : { deletedAt: null };
-        const products = await prisma.product.findMany({
-            where: whereClause as any,
-            orderBy: { createdAt: 'desc' },
-            include: { supplier: true }
-        });
+        let products;
+        try {
+            // Primary query: filter by deletedAt if column exists
+            const whereClause = includeArchived ? {} : { deletedAt: null };
+            products = await prisma.product.findMany({
+                where: whereClause as any,
+                orderBy: { createdAt: 'desc' },
+                include: { supplier: true }
+            });
+        } catch (filterError) {
+            // Fallback: deletedAt column may not exist yet in production
+            console.warn("getProducts: deletedAt filter failed, fetching all products:", filterError);
+            products = await prisma.product.findMany({
+                orderBy: { createdAt: 'desc' },
+                include: { supplier: true }
+            });
+        }
 
         return products.map((p: any) => ({
             id: p.id,
