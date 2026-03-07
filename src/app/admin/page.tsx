@@ -342,7 +342,7 @@ export default function AdminDashboard() {
             if (stockFilter === 'in-stock') matchesStock = p.stock > 0 && !p.isArchived;
             else if (stockFilter === 'low-stock') matchesStock = p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5) && !p.isArchived;
             else if (stockFilter === 'out-of-stock') matchesStock = p.stock === 0 && !p.isArchived;
-            else if (stockFilter === 'archived') matchesStock = p.isArchived;
+            else if (stockFilter === 'archived') matchesStock = !!p.isArchived;
             else matchesStock = !p.isArchived; // 'all' default
 
             return matchesSearch && matchesCategory && matchesSupplier && matchesStock;
