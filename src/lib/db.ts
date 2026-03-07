@@ -12,21 +12,31 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
     try {
         let products;
         try {
-            // Primary query: filter by deletedAt if column exists
+            // Tier 1: Full query with deletedAt filter + supplier relation
             const whereClause = includeArchived ? {} : { deletedAt: null };
             products = await prisma.product.findMany({
                 where: whereClause as any,
                 orderBy: { createdAt: 'desc' },
                 include: { supplier: true }
             });
-        } catch (filterError) {
-            // Fallback: deletedAt column may not exist yet in production
-            console.warn("getProducts: deletedAt filter failed, fetching all products:", filterError);
-            products = await prisma.product.findMany({
-                orderBy: { createdAt: 'desc' },
-                include: { supplier: true }
-            });
+        } catch (tier1Error) {
+            console.warn("getProducts Tier1 failed (deletedAt+supplier):", tier1Error);
+            try {
+                // Tier 2: Without deletedAt filter but with supplier
+                products = await prisma.product.findMany({
+                    orderBy: { createdAt: 'desc' },
+                    include: { supplier: true }
+                });
+            } catch (tier2Error) {
+                console.warn("getProducts Tier2 failed (supplier):", tier2Error);
+                // Tier 3: Bare-bones query — no relations, no filters
+                products = await prisma.product.findMany({
+                    orderBy: { createdAt: 'desc' },
+                });
+            }
         }
+
+        console.log(`getProducts: returning ${products.length} products`);
 
         return products.map((p: any) => ({
             id: p.id,
@@ -51,7 +61,7 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
             isArchived: !!p.deletedAt,
         }));
     } catch (error) {
-        console.error("DB Error fetching products:", error);
+        console.error("getProducts FATAL - all tiers failed:", error);
         return [];
     }
 }
