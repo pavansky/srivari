@@ -140,7 +140,15 @@ export default function AdminDashboard() {
     const [imagePrompt, setImagePrompt] = useState("");
     const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
 
-
+    const [confirmDialog, setConfirmDialog] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmText: string;
+        cancelText: string;
+        onConfirm: () => void;
+        type: 'danger' | 'warning' | 'info';
+    } | null>(null);
 
     const handleGenerateStudioImage = async () => {
         if (!imagePrompt && !studioImage) return alert("Please explain what you want or upload an image!");
@@ -359,12 +367,23 @@ export default function AdminDashboard() {
 
     // Helper for Bulk Actions
     const handleBulkArchive = async () => {
-        if (!confirm(`Archive ${selectedProducts.length} items? They won't appear in the storefront but history remains.`)) return;
-        try {
-            await Promise.all(selectedProducts.map(id => fetch(`/api/products?id=${id}`, { method: 'DELETE' })));
-            setSelectedProducts([]);
-            fetchData();
-        } catch (err) { alert('Bulk archive failed'); }
+        if (selectedProducts.length === 0) return;
+        setConfirmDialog({
+            isOpen: true,
+            title: "Bulk Archive",
+            message: `Archive ${selectedProducts.length} items? They won't appear in the storefront but history remains.`,
+            confirmText: "Archive Items",
+            cancelText: "Cancel",
+            type: "warning",
+            onConfirm: async () => {
+                try {
+                    await Promise.all(selectedProducts.map(id => fetch(`/api/products?id=${id}`, { method: 'DELETE' })));
+                    setSelectedProducts([]);
+                    fetchData();
+                    setConfirmDialog(null);
+                } catch (err) { alert('Bulk archive failed'); }
+            }
+        });
     };
 
     const handleBulkSupplierAssign = async () => {
@@ -549,11 +568,17 @@ export default function AdminDashboard() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const confirmImport = confirm("Are you sure you want to import this CSV? This will add or update products based on Name/SKU.");
-        if (!confirmImport) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: "Import CSV",
+            message: "Are you sure you want to import this CSV? This will add or update products based on Name/SKU.",
+            confirmText: "Import Database",
+            cancelText: "Cancel",
+            type: "info",
+            onConfirm: () => {
+                setConfirmDialog(null);
+                const reader = new FileReader();
+                reader.onload = async (event) => {
             const text = event.target?.result as string;
             if (!text) return;
 
@@ -607,6 +632,8 @@ export default function AdminDashboard() {
             }
         };
         reader.readAsText(file);
+            }
+        });
     };
 
     // --- Markup Helpers ---
@@ -1191,12 +1218,22 @@ export default function AdminDashboard() {
                                                         <button onClick={() => viewHistory(product.id, product.name)} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white" aria-label="View history"><History size={18} /></button>
                                                         {product.isArchived ? (
                                                             <button
-                                                                onClick={async () => {
-                                                                    if (!confirm('Restore this product? It will be visible on the store again.')) return;
-                                                                    try {
-                                                                        await fetch(`/api/products?id=${product.id}&action=restore`, { method: 'PATCH' });
-                                                                        fetchData();
-                                                                    } catch (err) { alert('Restore failed'); }
+                                                                onClick={() => {
+                                                                    setConfirmDialog({
+                                                                        isOpen: true,
+                                                                        title: "Restore Item",
+                                                                        message: "Restore this product? It will be visible on the store again.",
+                                                                        confirmText: "Restore",
+                                                                        cancelText: "Cancel",
+                                                                        type: "info",
+                                                                        onConfirm: async () => {
+                                                                            try {
+                                                                                await fetch(`/api/products?id=${product.id}&action=restore`, { method: 'PATCH' });
+                                                                                fetchData();
+                                                                                setConfirmDialog(null);
+                                                                            } catch (err) { alert('Restore failed'); }
+                                                                        }
+                                                                    });
                                                                 }}
                                                                 className="p-2 hover:bg-emerald-500/20 rounded-lg text-emerald-400"
                                                                 aria-label="Restore product"
@@ -1206,12 +1243,22 @@ export default function AdminDashboard() {
                                                             </button>
                                                         ) : (
                                                             <button
-                                                                onClick={async () => {
-                                                                    if (!confirm('Archive this product? It will be hidden from the store but accounting records will remain safe.')) return;
-                                                                    try {
-                                                                        await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
-                                                                        fetchData();
-                                                                    } catch (err) { alert('Archive failed'); }
+                                                                onClick={() => {
+                                                                    setConfirmDialog({
+                                                                        isOpen: true,
+                                                                        title: "Archive Item",
+                                                                        message: "Archive this product? It will be hidden from the store but accounting records will remain safe.",
+                                                                        confirmText: "Archive",
+                                                                        cancelText: "Cancel",
+                                                                        type: "warning",
+                                                                        onConfirm: async () => {
+                                                                            try {
+                                                                                await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
+                                                                                fetchData();
+                                                                                setConfirmDialog(null);
+                                                                            } catch (err) { alert('Archive failed'); }
+                                                                        }
+                                                                    });
                                                                 }}
                                                                 className="p-2 hover:bg-orange-500/20 rounded-lg text-orange-400"
                                                                 aria-label="Archive product"
@@ -1859,6 +1906,50 @@ export default function AdminDashboard() {
                     </div>
                 </motion.div>
             )}
+
+            {/* Confirm Dialog Modal */}
+            <AnimatePresence>
+                {confirmDialog?.isOpen && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className={`max-w-md w-full p-8 rounded-2xl border flex flex-col shadow-2xl ${
+                                confirmDialog.type === 'danger' ? 'border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.15)] bg-[#1a0f0f]' :
+                                confirmDialog.type === 'warning' ? 'border-orange-500/50 shadow-[0_0_50px_rgba(249,115,22,0.15)] bg-[#1a140f]' :
+                                'border-[#D4AF37]/50 shadow-[0_0_50px_rgba(212,175,55,0.15)] bg-[#101010]'
+                            }`}
+                        >
+                            <h3 className={`text-xl font-serif mb-2 ${
+                                confirmDialog.type === 'danger' ? 'text-red-400' :
+                                confirmDialog.type === 'warning' ? 'text-orange-400' :
+                                'text-[#D4AF37]'
+                            }`}>{confirmDialog.title}</h3>
+                            <p className="text-white/70 text-sm mb-8 leading-relaxed">{confirmDialog.message}</p>
+                            
+                            <div className="flex gap-4 items-center justify-end">
+                                <button
+                                    onClick={() => setConfirmDialog(null)}
+                                    className="px-5 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all"
+                                >
+                                    {confirmDialog.cancelText}
+                                </button>
+                                <button
+                                    onClick={confirmDialog.onConfirm}
+                                    className={`px-5 py-2 rounded-xl text-sm justify-center flex items-center gap-2 font-bold transition-all hover:scale-105 active:scale-95 ${
+                                        confirmDialog.type === 'danger' ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' :
+                                        confirmDialog.type === 'warning' ? 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30' :
+                                        'bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30'
+                                    }`}
+                                >
+                                    {confirmDialog.confirmText}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* History Modal */}
             {isHistoryModalOpen && (
