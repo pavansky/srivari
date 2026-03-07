@@ -446,7 +446,7 @@ export default function AdminDashboard() {
             return acc;
         }, {} as Record<string, number>);
     const topSellersSorted = Object.entries(topSellers)
-        .sort(([, a], [, b]) => b - a)
+        .sort((a, b) => (b[1] as number) - (a[1] as number))
         .slice(0, 5);
 
     const orderFunnel = {
@@ -1416,7 +1416,7 @@ export default function AdminDashboard() {
                                 {Object.keys(categoryRevenue).length > 0 ? (
                                     <div className="space-y-3">
                                         {Object.entries(categoryRevenue)
-                                            .sort(([, a], [, b]) => b - a)
+                                            .sort((a, b) => (b[1] as number) - (a[1] as number))
                                             .map(([cat, rev]) => {
                                                 const maxCatRev = Math.max(...Object.values(categoryRevenue), 1);
                                                 return (
