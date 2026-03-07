@@ -6,7 +6,6 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import { SITE_CONFIG } from "@/config/site";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { products as initialProducts } from "@/data/products";
 import Image from "next/image";
 import SrivariImage from "@/components/SrivariImage";
 import { Check, Truck, ShieldCheck, Share2, Heart, Sparkles, X } from "lucide-react";
@@ -28,41 +27,21 @@ export default function ProductPage() {
     useEffect(() => {
         if (!id) return;
 
-        console.log("Product Page Mounted. URL ID:", id);
-
         const normalizeId = (val: any) => String(val).trim();
         const targetId = normalizeId(id);
 
         const loadProduct = async () => {
             let found: Product | undefined;
 
-            // 1. Try LocalStorage
-            const storedProducts = localStorage.getItem('srivari_products');
-            if (storedProducts) {
-                try {
-                    const products: Product[] = JSON.parse(storedProducts);
-                    found = products.find(p => normalizeId(p.id) === targetId);
-                } catch (error) {
-                    console.error("LS Parse Error:", error);
+            // Fetch from Database API (single source of truth)
+            try {
+                const res = await fetch(`/api/products?t=${Date.now()}`);
+                if (res.ok) {
+                    const dbProducts: Product[] = await res.json();
+                    found = dbProducts.find(p => normalizeId(p.id) === targetId);
                 }
-            }
-
-            // 2. Fallback to Initial Data
-            if (!found) {
-                found = initialProducts.find(p => normalizeId(p.id) === targetId);
-            }
-
-            // 3. IMPORTANT: Fetch from Database API if not in static/local
-            if (!found) {
-                try {
-                    const res = await fetch('/api/products');
-                    if (res.ok) {
-                        const dbProducts: Product[] = await res.json();
-                        found = dbProducts.find(p => normalizeId(p.id) === targetId);
-                    }
-                } catch (error) {
-                    console.error("Failed to fetch product from DB:", error);
-                }
+            } catch (error) {
+                console.error("Failed to fetch product from DB:", error);
             }
 
             setProduct(found);
