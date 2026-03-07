@@ -181,7 +181,7 @@ export default function AdminDashboard() {
         setError(null);
         try {
             const [pRes, oRes, sRes] = await Promise.all([
-                fetch('/api/products'),
+                fetch('/api/products?archived=true'),
                 fetch('/api/orders'),
                 fetch('/api/admin/suppliers')
             ]);
@@ -330,9 +330,11 @@ export default function AdminDashboard() {
             const matchesCategory = categoryFilter ? p.category === categoryFilter : true;
             const matchesSupplier = supplierFilter ? p.supplierId === supplierFilter : true;
             let matchesStock = true;
-            if (stockFilter === 'in-stock') matchesStock = p.stock > 0;
-            if (stockFilter === 'low-stock') matchesStock = p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5);
-            if (stockFilter === 'out-of-stock') matchesStock = p.stock === 0;
+            if (stockFilter === 'in-stock') matchesStock = p.stock > 0 && !p.isArchived;
+            else if (stockFilter === 'low-stock') matchesStock = p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 5) && !p.isArchived;
+            else if (stockFilter === 'out-of-stock') matchesStock = p.stock === 0 && !p.isArchived;
+            else if (stockFilter === 'archived') matchesStock = p.isArchived;
+            else matchesStock = !p.isArchived; // 'all' default
 
             return matchesSearch && matchesCategory && matchesSupplier && matchesStock;
         })
@@ -1023,10 +1025,11 @@ export default function AdminDashboard() {
                                             value={stockFilter}
                                             onChange={(e) => setStockFilter(e.target.value)}
                                         >
-                                            <option value="all" className="bg-[#0f0f0f]">All Stock Status</option>
+                                            <option value="all" className="bg-[#0f0f0f]">All Active Stock</option>
                                             <option value="in-stock" className="bg-[#0f0f0f]">In Stock ({'>'}0)</option>
                                             <option value="low-stock" className="bg-[#0f0f0f]">Low Stock ({'<'}5)</option>
                                             <option value="out-of-stock" className="bg-[#0f0f0f]">Out of Stock (0)</option>
+                                            <option value="archived" className="bg-[#0f0f0f] text-orange-400">Archived Collection</option>
                                         </select>
                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={12} />
                                     </div>
@@ -1186,19 +1189,37 @@ export default function AdminDashboard() {
                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => { setFormData(product); setIsEditing(product.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="p-2 hover:bg-white/10 rounded-lg text-[#D4AF37]" aria-label="Edit product"><Edit2 size={18} /></button>
                                                         <button onClick={() => viewHistory(product.id, product.name)} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white" aria-label="View history"><History size={18} /></button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (!confirm('Archive this product? It will be hidden from the store but accounting records will remain safe.')) return;
-                                                                try {
-                                                                    await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
-                                                                    fetchData();
-                                                                } catch (err) { alert('Archive failed'); }
-                                                            }}
-                                                            className="p-2 hover:bg-orange-500/20 rounded-lg text-orange-400"
-                                                            aria-label="Archive product"
-                                                        >
-                                                            <Archive size={18} />
-                                                        </button>
+                                                        {product.isArchived ? (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!confirm('Restore this product? It will be visible on the store again.')) return;
+                                                                    try {
+                                                                        await fetch(`/api/products?id=${product.id}&action=restore`, { method: 'PATCH' });
+                                                                        fetchData();
+                                                                    } catch (err) { alert('Restore failed'); }
+                                                                }}
+                                                                className="p-2 hover:bg-emerald-500/20 rounded-lg text-emerald-400"
+                                                                aria-label="Restore product"
+                                                                title="Restore Product"
+                                                            >
+                                                                <Repeat size={18} />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!confirm('Archive this product? It will be hidden from the store but accounting records will remain safe.')) return;
+                                                                    try {
+                                                                        await fetch(`/api/products?id=${product.id}`, { method: 'DELETE' });
+                                                                        fetchData();
+                                                                    } catch (err) { alert('Archive failed'); }
+                                                                }}
+                                                                className="p-2 hover:bg-orange-500/20 rounded-lg text-orange-400"
+                                                                aria-label="Archive product"
+                                                                title="Archive Product"
+                                                            >
+                                                                <Archive size={18} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </motion.div>

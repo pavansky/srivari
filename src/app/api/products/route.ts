@@ -14,6 +14,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const includeArchived = searchParams.get('archived') === 'true';
+
         // Simple Rate Limiting (100 reqs/min)
         const ip = request.headers.get('x-forwarded-for') || 'anonymous';
         const limiter = rateLimit(ip, 100);
@@ -22,7 +25,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
-        const products = await getProducts();
+        const products = await getProducts(includeArchived);
         return NextResponse.json(products);
     } catch (e) {
         console.error(e);
@@ -82,5 +85,29 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ success: true });
     } catch (e) {
         return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+    }
+}
+
+/**
+ * PATCH Handler
+ * Restores a softly deleted product by ID (passed as query param).
+ */
+export async function PATCH(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+        const action = searchParams.get('action');
+        
+        if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+        if (action === 'restore') {
+            const { restoreProduct } = await import('@/lib/db');
+            await restoreProduct(id);
+            return NextResponse.json({ success: true });
+        }
+        
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    } catch (e) {
+        return NextResponse.json({ error: 'Failed to process patch' }, { status: 500 });
     }
 }

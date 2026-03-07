@@ -10,10 +10,11 @@ import { products as initialProducts } from '@/data/products';
  * 
  * @returns {Promise<Product[]>} List of products
  */
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(includeArchived: boolean = false): Promise<any[]> {
     try {
+        const whereClause = includeArchived ? {} : { deletedAt: null };
         let products = await prisma.product.findMany({
-            where: { deletedAt: null } as any,
+            where: whereClause as any,
             orderBy: { createdAt: 'desc' },
             include: { supplier: true }
         });
@@ -42,7 +43,7 @@ export async function getProducts(): Promise<Product[]> {
             }
             // Re-fetch after seeding
             products = await prisma.product.findMany({ 
-                where: { deletedAt: null } as any,
+                where: whereClause as any,
                 orderBy: { createdAt: 'desc' }, 
                 include: { supplier: true } 
             });
@@ -68,6 +69,7 @@ export async function getProducts(): Promise<Product[]> {
             shipping: p.shipping || undefined,
             supplierId: p.supplierId || undefined,
             supplierName: p.supplier?.name || undefined,
+            isArchived: !!p.deletedAt,
         }));
     } catch (error) {
         console.error("DB Error (Falling back to Mock Data):", error);
@@ -80,7 +82,8 @@ export async function getProducts(): Promise<Product[]> {
             shipping: undefined,
             locationBin: undefined,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            isArchived: false
         }));
     }
 }
@@ -176,6 +179,14 @@ export async function deleteProduct(id: string) {
     await prisma.product.update({ 
         where: { id },
         data: { deletedAt: new Date() } as any
+    });
+}
+
+export async function restoreProduct(id: string) {
+    // Restore softly deleted products
+    await prisma.product.update({ 
+        where: { id },
+        data: { deletedAt: null } as any
     });
 }
 
