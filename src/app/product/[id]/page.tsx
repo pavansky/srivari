@@ -372,31 +372,43 @@ export default function ProductPage() {
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6 relative z-30">
-                                    <button
-                                        onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product))}
-                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50
+                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6 relative z-50">
+                                    <a
+                                        href="#"
+                                        role="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (product) {
+                                                isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product);
+                                            }
+                                        }}
+                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none
                                             ${isInWishlist(product?.id || '') ? 'text-red-600' : 'text-neutral-500 hover:text-black'}
                                         `}
-                                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                                        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                     >
                                         <Heart
                                             size={16}
                                             className={`transition-transform duration-300 ${isInWishlist(product?.id || '') ? 'fill-current scale-110' : 'group-hover:scale-110'}`}
                                         />
                                         <span>{isInWishlist(product?.id || '') ? 'Saved' : 'Wishlist'}</span>
-                                    </button>
+                                    </a>
 
                                     <div className="w-[1px] h-4 bg-neutral-300"></div>
 
-                                    <button
-                                        onClick={() => handleShare()}
-                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50"
-                                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                                    <a
+                                        href="#"
+                                        role="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleShare();
+                                        }}
+                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none"
+                                        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                     >
                                         <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform" />
                                         <span>Share</span>
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
 
