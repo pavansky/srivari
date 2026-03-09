@@ -372,43 +372,43 @@ export default function ProductPage() {
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6 relative z-50">
-                                    <a
-                                        href="#"
-                                        role="button"
+                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-4 relative z-50">
+                                    <button
+                                        type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
+                                            e.stopPropagation();
                                             if (product) {
                                                 isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product);
                                             }
                                         }}
-                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none
+                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none p-4 -m-4
                                             ${isInWishlist(product?.id || '') ? 'text-red-600' : 'text-neutral-500 hover:text-black'}
                                         `}
                                         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                     >
                                         <Heart
                                             size={16}
-                                            className={`transition-transform duration-300 ${isInWishlist(product?.id || '') ? 'fill-current scale-110' : 'group-hover:scale-110'}`}
+                                            className={`transition-transform duration-300 pointer-events-none ${isInWishlist(product?.id || '') ? 'fill-current scale-110' : 'group-hover:scale-110'}`}
                                         />
-                                        <span>{isInWishlist(product?.id || '') ? 'Saved' : 'Wishlist'}</span>
-                                    </a>
+                                        <span className="pointer-events-none">{isInWishlist(product?.id || '') ? 'Saved' : 'Wishlist'}</span>
+                                    </button>
 
                                     <div className="w-[1px] h-4 bg-neutral-300"></div>
 
-                                    <a
-                                        href="#"
-                                        role="button"
+                                    <button
+                                        type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
+                                            e.stopPropagation();
                                             handleShare();
                                         }}
-                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none"
+                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none p-4 -m-4"
                                         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                     >
-                                        <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform" />
-                                        <span>Share</span>
-                                    </a>
+                                        <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform pointer-events-none" />
+                                        <span className="pointer-events-none">Share</span>
+                                    </button>
                                 </div>
                             </div>
 
