@@ -248,14 +248,27 @@ export default function ProductPage() {
                             </div>
 
                             {/* Narrative */}
-                            <div className="font-[family-name:var(--font-montserrat)] text-[#595959] font-light leading-relaxed text-sm tracking-wide text-justify">
-                                <p className="mb-4">
-                                    <span className="text-[#D4AF37] font-bold">Note from the Artisan:</span> {product.description}
-                                </p>
-                                <p>
-                                    Crafted for the modern connoisseur, this saree embodies the perfect symphony of tradition and contemporary elegance.
-                                    A drape that commands attention.
-                                </p>
+                            <div className="font-[family-name:var(--font-montserrat)] text-[#595959] font-light leading-relaxed text-sm tracking-wide text-justify space-y-6">
+                                <div>
+                                    <p className="mb-4 text-base">
+                                        <span className="text-[#D4AF37] font-bold tracking-widest uppercase text-xs mr-2">Note from the Artisan:</span>
+                                        {/* Split by our exact template delimiter */}
+                                        {product.description.split('--- \n**Wash & Care Instructions:**\n')[0] || product.description}
+                                    </p>
+                                </div>
+                                
+                                {/* Dynamic Wash & Care Block */}
+                                {product.description.includes('--- \n**Wash & Care Instructions:**\n') && (
+                                    <div className="bg-[#FAF8F5] p-6 border border-[#D4AF37]/20 rounded-sm">
+                                        <h3 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                            <Sparkles size={14} className="text-[#D4AF37] fill-[#D4AF37]/20" />
+                                            Wash & Care Instructions
+                                        </h3>
+                                        <div className="text-xs text-[#595959] space-y-2 leading-relaxed whitespace-pre-line">
+                                            {product.description.split('--- \n**Wash & Care Instructions:**\n')[1]}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Designer Action Bar */}

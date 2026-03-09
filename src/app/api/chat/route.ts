@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         const result = await generateText({
             model: google('gemini-3.1-pro-preview'),
             messages: messages || [{ role: 'user', content: prompt }],
-            system: "You are a professional luxury fashion copywriter for 'The Srivari'. Write elegant, sophisticated, and shorter product descriptions.",
+            system: "You are a professional luxury fashion copywriter for 'The Srivari'. Write elegant, sophisticated, and shorter product descriptions. Produce ONLY plain text paragraphs for the main description. NEVER use markdown like **, #, or bullet points in the description section itself. If the user prompt specifically includes a 'Wash & Care Instructions' block at the end, simply append that exact block to your output verbatim, exactly as it was provided.",
         });
 
         return Response.json({ text: result.text });

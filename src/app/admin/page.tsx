@@ -43,6 +43,8 @@ const GlassSelect = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
     />
 );
 
+import { getTemplateForCategory } from '@/lib/product-templates';
+
 export default function AdminDashboard() {
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -52,11 +54,31 @@ export default function AdminDashboard() {
     // AI Integration (Standard Fetch)
     const [isAIWriting, setIsAIWriting] = useState(false);
 
-    const generateAIDescription = async () => {
-        if (!formData.name) return alert("Please enter a product name first!");
+    // ZERO-TOKEN TEMPLATE GENERATION
+    const generateAIDescription = () => {
+        if (!formData.name || !formData.category) return alert("Please enter an Artifact Name and select a Category first!");
+        
+        const template = getTemplateForCategory(formData.category as string);
+        
+        // Combine the beautifully crafted base description with the dynamic wash care
+        const newDesc = `${template.description}\n\n--- \n**Wash & Care Instructions:**\n${template.washCare}`;
+        
+        setFormData(prev => ({ ...prev, description: newDesc }));
+        
+        // Show success toast
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-10 right-10 bg-[#D4AF37] text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(212,175,55,0.4)] z-50 animate-bounce flex items-center gap-2';
+        toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Template Applied`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    };
+
+    // AI ENHANCEMENT (When absolutely necessary for uniqueness)
+    const rewriteWithAI = async () => {
+        if (!formData.description) return alert("Please auto-generate the base template first before enhancing!");
         setIsAIWriting(true);
 
-        const prompt = `Write a description for a saree named "${formData.name}". Category: ${formData.category}. Additional Notes: ${formData.description || 'None'}`;
+        const prompt = `Rewrite this luxury saree description to make it sound exquisite, highly premium, and completely unique. DO NOT change or remove the "Wash & Care Instructions" section at the end. Make it 1 cohesive paragraph of description, then append exactly the existing wash care instructions verbatim. \n\nCurrent Text: \n${formData.description}`;
 
         try {
             const res = await fetch('/api/chat', {
@@ -67,9 +89,10 @@ export default function AdminDashboard() {
 
             if (data.error) {
                 alert(data.error);
-                setFormData(prev => ({ ...prev, description: data.error }));
             } else {
-                setFormData(prev => ({ ...prev, description: data.text }));
+                // Ensure no markdown formatting from AI like ** or quotes if possible
+                let cleanText = data.text.replace(/^["']|["']$/g, '');
+                setFormData(prev => ({ ...prev, description: cleanText }));
             }
         } catch (err: any) {
             alert("Network Error: " + err.message);
@@ -783,19 +806,33 @@ export default function AdminDashboard() {
                                         <div className="relative pt-2">
                                             <div className="flex justify-between items-center mb-2">
                                                 <label className="text-xs text-white/50 uppercase tracking-widest font-medium">Curator's Description</label>
-                                                <button
-                                                    type="button"
-                                                    onClick={generateAIDescription}
-                                                    disabled={isAIWriting}
-                                                    className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-[#F2D06B] hover:bg-[#D4AF37]/10 px-3 py-1.5 rounded border border-[#D4AF37]/30 transition-all disabled:opacity-50"
-                                                >
-                                                    {isAIWriting ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                                                    {isAIWriting ? 'Weaving magic...' : 'Auto-Generate Details'}
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={generateAIDescription}
+                                                        className="text-xs flex items-center gap-1.5 text-[#D4AF37] hover:text-[#F2D06B] hover:bg-[#D4AF37]/10 px-3 py-1.5 rounded border border-[#D4AF37]/30 transition-all disabled:opacity-50"
+                                                    >
+                                                        <Wand2 size={12} />
+                                                        Auto-Generate Details
+                                                    </button>
+                                                    
+                                                    {formData.description && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={rewriteWithAI}
+                                                            disabled={isAIWriting}
+                                                            className="text-xs flex items-center gap-1.5 text-[#D4AF37] bg-[#D4AF37]/5 hover:bg-[#D4AF37]/15 px-3 py-1.5 rounded border border-[#D4AF37]/20 transition-all disabled:opacity-50"
+                                                            title="Uses AI to creatively rewrite the template into a perfectly unique description"
+                                                        >
+                                                            {isAIWriting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                                            {isAIWriting ? 'Enhancing...' : 'Enhance with AI'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <textarea
-                                                placeholder="Enter the exquisite details or let the AI write an enchanting description for you..."
-                                                rows={5}
+                                                placeholder="Enter the exquisite details or click 'Auto-Generate Details' to instantly pull a beautiful template..."
+                                                rows={7}
                                                 value={formData.description}
                                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                                                 className="w-full bg-[#050505]/60 border border-white/10 p-4 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] hover:border-white/20 outline-none transition-all duration-300 resize-none font-sans leading-relaxed shadow-inner"
