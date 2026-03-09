@@ -90,11 +90,29 @@ export default function ProductPage() {
             }, 4000);
         }
     };
+    const showToast = (message: string) => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-24 right-6 bg-[#000000]/90 backdrop-blur-md border border-[#D4AF37]/50 text-[#D4AF37] px-6 py-4 flex items-center gap-3 z-[100] shadow-2xl transition-all duration-500 ease-out transform translate-x-full opacity-0 rounded-sm font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-bold';
+        
+        toast.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+        
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    };
+
     const handleShare = () => {
         if (!product) return;
         const shareUrl = window.location.href;
         
-        // Use try/catch synchronously for the Web Share API
         try {
             const shareData = {
                 title: `Srivari - ${product.name}`,
@@ -102,15 +120,11 @@ export default function ProductPage() {
                 url: shareUrl,
             };
 
-            // Only attempt share if API exists and is strictly valid for this data
-            // Some iOS browsers have navigator.share but fail if canShare is false
             if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-                navigator.share(shareData)
-                    .catch((err) => {
-                        console.log("Share API error:", err);
-                        // If it's an AbortError, user just dismissed the iOS sheet. Don't fallback.
-                        if (err.name !== 'AbortError') copyFallback(shareUrl);
-                    });
+                navigator.share(shareData).catch((err) => {
+                    console.log("Share API error:", err);
+                    if (err.name !== 'AbortError') copyFallback(shareUrl);
+                });
             } else {
                 copyFallback(shareUrl);
             }
@@ -122,9 +136,8 @@ export default function ProductPage() {
 
     const copyFallback = (text: string) => {
         try {
-            // Modern async fallback
             navigator.clipboard.writeText(text).then(() => {
-                alert("Link copied to clipboard!");
+                showToast("Link copied to clipboard!");
             }).catch(() => fallbackInputCopy(text));
         } catch (e) {
             fallbackInputCopy(text);
@@ -135,7 +148,6 @@ export default function ProductPage() {
         try {
             const el = document.createElement('textarea');
             el.value = text;
-            // Avoid scrolling to bottom in iOS
             el.style.position = 'fixed';
             el.style.top = '0';
             el.style.left = '0';
@@ -145,9 +157,9 @@ export default function ProductPage() {
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            alert("Link copied to clipboard!");
+            showToast("Link copied to clipboard!");
         } catch (err) {
-            alert("Could not copy link. Please copy the URL from your browser.");
+            showToast("Please copy the URL manually");
         }
     };
 
@@ -360,12 +372,13 @@ export default function ProductPage() {
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6">
+                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-6 relative z-30">
                                     <button
                                         onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product))}
-                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium
+                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50
                                             ${isInWishlist(product?.id || '') ? 'text-red-600' : 'text-neutral-500 hover:text-black'}
                                         `}
+                                        style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <Heart
                                             size={16}
@@ -377,8 +390,9 @@ export default function ProductPage() {
                                     <div className="w-[1px] h-4 bg-neutral-300"></div>
 
                                     <button
-                                        onClick={handleShare}
-                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium"
+                                        onClick={() => handleShare()}
+                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50"
+                                        style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform" />
                                         <span>Share</span>
