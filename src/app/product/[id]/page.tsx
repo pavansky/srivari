@@ -90,35 +90,64 @@ export default function ProductPage() {
             }, 4000);
         }
     };
-
-    const handleShare = async () => {
+    const handleShare = () => {
         if (!product) return;
-        const shareData = {
-            title: `Srivari - ${product.name}`,
-            text: `Check out this beautiful ${product.name} on Srivari!`,
-            url: window.location.href,
-        };
+        const shareUrl = window.location.href;
+        
+        // Use try/catch synchronously for the Web Share API
+        try {
+            const shareData = {
+                title: `Srivari - ${product.name}`,
+                text: `Check out this beautiful ${product.name} on Srivari!`,
+                url: shareUrl,
+            };
 
-        const copyToClipboard = async () => {
-            try {
-                await navigator.clipboard.writeText(window.location.href);
+            // Only attempt share if API exists and is strictly valid for this data
+            // Some iOS browsers have navigator.share but fail if canShare is false
+            if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+                navigator.share(shareData)
+                    .catch((err) => {
+                        console.log("Share API error:", err);
+                        // If it's an AbortError, user just dismissed the iOS sheet. Don't fallback.
+                        if (err.name !== 'AbortError') copyFallback(shareUrl);
+                    });
+            } else {
+                copyFallback(shareUrl);
+            }
+        } catch (error) {
+            console.error(error);
+            copyFallback(shareUrl);
+        }
+    };
+
+    const copyFallback = (text: string) => {
+        try {
+            // Modern async fallback
+            navigator.clipboard.writeText(text).then(() => {
                 alert("Link copied to clipboard!");
-            } catch (err) {
-                alert("Could not copy link.");
-            }
-        };
+            }).catch(() => fallbackInputCopy(text));
+        } catch (e) {
+            fallbackInputCopy(text);
+        }
+    };
 
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-            } catch (err: any) {
-                console.log("Share failed or was aborted:", err);
-                if (err.name !== 'AbortError') {
-                    await copyToClipboard();
-                }
-            }
-        } else {
-            await copyToClipboard();
+    const fallbackInputCopy = (text: string) => {
+        try {
+            const el = document.createElement('textarea');
+            el.value = text;
+            // Avoid scrolling to bottom in iOS
+            el.style.position = 'fixed';
+            el.style.top = '0';
+            el.style.left = '0';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.focus();
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Link copied to clipboard!");
+        } catch (err) {
+            alert("Could not copy link. Please copy the URL from your browser.");
         }
     };
 
