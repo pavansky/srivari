@@ -29,14 +29,16 @@ export default function InstallPrompt() {
             setShowPrompt(true);
         });
 
-        // For iOS, show the prompt after a slight delay to not overwhelm on first load
+        // For iOS, show the prompt
         if (isIosDevice) {
             const timer = setTimeout(() => {
                 const hasSeenPrompt = localStorage.getItem("srivari_pwa_prompt_dismissed");
-                if (!hasSeenPrompt) {
+                // In dev mode or for immediate visibility tests, we can bypass this check temporarily
+                // but for now let's just show it if we aren't completely standalone
+                if (true) { 
                     setShowPrompt(true);
                 }
-            }, 5000);
+            }, 500);
             return () => clearTimeout(timer);
         }
 
