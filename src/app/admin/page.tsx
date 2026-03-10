@@ -705,26 +705,26 @@ export default function AdminDashboard() {
                         <button onClick={fetchData} className="ml-auto bg-red-500/20 px-3 py-1 rounded text-sm hover:bg-red-500/40">Retry</button>
                     </div>
                 )}
-                <nav className="flex items-center gap-1 md:gap-1.5 flex-wrap justify-center w-full md:w-auto">
+                <nav className="flex items-center gap-2 md:gap-3 flex-wrap justify-center w-full md:w-auto mt-2 md:mt-0 pb-2 md:pb-0">
                     {/* Theme Toggle */}
-                    <button onClick={() => setIsLightMode(!isLightMode)} className="p-2.5 mr-1 rounded-xl hover:bg-white/[0.06] transition-all text-[#D4AF37] border border-transparent hover:border-white/[0.08]" title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}>
+                    <button onClick={() => setIsLightMode(!isLightMode)} className="p-2.5 rounded-xl hover:bg-white/[0.06] transition-all text-[#D4AF37] border border-transparent hover:border-white/[0.08]" title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}>
                         {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
 
-                    <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'inventory' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Inventory</button>
-                    <button onClick={() => setActiveTab('orders')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'orders' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Orders</button>
-                    <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'analytics' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><BarChart3 size={14} className="inline mr-1.5 -mt-0.5" />Analytics</button>
-                    <button onClick={() => setActiveTab('suppliers')} className={`px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'suppliers' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><Users size={14} className="inline mr-1.5 -mt-0.5" />Suppliers</button>
+                    <button onClick={() => setActiveTab('inventory')} className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'inventory' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Inventory</button>
+                    <button onClick={() => setActiveTab('orders')} className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'orders' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}>Orders</button>
+                    <button onClick={() => setActiveTab('analytics')} className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'analytics' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><BarChart3 size={14} className="inline mr-1 md:mr-1.5" />Analytics</button>
+                    <button onClick={() => setActiveTab('suppliers')} className={`px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === 'suppliers' ? 'bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'}`}><Users size={14} className="inline mr-1 md:mr-1.5" />Suppliers</button>
 
                     <div className="hidden md:block h-6 w-px bg-white/[0.06] mx-2"></div>
 
                     {/* Home Link */}
-                    <Link href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all flex items-center gap-2 border border-transparent hover:border-emerald-500/20">
+                    <Link href="/" className="px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider text-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all flex items-center gap-1.5 md:gap-2 border border-transparent hover:border-emerald-500/20">
                         <Home size={15} /> <span className="hidden sm:inline">Storefront</span>
                     </Link>
 
                     {/* Exit Link */}
-                    <Link href="/" className="px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wider text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-2 border border-transparent hover:border-red-500/20">
+                    <Link href="/" className="px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-semibold tracking-wider text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-all flex items-center gap-1.5 md:gap-2 border border-transparent hover:border-red-500/20">
                         <LogOut size={15} /> <span className="hidden sm:inline">Exit</span>
                     </Link>
 
