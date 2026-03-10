@@ -1217,8 +1217,8 @@ export default function AdminDashboard() {
                                                         />
                                                     </div>
 
-                                                    <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 items-center min-w-0">
-                                                        <div className="col-span-3 min-w-0 mb-2 md:mb-0">
+                                                    <div className="flex-1 flex flex-col md:grid md:grid-cols-6 gap-4 items-start md:items-center min-w-0">
+                                                        <div className="md:col-span-3 min-w-0 w-full mb-2 md:mb-0">
                                                             <div className="flex items-center gap-2">
                                                                 <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
                                                             </div>
@@ -1228,25 +1228,29 @@ export default function AdminDashboard() {
                                                                 {product.locationBin && <p className="text-[10px] tracking-widest uppercase text-amber-500/70 truncate border-l border-white/10 pl-2" title="Storage Location"><MapPin size={10} className="inline mr-1 -mt-0.5" />{product.locationBin}</p>}
                                                             </div>
                                                         </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Selling</p>
-                                                            <p className="font-semibold text-white tracking-wide">₹{product.price.toLocaleString()}</p>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Stock</p>
-                                                            <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => updateInlineStock(product.id, product.stock - 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Decrease Stock"><Minus size={12} /></button>
-                                                                <div className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border transition-colors ${product.stock <= (product.lowStockThreshold ?? 5) ? 'border-red-500/30 text-red-400 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
-                                                                    {product.stock}
-                                                                </div>
-                                                                <button onClick={() => updateInlineStock(product.id, product.stock + 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Increase Stock"><Plus size={12} /></button>
+                                                        
+                                                        {/* Mobile Stats Container */}
+                                                        <div className="flex justify-between w-full md:w-auto md:contents gap-4">
+                                                            <div className="text-left md:text-center shrink-0">
+                                                                <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Selling</p>
+                                                                <p className="font-semibold text-white tracking-wide">₹{product.price.toLocaleString()}</p>
                                                             </div>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Margin</p>
-                                                            <span className={`text-xs px-2 py-0.5 rounded border ${margin > 20 ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
-                                                                {margin.toFixed(0)}%
-                                                            </span>
+                                                            <div className="text-center shrink-0">
+                                                                <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Stock</p>
+                                                                <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                                    <button onClick={() => updateInlineStock(product.id, product.stock - 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Decrease Stock"><Minus size={12} /></button>
+                                                                    <div className={`inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full text-xs font-bold border transition-colors ${product.stock <= (product.lowStockThreshold ?? 5) ? 'border-red-500/30 text-red-400 bg-red-500/10 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
+                                                                        {product.stock}
+                                                                    </div>
+                                                                    <button onClick={() => updateInlineStock(product.id, product.stock + 1)} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors" aria-label="Increase Stock"><Plus size={12} /></button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right md:text-center shrink-0">
+                                                                <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Margin</p>
+                                                                <span className={`text-xs px-2 py-0.5 rounded border ${margin > 20 ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                                                                    {margin.toFixed(0)}%
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
