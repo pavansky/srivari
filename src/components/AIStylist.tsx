@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, X, Send, Bot, User, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import SrivariImage from "./SrivariImage";
 import { Product } from "@/types";
@@ -23,6 +24,7 @@ type Message = {
 };
 
 export default function AIStylist() {
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [messages, setMessages] = useState<Message[]>([
@@ -105,6 +107,8 @@ export default function AIStylist() {
             setIsTyping(false);
         }
     };
+
+    if (pathname?.startsWith('/admin')) return null;
 
     return (
         <>

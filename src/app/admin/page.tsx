@@ -1217,8 +1217,8 @@ export default function AdminDashboard() {
                                                         />
                                                     </div>
 
-                                                    <div className="flex-1 grid grid-cols-6 gap-4 items-center min-w-0">
-                                                        <div className="col-span-3 min-w-0">
+                                                    <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 items-center min-w-0">
+                                                        <div className="col-span-3 min-w-0 mb-2 md:mb-0">
                                                             <div className="flex items-center gap-2">
                                                                 <h4 className="font-serif text-lg text-white group-hover:text-[#D4AF37] transition-colors truncate">{product.name}</h4>
                                                             </div>

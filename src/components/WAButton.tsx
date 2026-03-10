@@ -1,10 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { SITE_CONFIG } from "@/config/site";
 
 export default function WAButton() {
+    const pathname = usePathname();
     const whatsappLink = SITE_CONFIG.links.whatsapp("Hi Srivari Team, I'm interested in your exclusive saree collection.");
+
+    if (pathname?.startsWith('/admin')) return null;
 
     return (
         <motion.a
