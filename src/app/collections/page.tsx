@@ -3,8 +3,11 @@ import { Metadata } from 'next';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import SrivariImage from '@/components/SrivariImage';
+import SectionHeader from '@/components/ui/SectionHeader';
+import ZariDivider from '@/components/ui/ZariDivider';
 import { HOME_CATEGORIES } from '@/components/home/CategoryTiles';
 import { getProducts, toPublicProduct } from '@/lib/db';
+import { isRenderableImageSrc } from '@/lib/image-src';
 import { Product } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +31,7 @@ interface CategoryGroup {
 }
 
 function firstImage(p: Product): string | null {
-    return p.images?.find(img => img && img.trim() !== "") || null;
+    return p.images?.find(isRenderableImageSrc) || null;
 }
 
 /** Group products into curated categories: the known five first, then anything else in the catalogue. */
@@ -82,22 +85,26 @@ export default async function Collections() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen">
-            {/* Premium Hero Banner */}
-            <section className="relative bg-obsidian text-marble pt-32 pb-20 overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#D4AF37_1px,transparent_1px)] bg-[size:24px_24px]" />
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[100px] pointer-events-none" />
-                <div className="container mx-auto px-6 relative z-10 text-center">
-                    <span className="text-gold text-xs font-sans font-bold uppercase tracking-[0.4em] mb-4 block">Curated by the Atelier</span>
-                    <h1 className="text-5xl md:text-7xl font-serif mb-4 text-white">The Collections</h1>
-                    <p className="text-xl max-w-2xl mx-auto font-light tracking-wide text-white/60 font-serif italic">
-                        Five great weaving traditions, one house of silk
-                    </p>
-                    <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-8" />
+            {/* Editorial hero band */}
+            <section className="texture-silk relative bg-obsidian text-marble pt-36 pb-20 overflow-hidden">
+                <div className="container mx-auto px-6">
+                    <h1 className="sr-only">The Collections</h1>
+                    <SectionHeader
+                        tone="dark"
+                        kicker="Curated by the Atelier"
+                        title="The Collections"
+                        accent="Collections"
+                        note="Five great weaving traditions, one house of silk — from loom to drape."
+                    />
                 </div>
+                <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent"
+                />
             </section>
 
             {/* Editorial Category Banners */}
-            <section className="container mx-auto px-6 py-16 md:py-24 space-y-16 md:space-y-24">
+            <section className="container mx-auto px-6 py-24 md:py-32 space-y-24 md:space-y-32">
                 {groups.length === 0 && (
                     <p className="text-center text-[#595959] font-serif italic text-xl py-16">
                         Our looms are busy — new collections arrive shortly.
@@ -112,16 +119,17 @@ export default async function Collections() {
                         {/* Banner image */}
                         <Link
                             href={`/shop?category=${encodeURIComponent(group.name)}`}
-                            className="group relative block aspect-[16/10] overflow-hidden rounded-sm border border-[#E5E5E5] hover:border-[#D4AF37] transition-colors duration-500 lg:[direction:ltr]"
+                            className="group zari-frame relative block aspect-[16/10] overflow-hidden border border-[#E5E5E5] hover:border-[#D4AF37]/60 transition-colors duration-700 lg:[direction:ltr]"
                             aria-label={`Shop the ${group.name} collection`}
                         >
                             {group.image ? (
                                 <SrivariImage
                                     src={group.image}
                                     alt={`${group.name} saree from The Srivari collection`}
+                                    fallbackLabel={group.name}
                                     fill
                                     sizes="(max-width: 1024px) 100vw, 50vw"
-                                    className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
+                                    className="object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]"
                                 />
                             ) : (
                                 <div className="absolute inset-0 bg-gradient-to-br from-[#141005] via-obsidian to-obsidian flex items-center justify-center">
@@ -131,24 +139,25 @@ export default async function Collections() {
                                 </div>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                            <span className="absolute bottom-5 left-6 text-[10px] uppercase tracking-[0.3em] text-white/90 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                            <span className="absolute bottom-5 left-6 z-10 flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] text-white/90 font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" aria-hidden="true" />
                                 {group.products.length} {group.products.length === 1 ? "weave" : "weaves"}
                             </span>
                         </Link>
 
                         {/* Copy */}
                         <div className="lg:[direction:ltr]">
-                            <span className="text-[#D4AF37] text-[11px] font-bold uppercase tracking-[0.35em]">
+                            <span className="kicker mb-5">
                                 Collection {String(index + 1).padStart(2, "0")}
                             </span>
-                            <h2 className="text-4xl md:text-5xl font-serif text-[#4A0404] mt-3">{group.name}</h2>
-                            <p className="mt-5 text-[#595959] leading-relaxed max-w-md">{group.blurb}</p>
-                            <p className="mt-2 text-sm text-[#8A8680]">
+                            <h2 className="font-serif text-4xl md:text-5xl leading-[1.05] tracking-tight text-[#1A1A1A]">{group.name}</h2>
+                            <p className="mt-5 text-[#595959] font-sans leading-relaxed max-w-md">{group.blurb}</p>
+                            <p className="mt-4 font-serif text-lg text-[#4A0404]">
                                 From ₹{Math.min(...group.products.map(p => p.price)).toLocaleString('en-IN')}
                             </p>
                             <Link
                                 href={`/shop?category=${encodeURIComponent(group.name)}`}
-                                className="mt-8 inline-block text-xs uppercase tracking-[0.25em] text-[#4A0404] border border-[#4A0404]/30 hover:bg-[#4A0404] hover:text-[#D4AF37] px-8 py-4 transition-colors duration-500"
+                                className="btn-thread mt-9 font-sans text-[#4A0404]"
                             >
                                 Explore {group.name}
                             </Link>
@@ -159,21 +168,26 @@ export default async function Collections() {
 
             {/* Featured strip */}
             {featured.length > 0 && (
-                <section className="bg-[#FAF8F5] border-t border-[#E5E5E5] py-16 md:py-24">
+                <section className="bg-[#F9F5F0] py-24 md:py-32">
                     <div className="container mx-auto px-6">
-                        <div className="text-center mb-12">
-                            <span className="text-[#D4AF37] text-[11px] font-bold uppercase tracking-[0.35em]">Srivari Signatures</span>
-                            <h2 className="text-3xl md:text-4xl font-serif text-[#4A0404] mt-3">Featured Masterpieces</h2>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                        <ZariDivider tone="light" className="mb-16 md:mb-20" />
+                        <SectionHeader
+                            tone="light"
+                            kicker="Srivari Signatures"
+                            title="Featured Masterpieces"
+                            accent="Masterpieces"
+                            note="Signed pieces from the current season, chosen by the atelier."
+                            className="mb-14"
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-14">
                             {featured.map((product) => (
-                                <ProductCard key={product.id} product={product} />
+                                <ProductCard key={product.id} product={product} tone="light" />
                             ))}
                         </div>
-                        <div className="text-center mt-12">
+                        <div className="mt-16">
                             <Link
                                 href="/shop"
-                                className="inline-block text-xs uppercase tracking-[0.25em] text-[#4A0404] border-b border-[#4A0404]/30 hover:border-[#D4AF37] hover:text-[#D4AF37] pb-1 transition-colors"
+                                className="btn-thread font-sans text-[#4A0404]"
                             >
                                 View the Full Catalogue
                             </Link>

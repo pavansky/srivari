@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 /**
  * NewsletterBand — homepage newsletter CTA wired to POST /api/newsletter.
@@ -41,44 +41,47 @@ export default function NewsletterBand() {
     };
 
     return (
-        <section className="relative bg-obsidian py-24 px-6 overflow-hidden border-t border-gold/10">
+        <section className="texture-silk relative bg-obsidian py-28 md:py-32 px-6 overflow-hidden">
             {/* Ambient glow */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" aria-hidden="true" />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gold/5 rounded-full blur-[100px] pointer-events-none" aria-hidden="true" />
 
             <div className="relative max-w-2xl mx-auto text-center">
-                <Mail className="w-8 h-8 text-gold mx-auto mb-6" strokeWidth={1} aria-hidden="true" />
-                <span className="text-gold uppercase tracking-[0.3em] text-xs">The Inner Circle</span>
-                <h2 className="text-3xl md:text-5xl font-serif text-marble mt-4">
-                    First to the Loom
-                </h2>
-                <p className="mt-4 text-marble/60 font-light leading-relaxed max-w-lg mx-auto">
+                <SectionHeader
+                    kicker="THE INNER CIRCLE"
+                    title="First to the Loom"
+                    accent="Loom"
+                    tone="dark"
+                    align="center"
+                />
+                <p className="mt-6 text-marble/60 font-light leading-relaxed max-w-lg mx-auto">
                     New weaves arrive in whispers. Join our list for private previews of fresh arrivals,
                     heritage stories and atelier invitations.
                 </p>
 
                 {status === "success" ? (
-                    <p aria-live="polite" className="mt-10 text-gold font-serif text-xl italic">
+                    <p aria-live="polite" className="mt-12 text-gold font-serif text-xl italic">
                         {message}
                     </p>
                 ) : (
                     <>
-                        <form onSubmit={handleSubmit} className="mt-10 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                            <label htmlFor="home-newsletter-email" className="sr-only">Email address</label>
-                            <input
-                                id="home-newsletter-email"
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => { setEmail(e.target.value); if (status === "error") { setStatus("idle"); setMessage(""); } }}
-                                placeholder="Your email address"
-                                className="flex-1 px-5 py-4 bg-white/5 border border-white/10 rounded-full text-marble placeholder:text-marble/40 focus:outline-none focus:border-gold/50 transition-colors text-sm"
-                                aria-required="true"
-                            />
+                        <form onSubmit={handleSubmit} className="mt-12 flex flex-col sm:flex-row sm:items-end gap-8 sm:gap-6 max-w-xl mx-auto">
+                            <div className="flex-1 text-left">
+                                <label htmlFor="home-newsletter-email" className="sr-only">Email address</label>
+                                <input
+                                    id="home-newsletter-email"
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => { setEmail(e.target.value); if (status === "error") { setStatus("idle"); setMessage(""); } }}
+                                    placeholder="Your email address"
+                                    className="w-full bg-transparent border-b border-marble/30 focus:border-gold rounded-none px-1 py-3 text-marble placeholder:text-marble/40 focus:outline-none transition-colors duration-500 text-sm tracking-wide"
+                                    aria-required="true"
+                                />
+                            </div>
                             <button
                                 type="submit"
                                 disabled={status === "loading"}
-                                className="px-8 py-4 bg-gold text-obsidian text-xs font-semibold uppercase tracking-[0.2em] rounded-full hover:bg-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                                className="btn-royal shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {status === "loading" ? "Joining…" : "Join"}
                             </button>

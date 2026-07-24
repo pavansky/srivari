@@ -38,24 +38,22 @@ export default function Navbar() {
 
     const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-    // Navbar Style Logic
-    // Floating Premium Pill Design
-    const navbarWrapper = isScrolled
-        ? "fixed top-0 left-0 w-full z-50 pt-4 px-4 transition-all duration-700 ease-out"
-        : "fixed top-0 left-0 w-full z-50 px-0 transition-all duration-700 ease-out";
+    // Navbar Style Logic — hairline maison bar (square corners, fine gold rule)
+    const navbarWrapper = "fixed top-0 left-0 w-full z-50 transition-all duration-700 ease-out";
 
     const navbarInner = isScrolled
         ? isLightPage
-            ? "bg-white/90 backdrop-blur-2xl border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full px-6 py-2.5 mx-auto max-w-7xl w-full flex justify-between items-center supports-[backdrop-filter]:bg-white/60"
-            : "bg-obsidian/90 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.4)] rounded-full px-6 py-2.5 mx-auto max-w-7xl w-full flex justify-between items-center supports-[backdrop-filter]:bg-obsidian/60"
+            ? "bg-[#FDFBF7]/90 backdrop-blur-2xl border-b border-[#C8AA6E]/25 px-6 lg:px-10 py-3 w-full flex justify-between items-center"
+            : "bg-obsidian/90 backdrop-blur-2xl border-b border-[#D4AF37]/20 px-6 lg:px-10 py-3 w-full flex justify-between items-center"
         : isLightPage
-            ? "bg-transparent py-5 px-6 mx-auto w-full flex justify-between items-center"
-            : "bg-transparent py-6 px-6 mx-auto w-full flex justify-between items-center";
+            ? "bg-transparent py-5 px-6 lg:px-10 w-full flex justify-between items-center border-b border-transparent"
+            : "bg-transparent py-6 px-6 lg:px-10 w-full flex justify-between items-center border-b border-transparent";
 
-    // Text Color Logic
-    const hoverColor = "text-[#D4AF37]"; // Gold
+    // Underline-on-hover nav link (classes must be literal for Tailwind)
+    const navLink = `relative pb-1 transition-colors duration-300 after:absolute after:left-0 after:bottom-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-[#D4AF37] after:transition-transform after:duration-500 after:ease-[cubic-bezier(0.22,1,0.36,1)] hover:after:scale-x-100 ${isLightPage ? "hover:text-[#4A0404]" : "hover:text-[#D4AF37]"}`;
+
     const iconColor = isLightPage
-        ? "text-[#1A1A1A] group-hover:text-[#D4AF37]"
+        ? "text-[#1A1A1A] group-hover:text-[#4A0404]"
         : "text-[#D4AF37] group-hover:text-white";
 
     return (
@@ -68,26 +66,16 @@ export default function Navbar() {
                 role="banner"
             >
                 <nav className={`${navbarInner} transition-all duration-700 delay-75`} aria-label="Main Navigation">
-                    {/* Logo Section */}
-                    <Link href="/" className="flex items-center gap-3 shrink-0 group" aria-label="Srivari Home">
-                        <div className="relative flex items-center justify-center">
-                            {/* The missing logo image the user requested - falls back elegantly if missing */}
-                            <img
-                                src="/logo.png"
-                                alt=""
-                                role="presentation"
-                                className="w-8 h-8 md:w-10 md:h-10 object-contain absolute opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                            />
-                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8C7320] flex items-center justify-center text-black font-serif font-bold text-xl md:text-2xl shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-all duration-500 relative z-10">
-                                S
-                            </div>
+                    {/* Logo Section — square monogram with hairline zari border */}
+                    <Link href="/" className="flex items-center gap-3.5 shrink-0 group" aria-label="Srivari Home">
+                        <div className={`w-9 h-9 md:w-10 md:h-10 flex items-center justify-center border transition-colors duration-500 ${isLightPage ? "border-[#4A0404]/40 group-hover:border-[#4A0404]" : "border-[#D4AF37]/50 group-hover:border-[#D4AF37]"}`}>
+                            <span className={`font-serif text-xl md:text-2xl leading-none ${isLightPage ? "text-[#4A0404]" : "text-[#D4AF37]"}`}>S</span>
                         </div>
                         <div className="flex-col hidden sm:flex">
-                            <h1 className={`text-lg md:text-xl font-serif tracking-widest cursor-pointer ${isLightPage ? 'text-[#1A1A1A] group-hover:text-[#D4AF37]' : 'text-[#D4AF37] group-hover:text-white'} transition-colors duration-500 whitespace-nowrap`}>
+                            <h1 className={`text-base md:text-lg font-serif tracking-[0.22em] cursor-pointer ${isLightPage ? 'text-[#1A1A1A]' : 'text-marble'} transition-colors duration-500 whitespace-nowrap`}>
                                 THE SRIVARI
                             </h1>
-                            <span className={`text-[8px] md:text-[9px] tracking-[0.2em] font-sans uppercase -mt-1 ${isLightPage ? 'text-black/50' : 'text-white/50'} group-hover:text-[#D4AF37] transition-colors duration-500 whitespace-nowrap`}>
+                            <span className={`text-[8px] tracking-[0.4em] font-sans uppercase ${isLightPage ? 'text-[#4A0404]/60' : 'text-[#D4AF37]/70'} transition-colors duration-500 whitespace-nowrap`}>
                                 Royalty Woven
                             </span>
                         </div>
@@ -95,22 +83,22 @@ export default function Navbar() {
 
                     {/* Desktop Menu */}
                     <div
-                        className={`hidden md:flex gap-4 lg:gap-8 items-center text-xs lg:text-sm tracking-widest ${isLightPage ? 'text-[#1A1A1A]/90' : 'text-marble/90'}`}
+                        className={`hidden md:flex gap-5 lg:gap-9 items-center text-[11px] lg:text-xs tracking-[0.25em] font-sans ${isLightPage ? 'text-[#1A1A1A]/80' : 'text-marble/80'}`}
                         role="menubar"
                     >
-                        <Link href="/shop" className={`hover:${hoverColor} transition-colors`} role="menuitem">
+                        <Link href="/shop" className={navLink} role="menuitem">
                             SHOP
                         </Link>
-                        <Link href="/collections" className={`hover:${hoverColor} transition-colors`} role="menuitem">
+                        <Link href="/collections" className={navLink} role="menuitem">
                             COLLECTIONS
                         </Link>
-                        <Link href="/atelier" className={`text-[#D4AF37] hover:text-white transition-colors font-bold`} role="menuitem">
+                        <Link href="/atelier" className={`${navLink} text-[#D4AF37]`} role="menuitem">
                             ATELIER
                         </Link>
-                        <Link href="/about" className={`hover:${hoverColor} transition-colors`} role="menuitem">
+                        <Link href="/about" className={navLink} role="menuitem">
                             ABOUT
                         </Link>
-                        <Link href="/contact" className={`hover:${hoverColor} transition-colors`} role="menuitem">
+                        <Link href="/contact" className={navLink} role="menuitem">
                             CONTACT
                         </Link>
                     </div>
@@ -128,7 +116,7 @@ export default function Navbar() {
                         <Link href="/wishlist" className="relative group p-1 hidden sm:block" aria-label={`Wishlist, ${wishlist.length} items`}>
                             <Heart className={`w-5 h-5 transition-colors ${iconColor}`} strokeWidth={1.5} />
                             {wishlist.length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] text-obsidian font-bold shadow-sm" aria-hidden="true">
+                                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 px-0.5 items-center justify-center bg-[#D4AF37] text-[9px] text-obsidian font-bold font-sans" aria-hidden="true">
                                     {wishlist.length}
                                 </span>
                             )}
@@ -136,7 +124,7 @@ export default function Navbar() {
                         <Link href="/cart" className="relative group p-1" aria-label={`Shopping bag, ${cartCount} items`}>
                             <ShoppingBag className={`w-5 h-5 transition-colors ${iconColor}`} strokeWidth={1.5} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] text-obsidian font-bold shadow-sm" aria-hidden="true">
+                                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 px-0.5 items-center justify-center bg-[#D4AF37] text-[9px] text-obsidian font-bold font-sans" aria-hidden="true">
                                     {cartCount}
                                 </span>
                             )}

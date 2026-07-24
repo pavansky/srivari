@@ -8,7 +8,8 @@ import { Search, SlidersHorizontal, X, Grid2X2, Grid3X3, List as ListIcon, Check
 import Breadcrumbs from '@/components/Breadcrumbs';
 import ProductCard from '@/components/ProductCard';
 import QuickViewModal from '@/components/QuickViewModal';
-import SrivariImage from '@/components/SrivariImage';
+import SectionHeader from '@/components/ui/SectionHeader';
+import SrivariImage, { isRenderableImageSrc } from '@/components/SrivariImage';
 import { useCart } from '@/context/CartContext';
 
 type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'newest';
@@ -19,6 +20,9 @@ interface ShopClientProps {
     initialCategory?: string;
     initialQuery?: string;
 }
+
+/** Micro-label used for drawer section headings. */
+const MICRO_LABEL = "text-[10px] font-sans uppercase tracking-[0.3em] text-[#595959] mb-4";
 
 /**
  * Fuzzy category equivalence, matching how homepage tiles and the collections
@@ -171,29 +175,40 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
 
     return (
         <div className="min-h-screen bg-[#FDFBF7]">
-            {/* Header */}
-            <div className="pt-32 pb-16 px-6 bg-obsidian text-marble text-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
-                <h1 className="text-4xl md:text-6xl font-serif text-[#D4AF37] mb-6 relative z-10 tracking-wide">The Collection</h1>
-                <p className="text-white/60 tracking-[0.2em] font-medium text-xs md:text-sm uppercase relative z-10">Artistry woven into eternity</p>
+            {/* Editorial hero band */}
+            <div className="texture-silk relative bg-obsidian text-marble pt-36 pb-20 px-6">
+                <div className="max-w-[1400px] mx-auto">
+                    <h1 className="sr-only">The Collection</h1>
+                    <SectionHeader
+                        tone="dark"
+                        kicker="The Srivari Atelier"
+                        title="The Collection"
+                        accent="Collection"
+                        note="Handwoven silk sarees, sourced loom-direct from the master weavers of the south."
+                    />
+                </div>
+                <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent"
+                />
             </div>
 
             <div className="max-w-[1400px] mx-auto px-6 py-8">
                 <Breadcrumbs />
 
                 {/* Sticky Command Bar */}
-                <div className="sticky top-20 z-30 mt-8 mb-8 flex flex-col items-end gap-4 md:flex-row md:justify-between md:items-center bg-[#FDFBF7]/90 backdrop-blur-md py-4 border-b border-[#E5E5E5]/50">
+                <div className="sticky top-20 z-30 mt-8 mb-10 flex flex-col gap-4 md:flex-row md:justify-between md:items-center bg-[#FDFBF7]/90 backdrop-blur-md py-4 border-b border-[#E5E5E5]/60">
 
                     {/* Left: Filter Toggle & Active Count */}
                     <div className="flex items-center gap-4 w-full md:w-auto">
                         <button
                             onClick={() => setIsFilterDrawerOpen(true)}
-                            className="flex items-center gap-2 px-6 py-3 bg-white border border-[#E5E5E5] hover:border-[#D4AF37] rounded-full text-sm font-bold tracking-widest uppercase transition-all shadow-sm hover:shadow-md"
+                            className="btn-thread font-sans text-[#1A1A1A]"
                         >
-                            <SlidersHorizontal size={16} className="text-[#D4AF37]" aria-hidden="true" />
+                            <SlidersHorizontal size={14} className="text-[#D4AF37]" aria-hidden="true" />
                             Filter & Sort
                             {activeFilterCount > 0 && (
-                                <span className="bg-[#1A1A1A] text-[#D4AF37] w-5 h-5 rounded-full flex items-center justify-center text-[10px] ml-1">
+                                <span className="ml-1 flex h-5 w-5 items-center justify-center bg-[#0A0A0A] text-[10px] tracking-normal text-[#D4AF37]">
                                     {activeFilterCount}
                                 </span>
                             )}
@@ -201,39 +216,39 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                     </div>
 
                     {/* Right: View Modes & Count */}
-                    <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-                        <div className="flex items-center bg-white border border-[#E5E5E5] rounded-full p-1 shadow-sm">
+                    <div className="flex items-center gap-6 w-full md:w-auto justify-end">
+                        <div className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#595959] hidden lg:block">
+                            Showing {filteredAndSortedProducts.length} items
+                        </div>
+
+                        <div className="flex items-center">
                             <button
                                 onClick={() => setViewMode('grid-large')}
-                                className={`hidden sm:block p-2 rounded-full transition-colors ${viewMode === 'grid-large' ? 'bg-[#1A1A1A] text-[#D4AF37]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}
+                                className={`hidden sm:flex h-10 w-10 items-center justify-center border transition-colors duration-300 ${viewMode === 'grid-large' ? 'bg-[#0A0A0A] border-[#0A0A0A] text-[#D4AF37]' : 'border-[#E5E5E5] text-[#8A8680] hover:text-[#0A0A0A] hover:border-[#0A0A0A]'}`}
                                 title="Large Grid"
                                 aria-label="Large grid view"
                                 aria-pressed={viewMode === 'grid-large'}
                             >
-                                <Grid2X2 size={18} aria-hidden="true" />
+                                <Grid2X2 size={16} aria-hidden="true" />
                             </button>
                             <button
                                 onClick={() => setViewMode('grid-standard')}
-                                className={`p-2 rounded-full transition-colors ${viewMode === 'grid-standard' ? 'bg-[#1A1A1A] text-[#D4AF37]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}
+                                className={`flex h-10 w-10 items-center justify-center border sm:-ml-px transition-colors duration-300 ${viewMode === 'grid-standard' ? 'bg-[#0A0A0A] border-[#0A0A0A] text-[#D4AF37]' : 'border-[#E5E5E5] text-[#8A8680] hover:text-[#0A0A0A] hover:border-[#0A0A0A]'}`}
                                 title="Standard Grid"
                                 aria-label="Standard grid view"
                                 aria-pressed={viewMode === 'grid-standard'}
                             >
-                                <Grid3X3 size={18} aria-hidden="true" />
+                                <Grid3X3 size={16} aria-hidden="true" />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-full transition-colors ${viewMode === 'list' ? 'bg-[#1A1A1A] text-[#D4AF37]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}
+                                className={`flex h-10 w-10 items-center justify-center border -ml-px transition-colors duration-300 ${viewMode === 'list' ? 'bg-[#0A0A0A] border-[#0A0A0A] text-[#D4AF37]' : 'border-[#E5E5E5] text-[#8A8680] hover:text-[#0A0A0A] hover:border-[#0A0A0A]'}`}
                                 title="List View"
                                 aria-label="List view"
                                 aria-pressed={viewMode === 'list'}
                             >
-                                <ListIcon size={18} aria-hidden="true" />
+                                <ListIcon size={16} aria-hidden="true" />
                             </button>
-                        </div>
-
-                        <div className="text-sm font-sans text-gray-400 hidden lg:block mr-2">
-                            Showing {filteredAndSortedProducts.length} items
                         </div>
                     </div>
                 </div>
@@ -247,40 +262,40 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                             exit={{ height: 0, opacity: 0 }}
                             className="flex flex-wrap items-center gap-2 mb-8 overflow-hidden"
                         >
-                            <span className="text-xs text-gray-400 mr-2 uppercase tracking-wider font-bold">Active:</span>
+                            <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#595959] mr-2">Active</span>
                             {activeCategories.map(cat => (
-                                <span key={cat} className="flex items-center gap-1 bg-[#F5F2EB] border border-[#D4AF37]/20 text-[#4A0404] px-3 py-1 rounded-full text-xs font-medium">
+                                <span key={cat} className="flex items-center gap-2 bg-white border border-[#E5E5E5] text-[#4A0404] px-3 py-1.5 text-[10px] uppercase tracking-[0.15em] font-sans">
                                     {cat}
                                     <button onClick={() => toggleCategory(cat)} aria-label={`Remove ${cat} filter`}>
-                                        <X size={12} className="cursor-pointer hover:text-red-500" aria-hidden="true" />
+                                        <X size={11} className="cursor-pointer text-[#8A8680] hover:text-[#4A0404] transition-colors" aria-hidden="true" />
                                     </button>
                                 </span>
                             ))}
                             {activeHashtags.map(tag => (
-                                <span key={tag} className="flex items-center gap-1 bg-[#F5F2EB] border border-[#D4AF37]/20 text-[#4A0404] px-3 py-1 rounded-full text-xs font-medium">
+                                <span key={tag} className="flex items-center gap-2 bg-white border border-[#E5E5E5] text-[#4A0404] px-3 py-1.5 text-[10px] uppercase tracking-[0.15em] font-sans">
                                     #{tag}
                                     <button onClick={() => toggleHashtag(tag)} aria-label={`Remove ${tag} filter`}>
-                                        <X size={12} className="cursor-pointer hover:text-red-500" aria-hidden="true" />
+                                        <X size={11} className="cursor-pointer text-[#8A8680] hover:text-[#4A0404] transition-colors" aria-hidden="true" />
                                     </button>
                                 </span>
                             ))}
                             {isPriceFiltered && (
-                                <span className="flex items-center gap-1 bg-[#F5F2EB] border border-[#D4AF37]/20 text-[#4A0404] px-3 py-1 rounded-full text-xs font-medium">
+                                <span className="flex items-center gap-2 bg-white border border-[#E5E5E5] text-[#4A0404] px-3 py-1.5 text-[10px] uppercase tracking-[0.15em] font-sans">
                                     ₹{priceRange[0].toLocaleString('en-IN')} – ₹{priceRange[1].toLocaleString('en-IN')}
                                     <button onClick={() => setPriceRange([0, priceCap])} aria-label="Remove price filter">
-                                        <X size={12} className="cursor-pointer hover:text-red-500" aria-hidden="true" />
+                                        <X size={11} className="cursor-pointer text-[#8A8680] hover:text-[#4A0404] transition-colors" aria-hidden="true" />
                                     </button>
                                 </span>
                             )}
                             {inStockOnly && (
-                                <span className="flex items-center gap-1 bg-[#F5F2EB] border border-[#D4AF37]/20 text-[#4A0404] px-3 py-1 rounded-full text-xs font-medium">
+                                <span className="flex items-center gap-2 bg-white border border-[#E5E5E5] text-[#4A0404] px-3 py-1.5 text-[10px] uppercase tracking-[0.15em] font-sans">
                                     In Stock
                                     <button onClick={() => setInStockOnly(false)} aria-label="Remove in-stock filter">
-                                        <X size={12} className="cursor-pointer hover:text-red-500" aria-hidden="true" />
+                                        <X size={11} className="cursor-pointer text-[#8A8680] hover:text-[#4A0404] transition-colors" aria-hidden="true" />
                                     </button>
                                 </span>
                             )}
-                            <button onClick={clearAllFilters} className="text-xs text-[#D4AF37] hover:underline ml-2 font-medium">
+                            <button onClick={clearAllFilters} className="btn-thread font-sans text-[#4A0404] ml-2">
                                 Clear All
                             </button>
                         </motion.div>
@@ -291,7 +306,7 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                 <div className={
                     viewMode === 'list'
                         ? 'flex flex-col gap-6'
-                        : `grid gap-x-6 gap-y-12 ${viewMode === 'grid-large'
+                        : `grid gap-x-8 gap-y-14 ${viewMode === 'grid-large'
                             ? 'grid-cols-1 md:grid-cols-2'
                             : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                         }`
@@ -300,10 +315,10 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                         {filteredAndSortedProducts.map((product) => (
                             <motion.div
                                 layout
-                                initial={{ opacity: 0, scale: 0.95 }}
+                                initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                 key={product.id}
                             >
                                 {viewMode === 'list' ? (
@@ -311,6 +326,7 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                 ) : (
                                     <ProductCard
                                         product={product}
+                                        tone="light"
                                         onQuickView={setQuickViewProduct}
                                     />
                                 )}
@@ -320,11 +336,13 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                 </div>
 
                 {filteredAndSortedProducts.length === 0 && (
-                    <div className="text-center py-32 border border-dashed border-[#E5E5E5] rounded-2xl bg-white mt-12">
-                        <Search className="w-12 h-12 text-[#D4AF37]/30 mx-auto mb-6" aria-hidden="true" />
-                        <h3 className="text-2xl font-serif text-[#1A1A1A] mb-2">No masterpieces found</h3>
-                        <p className="text-gray-500 font-sans mb-6">Try adjusting your filters or search terms.</p>
-                        <button onClick={clearAllFilters} className="px-8 py-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full uppercase tracking-widest text-xs font-bold hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-colors">
+                    <div className="text-center py-32 border border-[#E5E5E5] bg-white mt-12">
+                        <Search className="w-10 h-10 text-[#D4AF37]/40 mx-auto mb-8" aria-hidden="true" />
+                        <h3 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] mb-3">
+                            No <em className="italic text-[#4A0404]">masterpieces</em> found
+                        </h3>
+                        <p className="text-sm text-[#595959] font-sans mb-10">Try adjusting your filters or search terms.</p>
+                        <button onClick={clearAllFilters} className="btn-thread font-sans text-[#4A0404]">
                             Clear Filters
                         </button>
                     </div>
@@ -342,39 +360,43 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                         />
                         <motion.div
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[450px] bg-white z-50 shadow-2xl flex flex-col"
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[450px] bg-[#FDFBF7] z-50 shadow-2xl flex flex-col"
                         >
                             {/* Drawer Header */}
                             <div className="flex items-center justify-between px-8 py-6 border-b border-[#E5E5E5]">
-                                <h2 className="text-xl font-serif text-[#1A1A1A]">Filter & Sort</h2>
-                                <button onClick={() => setIsFilterDrawerOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Close filters">
-                                    <X size={20} className="text-gray-500" aria-hidden="true" />
+                                <h2 className="text-2xl font-serif text-[#1A1A1A]">Filter & Sort</h2>
+                                <button
+                                    onClick={() => setIsFilterDrawerOpen(false)}
+                                    className="flex h-9 w-9 items-center justify-center border border-[#E5E5E5] text-[#595959] hover:bg-[#0A0A0A] hover:border-[#0A0A0A] hover:text-[#D4AF37] transition-colors duration-300"
+                                    aria-label="Close filters"
+                                >
+                                    <X size={17} aria-hidden="true" />
                                 </button>
                             </div>
 
                             {/* Drawer Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-10 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10 custom-scrollbar">
 
                                 {/* Search */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Search</h3>
+                                    <h3 className={MICRO_LABEL}>Search</h3>
                                     <div className="relative">
                                         <input
                                             type="text"
                                             placeholder="Search collection..."
                                             aria-label="Search collection"
-                                            className="w-full pl-10 pr-4 py-3 bg-[#F9F5F0] border border-transparent focus:border-[#D4AF37] rounded-lg outline-none transition-all font-sans"
+                                            className="w-full pl-10 pr-4 py-3 bg-white border border-[#E5E5E5] focus:border-[#D4AF37] outline-none transition-colors duration-300 font-sans text-sm"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                         />
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} aria-hidden="true" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8680]" size={17} aria-hidden="true" />
                                     </div>
                                 </div>
 
                                 {/* Sort */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Sort By</h3>
+                                    <h3 className={MICRO_LABEL}>Sort By</h3>
                                     <div className="grid grid-cols-2 gap-3">
                                         {[
                                             { id: 'featured', label: 'Featured' },
@@ -385,9 +407,9 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                             <button
                                                 key={opt.id}
                                                 onClick={() => setSortBy(opt.id as SortOption)}
-                                                className={`py-3 px-4 text-sm font-medium rounded-lg border transition-all ${sortBy === opt.id
-                                                    ? 'border-[#D4AF37] bg-[#D4AF37]/5 text-[#4A0404]'
-                                                    : 'border-[#E5E5E5] bg-white text-gray-600 hover:border-gray-300'
+                                                className={`py-3 px-4 text-xs font-sans tracking-wide border transition-colors duration-300 ${sortBy === opt.id
+                                                    ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
+                                                    : 'border-[#E5E5E5] bg-white text-[#595959] hover:border-[#0A0A0A]'
                                                     }`}
                                             >
                                                 {opt.label}
@@ -398,34 +420,34 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
 
                                 {/* Price Range */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Price Range</h3>
+                                    <h3 className={MICRO_LABEL}>Price Range</h3>
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="flex-1">
-                                            <label htmlFor="price-min" className="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Min</label>
+                                            <label htmlFor="price-min" className="block text-[9px] uppercase tracking-[0.25em] text-[#8A8680] font-sans mb-1.5">Min</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" aria-hidden="true">₹</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8680] text-sm" aria-hidden="true">₹</span>
                                                 <input
                                                     id="price-min"
                                                     type="text"
                                                     inputMode="numeric"
                                                     value={priceRange[0]}
                                                     onChange={(e) => setPriceBound('min', e.target.value)}
-                                                    className="w-full pl-7 pr-3 py-2.5 bg-[#F9F5F0] border border-transparent focus:border-[#D4AF37] rounded-lg outline-none transition-all font-sans text-sm"
+                                                    className="w-full pl-7 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#D4AF37] outline-none transition-colors duration-300 font-sans text-sm"
                                                 />
                                             </div>
                                         </div>
-                                        <span className="text-gray-300 mt-5" aria-hidden="true">—</span>
+                                        <span className="text-[#E5E5E5] mt-5" aria-hidden="true">—</span>
                                         <div className="flex-1">
-                                            <label htmlFor="price-max" className="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Max</label>
+                                            <label htmlFor="price-max" className="block text-[9px] uppercase tracking-[0.25em] text-[#8A8680] font-sans mb-1.5">Max</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" aria-hidden="true">₹</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8680] text-sm" aria-hidden="true">₹</span>
                                                 <input
                                                     id="price-max"
                                                     type="text"
                                                     inputMode="numeric"
                                                     value={priceRange[1]}
                                                     onChange={(e) => setPriceBound('max', e.target.value)}
-                                                    className="w-full pl-7 pr-3 py-2.5 bg-[#F9F5F0] border border-transparent focus:border-[#D4AF37] rounded-lg outline-none transition-all font-sans text-sm"
+                                                    className="w-full pl-7 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#D4AF37] outline-none transition-colors duration-300 font-sans text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -447,9 +469,9 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                                 <button
                                                     key={preset.label}
                                                     onClick={() => setPriceRange(preset.range)}
-                                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isActive
-                                                        ? 'bg-[#1A1A1A] text-[#D4AF37]'
-                                                        : 'bg-[#F9F5F0] text-gray-600 hover:bg-[#E5E5E5]'
+                                                    className={`px-4 py-2 text-[11px] font-sans tracking-wide border transition-colors duration-300 ${isActive
+                                                        ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                                                        : 'bg-white border-[#E5E5E5] text-[#595959] hover:border-[#0A0A0A]'
                                                         }`}
                                                 >
                                                     {preset.label}
@@ -461,31 +483,29 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
 
                                 {/* Availability */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Availability</h3>
+                                    <h3 className={MICRO_LABEL}>Availability</h3>
                                     <button
                                         role="switch"
                                         aria-checked={inStockOnly}
                                         onClick={() => setInStockOnly(v => !v)}
                                         className="flex items-center justify-between w-full group"
                                     >
-                                        <span className="flex items-center gap-3 text-sm text-gray-600 group-hover:text-[#1A1A1A] transition-colors">
+                                        <span className="flex items-center gap-3 text-sm font-sans text-[#595959] group-hover:text-[#1A1A1A] transition-colors">
                                             <PackageCheck size={16} className="text-[#D4AF37]" aria-hidden="true" />
                                             In stock only
                                         </span>
                                         <span
                                             aria-hidden="true"
-                                            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-300 ${inStockOnly ? 'bg-[#1A1A1A]' : 'bg-neutral-200'}`}
+                                            className={`flex h-5 w-5 shrink-0 items-center justify-center border transition-colors duration-300 ${inStockOnly ? 'bg-[#4A0404] border-[#4A0404]' : 'bg-white border-[#8A8680]/50 group-hover:border-[#4A0404]'}`}
                                         >
-                                            <span
-                                                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 ${inStockOnly ? 'translate-x-[22px] bg-[#D4AF37]' : 'translate-x-0.5'}`}
-                                            ></span>
+                                            {inStockOnly && <Check size={13} className="text-[#D4AF37]" aria-hidden="true" />}
                                         </span>
                                     </button>
                                 </div>
 
                                 {/* Categories */}
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Categories</h3>
+                                    <h3 className={MICRO_LABEL}>Categories</h3>
                                     <div className="space-y-3">
                                         {categories.map(cat => {
                                             const isActive = activeCategories.includes(cat);
@@ -495,13 +515,9 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                                         type="checkbox"
                                                         checked={isActive}
                                                         onChange={() => toggleCategory(cat)}
-                                                        className="sr-only"
+                                                        className="h-4 w-4 shrink-0 accent-[#4A0404] cursor-pointer"
                                                     />
-                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isActive ? 'bg-[#1A1A1A] border-[#1A1A1A]' : 'border-gray-300 group-hover:border-[#D4AF37]'
-                                                        }`}>
-                                                        {isActive && <Check size={14} className="text-white" aria-hidden="true" />}
-                                                    </div>
-                                                    <span className={`text-sm ${isActive ? 'text-[#1A1A1A] font-bold' : 'text-gray-600 group-hover:text-[#1A1A1A]'}`}>
+                                                    <span className={`text-sm font-sans transition-colors ${isActive ? 'text-[#1A1A1A]' : 'text-[#595959] group-hover:text-[#1A1A1A]'}`}>
                                                         {cat}
                                                     </span>
                                                 </label>
@@ -513,7 +529,7 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                 {/* Style / Hashtags */}
                                 {hashtags.length > 0 && (
                                     <div>
-                                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Style & Occasion</h3>
+                                        <h3 className={MICRO_LABEL}>Style & Occasion</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {hashtags.slice(0, 15).map(tag => {
                                                 const isActive = activeHashtags.includes(tag);
@@ -521,9 +537,9 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                                                     <button
                                                         key={tag}
                                                         onClick={() => toggleHashtag(tag)}
-                                                        className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all ${isActive
-                                                            ? 'bg-[#1A1A1A] text-[#D4AF37]'
-                                                            : 'bg-[#F9F5F0] text-gray-600 hover:bg-[#E5E5E5]'
+                                                        className={`px-4 py-2 text-[11px] font-sans tracking-wide border transition-colors duration-300 ${isActive
+                                                            ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                                                            : 'bg-white border-[#E5E5E5] text-[#595959] hover:border-[#0A0A0A]'
                                                             }`}
                                                     >
                                                         #{tag}
@@ -537,16 +553,16 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                             </div>
 
                             {/* Drawer Footer Actions */}
-                            <div className="p-6 border-t border-[#E5E5E5] bg-gray-50 flex gap-4">
+                            <div className="p-6 border-t border-[#E5E5E5] bg-[#FDFBF7] flex items-center gap-6">
                                 <button
                                     onClick={clearAllFilters}
-                                    className="flex-1 py-4 uppercase text-xs font-bold tracking-widest text-gray-500 hover:text-[#1A1A1A] transition-colors"
+                                    className="btn-thread font-sans text-[#595959] hover:text-[#1A1A1A] transition-colors shrink-0"
                                 >
                                     Clear All
                                 </button>
                                 <button
                                     onClick={() => setIsFilterDrawerOpen(false)}
-                                    className="flex-1 py-4 bg-[#1A1A1A] text-[#D4AF37] uppercase text-xs font-bold tracking-widest rounded-full shadow-lg hover:shadow-xl hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all"
+                                    className="btn-royal btn-royal--oxblood flex-1"
                                 >
                                     View Results ({filteredAndSortedProducts.length})
                                 </button>
@@ -570,29 +586,28 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
 /** Horizontal card used by the "list" view mode. */
 function ProductListCard({ product, onQuickView }: { product: Product; onQuickView: (p: Product) => void }) {
     const { addToCart } = useCart();
-    const displayImage = product.images.find(img => img && img.trim() !== "") || "";
+    const displayImage = product.images.find(isRenderableImageSrc) || "";
 
     return (
-        <div className="group flex flex-col sm:flex-row bg-white border border-[#E5E5E5]/60 hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-sm">
+        <div className="group flex flex-col sm:flex-row bg-white border border-[#E5E5E5] hover:border-[#D4AF37]/60 transition-colors duration-700">
             {/* Image */}
             <Link
                 href={`/product/${product.id}`}
                 prefetch={true}
-                className="relative w-full sm:w-52 md:w-60 aspect-[4/3] sm:aspect-[3/4] shrink-0 overflow-hidden bg-[#F9F5F0]"
+                className="zari-frame relative w-full sm:w-52 md:w-60 aspect-[4/3] sm:aspect-[3/4] shrink-0 overflow-hidden bg-[#F3EEE5]"
                 aria-label={`View details of ${product.name}`}
             >
                 <SrivariImage
                     src={displayImage}
                     alt={product.name}
+                    fallbackLabel={product.category || "The Srivari"}
                     fill
                     sizes="(max-width: 640px) 100vw, 240px"
-                    className={`object-cover transition-transform duration-1000 group-hover:scale-110 ${product.stock <= 0 ? 'grayscale opacity-70' : ''}`}
+                    className={`object-cover transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] ${product.stock <= 0 ? 'grayscale opacity-60' : ''}`}
                 />
                 {product.stock <= 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
-                        <div className="px-4 py-2 bg-white/90 backdrop-blur-sm border border-[#D4AF37]/30 shadow-xl">
-                            <span className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-[0.3em]">Sold Out</span>
-                        </div>
+                    <div className="absolute inset-x-0 bottom-0 z-10 bg-[#0A0A0A]/80 backdrop-blur-sm py-2.5 text-center">
+                        <span className="text-[9px] uppercase tracking-[0.4em] text-marble/80 font-sans">Sold Out</span>
                     </div>
                 )}
             </Link>
@@ -600,36 +615,37 @@ function ProductListCard({ product, onQuickView }: { product: Product; onQuickVi
             {/* Details */}
             <div className="flex-1 flex flex-col justify-between p-6 md:p-8 gap-4">
                 <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 font-sans">{product.category}</p>
+                    <p className="text-[9px] uppercase tracking-[0.35em] text-[#C8AA6E] font-sans mb-2">{product.category}</p>
                     <Link href={`/product/${product.id}`} prefetch={true}>
-                        <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors mb-2">
+                        <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors duration-300 mb-2">
                             {product.name}
                         </h3>
                     </Link>
-                    <p className="text-sm text-gray-500 font-sans font-light leading-relaxed line-clamp-2">
+                    <p className="text-sm text-[#595959] font-sans font-light leading-relaxed line-clamp-2">
                         {product.description?.split('--- \n**Wash & Care Instructions:**\n')[0]}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                    <span className="text-lg font-medium text-[#4A0404] font-sans">
+                    <span className="font-serif text-xl text-[#4A0404]">
                         ₹{product.price.toLocaleString('en-IN')}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-7">
                         <button
                             onClick={() => onQuickView(product)}
                             aria-label={`Quick view of ${product.name}`}
-                            className="p-3 rounded-full border border-[#E5E5E5] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-[#D4AF37] hover:border-[#1A1A1A] transition-colors"
+                            className="btn-thread font-sans text-[#1A1A1A]"
                         >
-                            <Eye size={16} aria-hidden="true" />
+                            <Eye size={13} aria-hidden="true" />
+                            View
                         </button>
                         <button
                             onClick={() => addToCart(product)}
                             disabled={product.stock <= 0}
                             aria-label={`Add ${product.name} to bag`}
-                            className="flex items-center gap-2 px-6 py-3 bg-[#1A1A1A] text-[#D4AF37] rounded-full uppercase tracking-widest text-[10px] font-bold hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="btn-royal btn-royal--oxblood !px-7 !py-3 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <ShoppingBag size={14} aria-hidden="true" />
+                            <ShoppingBag size={13} aria-hidden="true" />
                             Add to Bag
                         </button>
                     </div>

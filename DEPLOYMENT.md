@@ -26,6 +26,7 @@ Since your project uses **Next.js**, **Supabase**, and **Google Auth**, there ar
    - `ADMIN_EMAILS` — comma-separated admin logins (defaults to support@thesrivari.com).
    - `SHIPROCKET_WEBHOOK_SECRET` — also set the same value as the `x-api-key` header in your Shiprocket webhook settings (delivery updates are rejected until this is configured).
    - `RAZORPAY_WEBHOOK_SECRET` — create a webhook in the Razorpay dashboard pointing to `https://thesrivari.com/api/payment/webhook` for the `payment.captured` event with this secret. This marks orders Paid even when the customer's browser closes before returning from the payment popup.
+   - `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` — the store's AI features (Royal Stylist, description writer, image-prompt helper) now use any free OpenAI-compatible endpoint instead of Gemini. Free options: [Groq](https://console.groq.com) (e.g. `https://api.groq.com/openai/v1` + `llama-3.3-70b-versatile`) or [OpenRouter](https://openrouter.ai) `:free` models. Until set, AI features respond with a friendly "not configured" notice — nothing else breaks. The AI Image Studio uses Pollinations (free, keyless) and needs no key. `GEMINI_API_KEY` can be deleted from Vercel.
    - Do **not** set `ADMIN_DEV_BYPASS` in Vercel — it is a local-development flag only.
 
 ## 1. Push Code to GitHub

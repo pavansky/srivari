@@ -1,14 +1,9 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { chatComplete, isLLMConfigured, LLM_NOT_CONFIGURED_MSG } from '@/lib/llm';
 import { rateLimit } from '@/lib/rate-limit';
 import { requireAdmin } from '@/lib/adminAuth';
 
-// Allow responses up to 30 seconds
-export const maxDuration = 30;
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
+// Allow responses up to 60 seconds (free/local endpoints can be slower)
+export const maxDuration = 60;
 
 // Admin-only: the sole consumer is the admin product-description enhancer.
 // (The public storefront concierge uses /api/stylist instead.)
@@ -17,8 +12,8 @@ export async function POST(req: Request) {
     if (denied) return denied;
 
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            return Response.json({ error: "SYSTEM: GEMINI_API_KEY missing" }, { status: 500 });
+        if (!isLLMConfigured()) {
+            return Response.json({ error: LLM_NOT_CONFIGURED_MSG }, { status: 503 });
         }
 
         const ip = req.headers.get('x-forwarded-for') || 'anonymous';
@@ -32,16 +27,16 @@ export async function POST(req: Request) {
             return Response.json({ error: 'Prompt too long' }, { status: 400 });
         }
 
-        // Use gemini-3.1-pro-preview (latest model)
-        const result = await generateText({
-            model: google('gemini-3.1-pro-preview'),
-            messages: messages || [{ role: 'user', content: prompt }],
+        const text = await chatComplete({
             system: "You are a professional luxury fashion copywriter for 'The Srivari'. Write elegant, sophisticated, and shorter product descriptions. Produce ONLY plain text paragraphs for the main description. NEVER use markdown like **, #, or bullet points in the description section itself. If the user prompt specifically includes a 'Wash & Care Instructions' block at the end, simply append that exact block to your output verbatim, exactly as it was provided.",
+            messages: messages || undefined,
+            prompt: messages ? undefined : prompt,
+            maxTokens: 900,
         });
 
-        return Response.json({ text: result.text });
+        return Response.json({ text });
     } catch (error: any) {
         console.error("AI Generation Error:", error);
-        return Response.json({ error: `API ERROR: ${error.message}` }, { status: 500 });
+        return Response.json({ error: `AI error: ${error.message}` }, { status: 500 });
     }
 }

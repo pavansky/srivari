@@ -101,7 +101,7 @@ export default function ProductActions({ product }: { product: Product }) {
     const whatsappUrl = SITE_CONFIG.links.whatsapp(whatsappMessage);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Toast */}
             <AnimatePresence>
                 {toast && (
@@ -111,22 +111,22 @@ export default function ProductActions({ product }: { product: Product }) {
                         exit={{ opacity: 0, x: 80 }}
                         transition={{ duration: 0.35, ease: "easeOut" }}
                         role="status"
-                        className="fixed top-24 right-4 sm:right-6 bg-black/90 backdrop-blur-md border border-[#D4AF37]/50 text-white px-5 py-4 flex items-center gap-4 z-[100] shadow-2xl rounded-sm max-w-[calc(100vw-2rem)]"
+                        className="fixed top-24 right-4 sm:right-6 bg-[#0A0A0A]/95 backdrop-blur-md border border-[#D4AF37]/50 text-marble px-5 py-4 flex items-center gap-4 z-[100] shadow-2xl max-w-[calc(100vw-2rem)]"
                     >
                         {toast.showCartLink && displayImage && (
-                            <div className="w-10 h-10 relative rounded overflow-hidden flex-shrink-0 border border-[#D4AF37]/30">
+                            <div className="w-10 h-10 relative overflow-hidden flex-shrink-0 border border-[#D4AF37]/30">
                                 <SrivariImage src={displayImage} alt={product.name} fill sizes="40px" className="object-cover" />
                             </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                            <span className="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold">{toast.title}</span>
-                            <span className="text-sm font-sans truncate max-w-[200px]">{toast.message}</span>
+                            <span className="text-[9px] text-[#D4AF37] uppercase tracking-[0.3em] font-sans">{toast.title}</span>
+                            <span className="text-sm font-serif truncate max-w-[200px]">{toast.message}</span>
                         </div>
                         {toast.showCartLink && (
                             <div className="ml-2 pl-4 border-l border-white/10">
                                 <Link
                                     href="/cart"
-                                    className="text-xs text-white hover:text-[#D4AF37] uppercase tracking-widest transition-colors font-bold whitespace-nowrap"
+                                    className="btn-thread text-marble hover:text-[#D4AF37] transition-colors whitespace-nowrap !pb-1"
                                 >
                                     View Bag
                                 </Link>
@@ -136,30 +136,30 @@ export default function ProductActions({ product }: { product: Product }) {
                 )}
             </AnimatePresence>
 
-            <div className="flex flex-col gap-3">
-                {/* Quantity Selector */}
+            <div className="flex flex-col gap-4">
+                {/* Quantity — square, hairline, serif numerals */}
                 {product.stock > 0 && (
-                    <div className="flex items-center gap-6 mb-4">
-                        <span className="text-xs font-sans uppercase tracking-widest font-bold text-[#1A1A1A]">
+                    <div className="flex items-center gap-6 mb-2">
+                        <span className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#1A1A1A]/70">
                             Quantity
                         </span>
-                        <div className="flex items-center border border-[#1A1A1A] bg-white">
+                        <div className="flex items-center border border-black/20">
                             <button
                                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                className="w-12 h-12 flex items-center justify-center font-serif text-xl font-light text-[#1A1A1A] hover:bg-[#4A0404] hover:text-[#FDFBF7] transition-colors duration-300"
                                 aria-label="Decrease quantity"
                             >
-                                -
+                                &minus;
                             </button>
                             <span
                                 aria-live="polite"
-                                className="w-12 h-12 flex items-center justify-center font-serif text-xl text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20"
+                                className="w-12 h-12 flex items-center justify-center font-serif text-xl text-[#4A0404] border-l border-r border-black/10"
                             >
                                 {quantity}
                             </span>
                             <button
                                 onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                                className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
+                                className="w-12 h-12 flex items-center justify-center font-serif text-xl font-light text-[#1A1A1A] hover:bg-[#4A0404] hover:text-[#FDFBF7] transition-colors duration-300"
                                 aria-label="Increase quantity"
                             >
                                 +
@@ -170,33 +170,30 @@ export default function ProductActions({ product }: { product: Product }) {
 
                 {product.stock > 0 ? (
                     <>
+                        <button onClick={handleAddToCart} className="btn-royal btn-royal--oxblood w-full">
+                            Add to Bag
+                            <ShoppingBag size={15} aria-hidden="true" />
+                        </button>
+
                         <a
                             href={whatsappUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full bg-[#1A1A1A] text-white h-14 flex items-center justify-center gap-4 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-500 shadow-xl shadow-black/5 group"
+                            className="btn-royal w-full group"
                         >
-                            <span className="font-sans text-xs font-bold uppercase tracking-[0.2em]">Acquire via WhatsApp</span>
-                            <Share2 size={18} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                            Acquire via WhatsApp
+                            <Share2 size={15} className="transition-transform duration-500 group-hover:translate-x-1" aria-hidden="true" />
                         </a>
-
-                        <button
-                            onClick={handleAddToCart}
-                            className="w-full bg-transparent border border-[#1A1A1A] text-[#1A1A1A] h-14 flex items-center justify-center gap-4 hover:bg-[#1A1A1A] hover:text-white transition-all duration-500"
-                        >
-                            <span className="font-sans text-xs font-bold uppercase tracking-[0.2em]">Add to Bag</span>
-                            <ShoppingBag size={18} aria-hidden="true" />
-                        </button>
                     </>
                 ) : (
                     <div className="space-y-4">
-                        <div className="w-full bg-neutral-100 text-neutral-400 h-14 flex items-center justify-center gap-4 cursor-not-allowed border border-neutral-200">
-                            <span className="font-sans text-xs font-bold uppercase tracking-[0.2em]">Currently Unavailable</span>
-                            <X size={18} aria-hidden="true" />
+                        <div className="w-full border border-black/10 text-neutral-400 h-14 flex items-center justify-center gap-4 cursor-not-allowed">
+                            <span className="font-sans text-[11px] uppercase tracking-[0.28em]">Currently Unavailable</span>
+                            <X size={16} aria-hidden="true" />
                         </div>
-                        <p className="text-[10px] text-center text-neutral-400 font-medium tracking-wide">
+                        <p className="text-[10px] text-center text-neutral-400 font-sans tracking-wide">
                             This masterpiece has been acquired.{" "}
-                            <Link href="/shop" className="underline hover:text-[#D4AF37]">
+                            <Link href="/shop" className="underline underline-offset-4 text-[#4A0404] hover:text-[#D4AF37] transition-colors">
                                 Explore similar treasures
                             </Link>
                         </p>
@@ -204,43 +201,46 @@ export default function ProductActions({ product }: { product: Product }) {
                 )}
             </div>
 
-            <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-4">
+            {/* Wishlist / share — square hairline icon buttons */}
+            <div className="flex items-center gap-4 border-t border-b border-black/10 py-5">
                 <button
                     type="button"
                     onClick={handleWishlistToggle}
                     aria-pressed={saved}
-                    className={`group flex items-center gap-2 transition-colors font-sans text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation select-none p-4 -m-4
-                        ${saved ? "text-red-600" : "text-neutral-500 hover:text-black"}
+                    aria-label={saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}
+                    className={`w-12 h-12 flex items-center justify-center border transition-colors duration-300 cursor-pointer touch-manipulation select-none
+                        ${saved ? "border-[#4A0404] text-[#4A0404]" : "border-black/15 text-neutral-500 hover:border-[#4A0404] hover:text-[#4A0404]"}
                     `}
                     style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
                 >
                     <Heart
                         size={16}
                         aria-hidden="true"
-                        className={`transition-transform duration-300 pointer-events-none ${saved ? "fill-current scale-110" : "group-hover:scale-110"}`}
+                        className={`pointer-events-none transition-transform duration-300 ${saved ? "fill-current" : ""}`}
                     />
-                    <span className="pointer-events-none">{saved ? "Saved" : "Wishlist"}</span>
                 </button>
-
-                <div className="w-[1px] h-4 bg-neutral-300" aria-hidden="true"></div>
 
                 <button
                     type="button"
                     onClick={handleShare}
-                    className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-sans text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation select-none p-4 -m-4"
+                    aria-label={`Share ${product.name}`}
+                    className="w-12 h-12 flex items-center justify-center border border-black/15 text-neutral-500 hover:border-[#4A0404] hover:text-[#4A0404] transition-colors duration-300 cursor-pointer touch-manipulation select-none"
                     style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
                 >
-                    <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform pointer-events-none" aria-hidden="true" />
-                    <span className="pointer-events-none">Share</span>
+                    <Share2 size={16} className="pointer-events-none" aria-hidden="true" />
                 </button>
+
+                <span className="ml-2 text-[9px] font-sans uppercase tracking-[0.3em] text-neutral-400">
+                    {saved ? "Saved to your wishlist" : "Wishlist · Share"}
+                </span>
             </div>
 
             {/* Assurance strip */}
-            <div className="flex items-center justify-center gap-6 text-neutral-400 text-[10px] uppercase tracking-widest font-sans">
-                <span className="flex items-center gap-1.5">
+            <div className="flex items-center gap-8 text-neutral-400 text-[9px] uppercase tracking-[0.3em] font-sans">
+                <span className="flex items-center gap-2">
                     <Check size={12} className="text-[#D4AF37]" aria-hidden="true" /> Silk Mark Certified
                 </span>
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                     <Truck size={12} className="text-[#D4AF37]" aria-hidden="true" /> Insured Delivery
                 </span>
             </div>

@@ -1,14 +1,9 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { chatComplete, isLLMConfigured } from '@/lib/llm';
 import { getProducts } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
 
-// Allow responses up to 30 seconds for complex reasoning
-export const maxDuration = 30;
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
+// Allow responses up to 60 seconds (free/local endpoints can be slower)
+export const maxDuration = 60;
 
 /**
  * World-Class AI Stylist API
@@ -20,8 +15,8 @@ const google = createGoogleGenerativeAI({
  */
 export async function POST(req: Request) {
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            return Response.json({ error: "KEY_MISSING" }, { status: 500 });
+        if (!isLLMConfigured()) {
+            return Response.json({ error: "KEY_MISSING" }, { status: 503 });
         }
 
         const ip = req.headers.get('x-forwarded-for') || 'anonymous';
@@ -95,16 +90,17 @@ export async function POST(req: Request) {
             ${JSON.stringify(productContext)}
         `;
 
-        // 5. Intelligent Generation (Using stable gemini-1.5-pro for reasoning)
-        const result = await generateText({
-            model: google('gemini-1.5-pro'),
+        // 5. Intelligent Generation via the configured open/free endpoint
+        const raw = await chatComplete({
             system: systemPrompt,
             messages: [{ role: 'user', content: userQuery }],
+            temperature: 0.6,
+            maxTokens: 1200,
         });
 
         // 6. Robust Universal JSON Parser
         let resultData;
-        const text = result.text.trim();
+        const text = raw.trim();
         try {
             // Remove markdown blocks if present
             const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();

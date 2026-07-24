@@ -2,7 +2,8 @@
 
 import { useScroll, useTransform, motion } from "framer-motion";
 import { useRef } from "react";
-import SrivariImage from "@/components/SrivariImage";
+import SrivariImage, { isRenderableImageSrc } from "@/components/SrivariImage";
+import SectionHeader from "@/components/ui/SectionHeader";
 import Link from "next/link";
 import { Product } from "@/types";
 
@@ -32,22 +33,20 @@ export default function AntiGravityGallery({ products }: AntiGravityGalleryProps
     if (featuredProducts.length === 0) return null;
 
     return (
-        <section id="featured-collections" ref={containerRef} className="py-32 px-6 bg-obsidian relative">
+        <section id="featured-collections" ref={containerRef} className="texture-silk py-28 md:py-32 px-6 bg-obsidian relative">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
-                    <div>
-                        <span className="text-gold uppercase tracking-widest text-sm">Curated Selection</span>
-                        <h2 className="text-4xl md:text-6xl font-serif text-marble mt-4">Featured<br />Masterpieces</h2>
-                    </div>
-                    <p className="text-marble/60 max-w-sm text-sm leading-relaxed">
-                        Handpicked weaves that defy gravity — lightweight silks that float around you,
-                        each one a signed work of the loom.
-                    </p>
-                </div>
+                <SectionHeader
+                    kicker="CURATED SELECTION"
+                    title="Featured Masterpieces"
+                    accent="Masterpieces"
+                    tone="dark"
+                    note="Handpicked weaves that defy gravity — lightweight silks that float around you, each one a signed work of the loom."
+                    className="mb-20"
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24">
                     {featuredProducts.map((product, index) => {
-                        const displayImage = product.images.find(img => img && img.trim() !== "") || "";
+                        const displayImage = product.images.find(isRenderableImageSrc) || "";
 
                         return (
                             <motion.div
@@ -56,29 +55,33 @@ export default function AntiGravityGallery({ products }: AntiGravityGalleryProps
                                 className="group relative"
                             >
                                 <Link href={`/product/${product.id}`} className="block">
-                                    <div className="aspect-[3/4] overflow-hidden rounded-sm bg-gray-900 relative cursor-pointer">
+                                    <div className="zari-frame aspect-[3/4] overflow-hidden bg-[#0d0c0a] relative cursor-pointer">
                                         <SrivariImage
                                             src={displayImage}
                                             alt={product.name}
+                                            fallbackLabel={product.category || "The Srivari"}
                                             fill
                                             sizes="(max-width: 768px) 100vw, 50vw"
-                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                            className="object-cover transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
                                         />
-
-                                        {/* Floating Price Tag */}
-                                        <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-md px-4 py-2 border border-white/20 text-marble">
-                                            <span className="block text-xs uppercase tracking-wider text-gold">Price</span>
-                                            <span className="font-serif text-lg">₹{product.price.toLocaleString('en-IN')}</span>
-                                        </div>
+                                        {/* Soft vignette so the frame reads on bright imagery */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                                     </div>
                                 </Link>
-                                <div className="mt-6 flex justify-between items-center gap-4 bg-transparent">
-                                    <Link href={`/product/${product.id}`}>
-                                        <h3 className="text-2xl font-serif text-marble group-hover:text-gold transition-colors">{product.name}</h3>
+
+                                {/* Editorial name + price block */}
+                                <div className="mt-6 flex items-end justify-between gap-4">
+                                    <Link href={`/product/${product.id}`} className="min-w-0">
+                                        <h3 className="text-2xl md:text-3xl font-serif leading-snug text-marble group-hover:text-gold transition-colors duration-500">
+                                            {product.name}
+                                        </h3>
+                                        <p className="mt-1.5 font-serif text-lg text-marble/80">
+                                            ₹{product.price.toLocaleString('en-IN')}
+                                        </p>
                                     </Link>
                                     <Link
                                         href={`/product/${product.id}`}
-                                        className="text-sm uppercase tracking-widest text-marble/60 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1 shrink-0"
+                                        className="btn-thread font-sans text-marble/60 hover:text-gold transition-colors duration-500 shrink-0 mb-1"
                                     >
                                         View
                                     </Link>

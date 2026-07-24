@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface Particle {
     x: number;
@@ -11,7 +12,7 @@ interface Particle {
     baseSize: number;
     size: number;
     alpha: number;
-    type: 'heart' | 'butterfly' | 'circle';
+    type: 'spark' | 'circle';
     rotation: number;
     rotationSpeed: number;
 }
@@ -58,10 +59,11 @@ function ParticleCanvas() {
         };
 
         const initParticles = () => {
-            // About 250 particles for a good dense sphere
-            const particleCount = Math.min(window.innerWidth * 0.15, 250);
+            // Restrained "zari dust": enough to suggest thread-gold in the air,
+            // never enough to read as confetti.
+            const particleCount = Math.min(window.innerWidth * 0.06, 90);
             particles = [];
-            const types = ['heart', 'butterfly', 'circle'] as const;
+            const types = ['spark', 'circle', 'circle'] as const;
 
             // Use Fibonacci sphere algorithm for even distribution
             const radius = Math.min(canvas.width, canvas.height) * 0.4;
@@ -74,7 +76,7 @@ function ParticleCanvas() {
                 const baseY = radius * Math.sin(phi) * Math.sin(theta);
                 const baseZ = radius * Math.cos(phi);
 
-                const size = Math.random() * 3 + 1.5;
+                const size = Math.random() * 1.6 + 0.8;
                 particles.push({
                     // Start particles scattered or at center
                     x: canvas.width / 2 + (Math.random() - 0.5) * 200,
@@ -84,7 +86,7 @@ function ParticleCanvas() {
                     baseZ,
                     baseSize: size,
                     size: size,
-                    alpha: Math.random() * 0.5 + 0.3,
+                    alpha: Math.random() * 0.3 + 0.15,
                     type: types[Math.floor(Math.random() * types.length)],
                     rotation: Math.random() * Math.PI * 2,
                     rotationSpeed: (Math.random() - 0.5) * 0.05
@@ -155,25 +157,15 @@ function ParticleCanvas() {
                     ctx.beginPath();
                     ctx.arc(0, 0, p.size, 0, Math.PI * 2);
                     ctx.fill();
-                } else if (p.type === 'heart') {
-                    const s = p.size;
+                } else {
+                    // Four-point zari spark — a fine thread-gold glint
+                    const s = p.size * 2.2;
                     ctx.beginPath();
-                    ctx.moveTo(0, s * 0.3);
-                    ctx.bezierCurveTo(-s * 0.5, -s * 0.1, -s * 0.9, s * 0.5, 0, s * 1.2);
-                    ctx.bezierCurveTo(s * 0.9, s * 0.5, s * 0.5, -s * 0.1, 0, s * 0.3);
-                    ctx.fill();
-                } else if (p.type === 'butterfly') {
-                    const s = p.size;
-                    ctx.beginPath();
-                    // Top left wing
-                    ctx.moveTo(0, 0);
-                    ctx.bezierCurveTo(-s * 1.2, -s * 0.8, -s * 1.5, s * 0.4, 0, s * 0.4);
-                    // Bottom left wing
-                    ctx.bezierCurveTo(-s * 0.8, s * 0.8, -s * 0.4, s * 1.2, 0, s * 0.8);
-                    // Bottom right wing
-                    ctx.bezierCurveTo(s * 0.4, s * 1.2, s * 0.8, s * 0.8, 0, s * 0.4);
-                    // Top right wing
-                    ctx.bezierCurveTo(s * 1.5, s * 0.4, s * 1.2, -s * 0.8, 0, 0);
+                    ctx.moveTo(0, -s);
+                    ctx.quadraticCurveTo(s * 0.12, -s * 0.12, s, 0);
+                    ctx.quadraticCurveTo(s * 0.12, s * 0.12, 0, s);
+                    ctx.quadraticCurveTo(-s * 0.12, s * 0.12, -s, 0);
+                    ctx.quadraticCurveTo(-s * 0.12, -s * 0.12, 0, -s);
                     ctx.fill();
                 }
 
@@ -206,12 +198,14 @@ function ParticleCanvas() {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-[40]"
+            className="fixed inset-0 pointer-events-none z-[1]"
+            aria-hidden="true"
         />
     );
 }
 
 export default function ParticleBackground() {
+    const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
@@ -229,7 +223,8 @@ export default function ParticleBackground() {
         };
     }, []);
 
-    if (!isVisible) return null;
+    // A hero flourish, not sitewide chrome: only the homepage gets the dust.
+    if (!isVisible || pathname !== "/") return null;
 
     return <ParticleCanvas />;
 }

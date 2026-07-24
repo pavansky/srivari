@@ -8,6 +8,11 @@ interface SrivariImageProps extends Omit<ImageProps, 'src'> {
     fallbackLabel?: string;
 }
 
+// Single source of truth lives in a server-safe module; re-exported here so
+// client components can import it alongside the component.
+import { isRenderableImageSrc } from "@/lib/image-src";
+export { isRenderableImageSrc };
+
 export default function SrivariImage({ src, alt, className, fallbackLabel = "The Srivari", ...props }: SrivariImageProps) {
     const [loadError, setLoadError] = useState(false);
 
@@ -15,24 +20,18 @@ export default function SrivariImage({ src, alt, className, fallbackLabel = "The
         setLoadError(false);
     }, [src]);
 
-    const handleError = () => {
-        setLoadError(true);
-    };
-
-    const isInvalid = !src || src.trim() === "";
-
-    if (isInvalid || loadError) {
+    if (!isRenderableImageSrc(src) || loadError) {
+        // Branded fallback: obsidian silk tile with a fine zari frame and the
+        // house monogram — at home on dark and light surfaces alike.
         return (
-            <div className={`relative w-full h-full bg-gray-200 overflow-hidden ${className || ''}`}>
-                <Image
-                    src="/srivari-flow.png"
-                    alt="The Srivari Flow"
-                    fill
-                    className="object-cover opacity-80"
-                    unoptimized
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                    <span className="text-white font-serif text-lg md:text-xl tracking-widest uppercase opacity-90 text-center px-4">
+            <div className={`relative w-full h-full overflow-hidden bg-[#0d0c0a] ${className || ''}`} role="img" aria-label={typeof alt === 'string' ? alt : fallbackLabel}>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(212,175,55,0.12),transparent_55%),radial-gradient(ellipse_at_75%_85%,rgba(74,4,4,0.35),transparent_60%)]" />
+                <div className="absolute inset-3 border border-[#D4AF37]/25" />
+                <div className="absolute inset-[15px] border border-[#D4AF37]/10" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+                    <span className="font-serif text-4xl md:text-5xl text-[#D4AF37]/70 leading-none">S</span>
+                    <span className="h-px w-8 bg-[#D4AF37]/40" />
+                    <span className="text-[#F5F5F5]/60 font-sans text-[9px] md:text-[10px] tracking-[0.35em] uppercase">
                         {fallbackLabel}
                     </span>
                 </div>
@@ -49,7 +48,7 @@ export default function SrivariImage({ src, alt, className, fallbackLabel = "The
             src={src}
             alt={alt}
             className={className}
-            onError={handleError}
+            onError={() => setLoadError(true)}
             placeholder="blur"
             blurDataURL={shimmer}
         />

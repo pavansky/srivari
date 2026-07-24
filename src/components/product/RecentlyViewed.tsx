@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Product } from "@/types";
 import ProductCard from "@/components/ProductCard";
+import SectionHeader from "@/components/ui/SectionHeader";
+import ZariDivider from "@/components/ui/ZariDivider";
 
 const STORAGE_KEY = "srivari_recently_viewed";
 const MAX_ITEMS = 8;
@@ -64,22 +66,24 @@ export default function RecentlyViewed({ currentProductId }: { currentProductId:
     if (products.length === 0) return null;
 
     return (
-        <section className="container mx-auto px-4 md:px-6 py-16 border-t border-[#D4AF37]/10" aria-label="Recently viewed">
-            <div className="flex items-end justify-between mb-8">
-                <div>
-                    <span className="text-[#D4AF37] text-[10px] font-sans font-bold uppercase tracking-[0.4em] block mb-2">
-                        Your Journey
-                    </span>
-                    <h2 className="text-2xl md:text-3xl font-serif text-[#1A1A1A]">Recently Viewed</h2>
+        <>
+            <ZariDivider tone="light" className="container mx-auto px-4" />
+            <section className="container mx-auto px-4 md:px-6 py-28" aria-label="Recently viewed">
+                <SectionHeader
+                    tone="light"
+                    kicker="Your Journey"
+                    title="Recently Viewed"
+                    accent="Viewed"
+                    className="mb-14"
+                />
+                <div className="flex gap-6 overflow-x-auto pb-4 snap-x scrollbar-hide">
+                    {products.map((product) => (
+                        <div key={product.id} className="w-64 sm:w-72 flex-shrink-0 snap-start">
+                            <ProductCard product={product} tone="light" />
+                        </div>
+                    ))}
                 </div>
-            </div>
-            <div className="flex gap-6 overflow-x-auto pb-4 snap-x scrollbar-hide">
-                {products.map((product) => (
-                    <div key={product.id} className="w-64 sm:w-72 flex-shrink-0 snap-start">
-                        <ProductCard product={product} />
-                    </div>
-                ))}
-            </div>
-        </section>
+            </section>
+        </>
     );
 }

@@ -20,6 +20,159 @@ body {
   /* Prevent horizontal scroll from floating elements */
 }
 
+/* =============================================
+   The Srivari signature language
+   ============================================= */
+
+/* Subtle woven-silk sheen for obsidian sections */
+.texture-silk {
+  background-image:
+    repeating-linear-gradient(115deg,
+      rgba(212, 175, 55, 0.012) 0px,
+      rgba(212, 175, 55, 0.012) 1px,
+      transparent 1px,
+      transparent 7px),
+    radial-gradient(ellipse 90% 60% at 50% 0%,
+      rgba(212, 175, 55, 0.05),
+      transparent 65%);
+}
+
+/* Fine double gold inset — the "zari frame". Apply to a relative container. */
+.zari-frame {
+  position: relative;
+}
+
+.zari-frame::before,
+.zari-frame::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  transition: opacity 0.6s ease, inset 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.zari-frame::before {
+  inset: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  opacity: 0;
+}
+
+.zari-frame::after {
+  inset: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  opacity: 0;
+}
+
+.zari-frame:hover::before,
+.zari-frame:hover::after,
+.group:hover .zari-frame::before,
+.group:hover .zari-frame::after {
+  opacity: 1;
+}
+
+/* Thread link — tracked uppercase with a gold thread that draws underneath */
+.btn-thread {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.7rem;
+  padding-bottom: 0.45rem;
+}
+
+.btn-thread::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, #d4af37, rgba(212, 175, 55, 0.25));
+  transform: scaleX(0.25);
+  transform-origin: left;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-thread:hover::after {
+  transform: scaleX(1);
+}
+
+/* Royal button — hairline gold outline, silk fill sweeps in on hover */
+.btn-royal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1rem 2.6rem;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  color: #d4af37;
+  background: transparent;
+  overflow: hidden;
+  transition: color 0.45s ease, border-color 0.45s ease;
+  isolation: isolate;
+}
+
+.btn-royal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, #d4af37, #f2d06b 55%, #d4af37);
+  transform: translateX(-101%);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-royal:hover {
+  color: #0a0a0a;
+  border-color: #d4af37;
+}
+
+.btn-royal:hover::before {
+  transform: translateX(0);
+}
+
+.btn-royal--oxblood {
+  border-color: rgba(74, 4, 4, 0.55);
+  color: #4a0404;
+}
+
+.btn-royal--oxblood::before {
+  background: #4a0404;
+}
+
+.btn-royal--oxblood:hover {
+  color: #fdfbf7;
+  border-color: #4a0404;
+}
+
+/* Kicker — small tracked gold label with a leading thread */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  font-size: 0.65rem;
+  color: #d4af37;
+}
+
+.kicker::before {
+  content: "";
+  width: 2.6rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4af37);
+}
+
+.kicker--plain::before {
+  display: none;
+}
+
 /* Glassmorphism Utilities */
 .glass {
   background: rgba(255, 255, 255, 0.05);

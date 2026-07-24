@@ -31,13 +31,13 @@ export default function ProductGallery({ name, category, images }: ProductGaller
 
     return (
         <div className="sticky top-32 space-y-8">
-            {/* Main Image - Art Frame Style with cursor-follow zoom */}
+            {/* Main image — museum frame with an always-on zari border and cursor-follow zoom */}
             <div
                 ref={frameRef}
                 onMouseEnter={() => setIsZooming(true)}
                 onMouseLeave={() => setIsZooming(false)}
                 onMouseMove={handleMouseMove}
-                className="relative aspect-[3/4] w-full bg-[#f0eee6] overflow-hidden group cursor-zoom-in"
+                className="relative aspect-[3/4] w-full bg-[#F3EEE5] overflow-hidden cursor-zoom-in"
             >
                 <div
                     className="absolute inset-0 transition-transform duration-300 ease-out will-change-transform"
@@ -56,38 +56,42 @@ export default function ProductGallery({ name, category, images }: ProductGaller
                     />
                 </div>
 
-                {/* Minimalist Badge */}
-                <div className="absolute top-0 left-0 p-6 z-10 pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 border border-[#D4AF37]/20 shadow-sm">
-                        <span className="text-[#1A1A1A] text-[10px] font-sans uppercase tracking-[0.25em] font-bold">
+                {/* Always-on zari frame — fine double gold inset */}
+                <div className="absolute inset-[10px] border border-[#D4AF37]/45 pointer-events-none z-10" aria-hidden="true" />
+                <div className="absolute inset-4 border border-[#D4AF37]/20 pointer-events-none z-10" aria-hidden="true" />
+
+                {/* Category — quiet micro-label on obsidian silk */}
+                <div className="absolute top-0 left-0 p-7 z-20 pointer-events-none">
+                    <div className="bg-[#0A0A0A]/75 backdrop-blur-sm px-4 py-2 border border-[#D4AF37]/30">
+                        <span className="text-[#D4AF37] text-[9px] font-sans uppercase tracking-[0.35em]">
                             {category}
                         </span>
                     </div>
                 </div>
 
-                {/* AI Try-On Overlay Button */}
+                {/* AI Try-On overlay */}
                 <Link
                     href={`/try-on?product=${encodeURIComponent(activeImage)}`}
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-[#D4AF37]/30 text-[#4A0404] hover:bg-[#4A0404] hover:text-white transition-all duration-300 group/tryon"
+                    className="absolute bottom-7 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 bg-[#0A0A0A]/80 backdrop-blur-md px-6 py-3 border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#D4AF37] hover:border-[#D4AF37] hover:text-[#0A0A0A] transition-colors duration-500 whitespace-nowrap"
                 >
-                    <Sparkles size={16} className="text-[#D4AF37] group-hover/tryon:text-white transition-colors" />
-                    <span className="text-xs font-bold font-sans uppercase tracking-widest">
+                    <Sparkles size={14} className="transition-colors" aria-hidden="true" />
+                    <span className="text-[10px] font-sans uppercase tracking-[0.3em]">
                         Virtual Try-On
                     </span>
                 </Link>
             </div>
 
-            {/* Gallery Strip */}
+            {/* Gallery strip */}
             {validImages.length > 0 && (
-                <div className="flex items-center gap-4 py-2 border-t border-[#D4AF37]/10">
-                    <span className="text-[10px] font-sans uppercase tracking-widest text-neutral-400">Gallery</span>
+                <div className="flex items-center gap-5 py-2 border-t border-black/10">
+                    <span className="text-[9px] font-sans uppercase tracking-[0.35em] text-neutral-400">Gallery</span>
                     <div className="flex gap-3 overflow-x-auto scrollbar-hide">
                         {validImages.map((img, i) => (
                             <button
                                 key={i}
                                 onClick={() => setActiveImage(img)}
-                                className={`relative w-16 h-20 flex-shrink-0 transition-opacity duration-300
-                                    ${activeImage === img ? "opacity-100 ring-1 ring-[#D4AF37]" : "opacity-40 hover:opacity-80"}
+                                className={`relative w-16 h-20 flex-shrink-0 border transition-all duration-300
+                                    ${activeImage === img ? "border-[#4A0404] opacity-100" : "border-black/10 opacity-40 hover:opacity-80"}
                                 `}
                                 aria-label={`View gallery image ${i + 1} of ${name}`}
                             >

@@ -16,7 +16,8 @@ vi.mock('@/context/CartContext', () => ({
 
 // Mock SrivariImage to avoid Next.js Image complexity in tests
 vi.mock('@/components/SrivariImage', () => ({
-    default: ({ alt, ...props }: any) => <img alt={alt} data-testid="product-image" {...props} />,
+    default: ({ alt, fallbackLabel, ...props }: any) => <img alt={alt} data-testid="product-image" {...props} />,
+    isRenderableImageSrc: (src: string | undefined | null) => !!src && src.trim() !== "",
 }));
 
 // Mock next/link
@@ -59,14 +60,14 @@ describe('ProductCard', () => {
         expect(screen.getByText('₹85,000')).toBeInTheDocument();
     });
 
-    it('shows "Low Stock" badge when stock is below 5', () => {
+    it('shows the "Last N" scarcity mark when stock is below 5', () => {
         render(<ProductCard product={mockProduct} />);
-        expect(screen.getByText('Low Stock')).toBeInTheDocument();
+        expect(screen.getByText(/Last 3/i)).toBeInTheDocument();
     });
 
-    it('shows "Out of Stock" badge when stock is 0', () => {
+    it('shows the "Sold Out" band when stock is 0', () => {
         render(<ProductCard product={outOfStockProduct} />);
-        expect(screen.getByText('Out of Stock')).toBeInTheDocument();
+        expect(screen.getByText(/Sold Out/i)).toBeInTheDocument();
     });
 
     it('renders a link to the product detail page', () => {

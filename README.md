@@ -28,7 +28,7 @@
 | Authentication | Supabase Auth (OTP-based) |
 | Payments | Razorpay |
 | Shipping | Shiprocket API |
-| AI Chat | Google Gemini (`@ai-sdk/google`) |
+| AI | Free/open LLM endpoints (OpenAI-compatible: Groq free tier, OpenRouter :free, LM Studio) + Pollinations image gen |
 | Email | Nodemailer |
 | Image Hosting | Cloudinary |
 | Styling | TailwindCSS 3 + Framer Motion |
@@ -121,7 +121,7 @@ srivari/
 │   │   │
 │   │   └── api/                # Backend API Routes
 │   │       ├── admin/          # Admin CRUD (products, orders, uploads)
-│   │       ├── chat/           # AI chatbot (Gemini)
+│   │       ├── chat/           # AI copywriter (open/free LLM endpoint)
 │   │       ├── delivery-updates/ # Shipping status webhooks
 │   │       ├── orders/         # Order creation, tracking & admin ledger
 │   │       ├── coupons/        # Coupon validation
@@ -273,8 +273,12 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID="rzp_live_XXXX"
 SHIPROCKET_EMAIL="your@email.com"
 SHIPROCKET_PASSWORD="your_password"
 
-# Google Gemini AI
-GOOGLE_GENERATIVE_AI_API_KEY="YOUR_KEY"
+# AI — any free OpenAI-compatible endpoint (no Gemini / paid LLMs)
+# Groq free tier: https://console.groq.com  ·  OpenRouter ":free" models: https://openrouter.ai
+# Local dev: leave unset and run LM Studio (auto-detected at localhost:1234)
+LLM_BASE_URL="https://api.groq.com/openai/v1"
+LLM_API_KEY="YOUR_FREE_KEY"
+LLM_MODEL="llama-3.3-70b-versatile"
 
 # Cloudinary (Image Uploads)
 CLOUDINARY_CLOUD_NAME="your_cloud"

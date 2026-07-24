@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X, ShoppingBag, ArrowRight } from "lucide-react";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
-import SrivariImage from "./SrivariImage";
+import SrivariImage, { isRenderableImageSrc } from "./SrivariImage";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,7 +27,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         }, 800);
     };
 
-    const validImages = product.images.filter(img => img && img.trim() !== "");
+    const validImages = product.images.filter(isRenderableImageSrc);
 
     return (
         <AnimatePresence>
@@ -43,62 +43,64 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
 
                 {/* Modal Content */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.97, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-4xl max-h-[90vh] bg-[#FDFBF7] rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
+                    exit={{ opacity: 0, scale: 0.97, y: 16 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative w-full max-w-4xl max-h-[90vh] bg-[#FDFBF7] border border-[#D4AF37]/20 shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2"
                 >
                     {/* Close Button */}
                     <button
                         onClick={onClose}
                         aria-label="Close quick view"
-                        className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-[#1A1A1A] hover:text-[#D4AF37] text-gray-800 rounded-full backdrop-blur-md transition-colors"
+                        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center border border-[#E5E5E5] bg-[#FDFBF7]/90 backdrop-blur-md text-[#1A1A1A] hover:bg-[#0A0A0A] hover:border-[#0A0A0A] hover:text-[#D4AF37] transition-colors duration-300"
                     >
-                        <X size={20} aria-hidden="true" />
+                        <X size={18} aria-hidden="true" />
                     </button>
 
                     {/* Image Gallery */}
-                    <div className="bg-gray-100 h-[50vh] md:h-full relative group">
+                    <div className="bg-[#F3EEE5] h-[50vh] md:h-full relative group">
                         <SrivariImage
                             src={validImages[activeImage] || ""}
                             alt={product.name}
+                            fallbackLabel={product.category || "The Srivari"}
                             fill
                             className="object-cover"
                             sizes="(max-width: 768px) 100vw, 50vw"
                         />
                         {validImages.length > 1 && (
-                            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                            <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-2">
                                 {validImages.map((_, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setActiveImage(idx)}
                                         aria-label={`View image ${idx + 1} of ${product.name}`}
-                                        className={`w-2 h-2 rounded-full transition-all ${activeImage === idx ? "bg-[#D4AF37] w-6" : "bg-white/60 hover:bg-white"
-                                            }`}
-                                    />
+                                        className="py-2"
+                                    >
+                                        <span
+                                            className={`block h-[2px] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${activeImage === idx ? "w-8 bg-[#D4AF37]" : "w-4 bg-white/60 hover:bg-white"}`}
+                                        />
+                                    </button>
                                 ))}
                             </div>
                         )}
 
-                        {/* Badges */}
-                        <div className="absolute top-4 left-4 flex flex-col gap-2">
-                            <span className="bg-white/90 backdrop-blur-sm text-[#4A0404] text-[10px] uppercase font-bold px-3 py-1.5 tracking-wider rounded-sm shadow-sm inline-block">
-                                {product.category}
+                        {/* Stock state — a quiet mark, not a shouting chip */}
+                        {product.stock > 0 && product.stock < 5 && (
+                            <span className="absolute top-5 left-5 z-10 flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] font-sans text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" aria-hidden="true" />
+                                Only {product.stock} left
                             </span>
-                            {product.stock > 0 && product.stock < 5 && (
-                                <span className="bg-[#D4AF37] text-white text-[10px] uppercase font-bold px-3 py-1.5 tracking-wider rounded-sm shadow-sm inline-block">
-                                    Only {product.stock} Left
-                                </span>
-                            )}
-                        </div>
+                        )}
                     </div>
 
                     {/* Product Details */}
                     <div className="p-8 md:p-10 lg:p-12 overflow-y-auto">
-                        <h2 className="text-3xl font-serif text-[#1A1A1A] mb-2">{product.name}</h2>
-                        <p className="text-2xl text-[#4A0404] font-medium mb-6">₹{product.price.toLocaleString('en-IN')}</p>
+                        <p className="text-[9px] uppercase tracking-[0.35em] text-[#C8AA6E] font-sans mb-3">{product.category}</p>
+                        <h2 className="font-serif text-3xl md:text-4xl leading-[1.1] text-[#1A1A1A] mb-3">{product.name}</h2>
+                        <p className="font-serif text-2xl text-[#4A0404] mb-6">₹{product.price.toLocaleString('en-IN')}</p>
 
-                        <p className="text-gray-600 font-light leading-relaxed mb-8">
+                        <p className="text-sm text-[#595959] font-sans font-light leading-relaxed mb-8">
                             {product.description || "A breathtaking piece weaving tradition with modern luxury."}
                         </p>
 
@@ -106,7 +108,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                         {product.hashtags && product.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-8">
                                 {product.hashtags.map(tag => (
-                                    <span key={tag} className="text-xs border border-[#E5E5E5] text-gray-500 px-3 py-1 rounded-full">
+                                    <span key={tag} className="border border-[#E5E5E5] text-[#595959] px-3 py-1 text-[10px] uppercase tracking-[0.15em] font-sans">
                                         #{tag}
                                     </span>
                                 ))}
@@ -114,34 +116,35 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                         )}
 
                         {/* Actions */}
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <button
                                 onClick={handleAddToCart}
                                 disabled={product.stock === 0 || isAdding}
-                                className={`w-full flex items-center justify-center gap-2 py-4 rounded-full font-bold uppercase tracking-widest transition-all ${product.stock === 0
-                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                        : "bg-[#1A1A1A] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#1A1A1A]"
-                                    }`}
+                                className="btn-royal btn-royal--oxblood w-full disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {product.stock === 0 ? "Out of Stock" : isAdding ? "Adding..." : (
                                     <>
-                                        <ShoppingBag size={18} /> Add to Cart
+                                        <ShoppingBag size={15} aria-hidden="true" /> Add to Cart
                                     </>
                                 )}
                             </button>
 
-                            <Link href={`/product/${product.id}`} className="block">
-                                <button className="w-full flex items-center justify-center gap-2 py-4 rounded-full border border-[#1A1A1A] text-[#1A1A1A] hover:bg-gray-50 transition-colors font-bold uppercase tracking-widest">
-                                    View Full Details <ArrowRight size={18} />
-                                </button>
+                            <Link href={`/product/${product.id}`} className="btn-thread font-sans text-[#1A1A1A]">
+                                View Full Details <ArrowRight size={13} aria-hidden="true" />
                             </Link>
                         </div>
 
                         {/* Delivery/Returns */}
-                        <div className="mt-8 pt-8 border-t border-gray-100 text-xs text-gray-500 space-y-2">
-                            <p className="flex items-center gap-2">✓ Free Shipping in India</p>
-                            <p className="flex items-center gap-2">✓ 7-Day Return Policy</p>
-                            <p className="flex items-center gap-2">✓ 100% Authentic Handloom</p>
+                        <div className="mt-10 pt-8 border-t border-[#E5E5E5] space-y-3">
+                            <p className="flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-[#595959] font-sans">
+                                <span className="w-1 h-1 rounded-full bg-[#D4AF37]" aria-hidden="true" /> Free Shipping in India
+                            </p>
+                            <p className="flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-[#595959] font-sans">
+                                <span className="w-1 h-1 rounded-full bg-[#D4AF37]" aria-hidden="true" /> 7-Day Return Policy
+                            </p>
+                            <p className="flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-[#595959] font-sans">
+                                <span className="w-1 h-1 rounded-full bg-[#D4AF37]" aria-hidden="true" /> 100% Authentic Handloom
+                            </p>
                         </div>
                     </div>
                 </motion.div>

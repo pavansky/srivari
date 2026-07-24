@@ -1,5 +1,7 @@
 import Link from "next/link";
 import SrivariImage from "@/components/SrivariImage";
+import { isRenderableImageSrc } from "@/lib/image-src";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { Product } from "@/types";
 
 export const HOME_CATEGORIES = [
@@ -36,7 +38,7 @@ function matchesCategory(productCategory: string | undefined, name: string): boo
 /** Server-side pick of a representative image for a category (prefers featured products). */
 function pickCategoryImage(products: Product[], name: string): string | null {
     const inCategory = products.filter(p => matchesCategory(p.category, name));
-    const withImage = (p: Product) => p.images?.find(img => img && img.trim() !== "");
+    const withImage = (p: Product) => p.images?.find(isRenderableImageSrc);
     const featured = inCategory.find(p => p.isFeatured && withImage(p));
     const any = inCategory.find(p => withImage(p));
     const chosen = featured || any;
@@ -55,20 +57,22 @@ export default function CategoryTiles({ products }: CategoryTilesProps) {
     }));
 
     return (
-        <section id="collections" className="py-24 md:py-32 px-6 bg-obsidian relative">
+        <section id="collections" className="texture-silk py-28 md:py-32 px-6 bg-obsidian relative">
             <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                    <span className="text-gold uppercase tracking-[0.3em] text-xs md:text-sm">The Wardrobe of Queens</span>
-                    <h2 className="text-4xl md:text-6xl font-serif text-marble mt-4">Shop by Collection</h2>
-                    <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-8" />
-                </div>
+                <SectionHeader
+                    kicker="THE WARDROBE OF QUEENS"
+                    title="Shop by Collection"
+                    accent="Collection"
+                    tone="dark"
+                    className="mb-16"
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6">
                     {tiles.map((tile, index) => (
                         <Link
                             key={tile.name}
                             href={`/shop?category=${encodeURIComponent(tile.name)}`}
-                            className={`group relative block overflow-hidden rounded-sm border border-white/5 hover:border-gold/40 transition-colors duration-500 ${index < 2 ? "lg:col-span-3 aspect-[4/5] sm:aspect-[16/10]" : "lg:col-span-2 aspect-[4/5]"}`}
+                            className={`group zari-frame relative block overflow-hidden border border-white/5 hover:border-gold/40 transition-colors duration-700 ${index < 2 ? "lg:col-span-3 aspect-[4/5] sm:aspect-[16/10]" : "lg:col-span-2 aspect-[4/5]"}`}
                             aria-label={`Shop the ${tile.name} collection`}
                         >
                             {tile.image ? (
@@ -78,7 +82,7 @@ export default function CategoryTiles({ products }: CategoryTilesProps) {
                                         alt={`${tile.name} silk saree from The Srivari collection`}
                                         fill
                                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                        className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-110"
+                                        className="object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06]"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/20 to-transparent" />
                                 </>
@@ -97,16 +101,16 @@ export default function CategoryTiles({ products }: CategoryTilesProps) {
 
                             {/* Caption */}
                             <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-gold mb-2">
+                                <p className="text-[10px] font-sans uppercase tracking-[0.3em] text-gold mb-2">
                                     {tile.count > 0 ? `${tile.count} ${tile.count === 1 ? "weave" : "weaves"}` : "Arriving soon"}
                                 </p>
-                                <h3 className="text-2xl md:text-3xl font-serif text-marble group-hover:text-gold transition-colors duration-500">
+                                <h3 className="text-2xl md:text-3xl font-serif text-marble group-hover:text-gold transition-colors duration-700">
                                     {tile.name}
                                 </h3>
                                 <p className="mt-2 text-sm text-marble/60 max-w-xs hidden sm:block">
                                     {tile.blurb}
                                 </p>
-                                <span className="mt-4 inline-block text-[11px] uppercase tracking-[0.25em] text-marble/50 group-hover:text-gold border-b border-transparent group-hover:border-gold/60 pb-1 transition-all duration-500">
+                                <span className="btn-thread mt-5 font-sans text-marble/50 group-hover:text-gold transition-colors duration-500">
                                     Explore
                                 </span>
                             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import SrivariImage from "./SrivariImage";
+import SrivariImage, { isRenderableImageSrc } from "./SrivariImage";
 import Link from "next/link";
 import { Eye, ShoppingBag } from "lucide-react";
 import { Product } from "@/types";
@@ -9,9 +9,15 @@ import { useCart } from "@/context/CartContext";
 interface ProductCardProps {
   product: Product;
   onQuickView?: (product: Product) => void;
+  /** Surface the card sits on. Dark = obsidian home/shop bands, light = cream pages. */
+  tone?: "light" | "dark";
 }
 
-export default function ProductCard({ product, onQuickView }: ProductCardProps) {
+/**
+ * Signature product card: 4:5 portrait, zari frame that draws in on hover,
+ * whisper-quiet chrome. The image is the jewel; everything else recedes.
+ */
+export default function ProductCard({ product, onQuickView, tone = "light" }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -26,82 +32,77 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
     if (onQuickView) onQuickView(product);
   };
 
-  // Find first valid image
-  const displayImage = product.images.find(img => img && img.trim() !== "") || "";
+  const displayImage = product.images.find(isRenderableImageSrc) || "";
+  const dark = tone === "dark";
 
   return (
-    <div className="group relative bg-white border border-[#E5E5E5]/60 hover:border-[#D4AF37] transition-all duration-500 overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-sm">
-      {/* Image Container */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-[#F9F5F0]">
-        <SrivariImage
-          src={displayImage}
-          alt={product.name}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className={`object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110 ${product.stock <= 0 ? 'grayscale opacity-70' : ''}`}
-        />
+    <div className="group relative">
+      {/* Image */}
+      <Link href={`/product/${product.id}`} prefetch={true} aria-label={`View ${product.name}`} className="block">
+        <div className={`zari-frame relative aspect-[4/5] overflow-hidden ${dark ? "bg-[#0d0c0a]" : "bg-[#F3EEE5]"}`}>
+          <SrivariImage
+            src={displayImage}
+            alt={product.name}
+            fallbackLabel={product.category || "The Srivari"}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            className={`object-cover transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] ${product.stock <= 0 ? "grayscale opacity-60" : ""}`}
+          />
 
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
-            <div className="px-4 py-2 bg-white/90 backdrop-blur-sm border border-[#D4AF37]/30 shadow-xl">
-              <span className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-[0.3em]">Sold Out</span>
+          {/* Soft vignette so the frame reads on bright imagery */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+          {/* Stock state — a quiet mark, not a shouting chip */}
+          {product.stock <= 0 ? (
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-[#0A0A0A]/80 backdrop-blur-sm py-2.5 text-center">
+              <span className="text-[9px] uppercase tracking-[0.4em] text-marble/80 font-sans">Sold Out</span>
             </div>
-          </div>
-        )}
-
-        {/* Overlay Actions */}
-        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-3">
-          {onQuickView ? (
-            <button
-              onClick={handleQuickView}
-              aria-label={`Quick view of ${product.name}`}
-              className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]"
-            >
-              <Eye size={18} aria-hidden="true" />
-            </button>
           ) : (
-            <Link href={`/product/${product.id}`} prefetch={true} aria-label={`View details of ${product.name}`}>
-              <button className="bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37]">
-                <Eye size={18} aria-hidden="true" />
-              </button>
-            </Link>
+            product.stock < 5 && (
+              <span className={`absolute top-4 left-4 z-10 flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] font-sans ${dark ? "text-marble/90" : "text-white"} drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                Last {product.stock}
+              </span>
+            )
           )}
-          <button
-            onClick={handleAddToCart}
-            disabled={product.stock <= 0}
-            aria-label={`Add ${product.name} to cart`}
-            className={`bg-white/95 backdrop-blur-sm text-[#1A1A1A] p-3.5 rounded-full transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-50 ease-out hover:bg-[#1A1A1A] hover:text-[#D4AF37] ${product.stock <= 0 ? 'cursor-not-allowed opacity-50 grayscale' : ''}`}
-          >
-            <ShoppingBag size={18} aria-hidden="true" />
-          </button>
+
+          {/* Actions: a slim rail rising from the base */}
+          <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock <= 0}
+              aria-label={`Add ${product.name} to cart`}
+              className="flex-1 flex items-center justify-center gap-2.5 bg-[#0A0A0A]/90 backdrop-blur-md text-[#D4AF37] py-3.5 text-[10px] uppercase tracking-[0.3em] font-sans hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors duration-300 disabled:opacity-40 disabled:hover:bg-[#0A0A0A]/90 disabled:hover:text-[#D4AF37]"
+            >
+              <ShoppingBag size={13} aria-hidden="true" /> Add to Bag
+            </button>
+            {onQuickView && (
+              <button
+                onClick={handleQuickView}
+                aria-label={`Quick view of ${product.name}`}
+                className="w-14 flex items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-md text-marble/70 border-l border-white/10 hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors duration-300"
+              >
+                <Eye size={15} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         </div>
+      </Link>
 
-        {/* Badges */}
-        {product.stock > 0 ? (
-          product.stock < 5 && (
-            <span className="absolute top-3 left-3 bg-[#D4AF37] text-white text-[10px] uppercase font-bold px-2 py-1 tracking-wider">
-              Low Stock
-            </span>
-          )
-        ) : (
-          <span className="absolute top-3 left-3 bg-red-800 text-white text-[10px] uppercase font-bold px-2 py-1 tracking-wider">
-            Out of Stock
-          </span>
-        )}
-      </div>
-
-      {/* Product Details */}
-      <div className="p-5 text-center">
-        <p className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-sans">
+      {/* Details — left-aligned editorial block */}
+      <div className="pt-5 pb-1">
+        <p className={`text-[9px] uppercase tracking-[0.35em] mb-2 font-sans ${dark ? "text-[#D4AF37]/70" : "text-[#C8AA6E]"}`}>
           {product.category}
         </p>
         <Link href={`/product/${product.id}`} prefetch={true}>
-          <h3 className="text-lg font-serif text-[#1A1A1A] group-hover:text-[#4A0404] transition-colors line-clamp-1 mb-2">
+          <h3 className={`text-lg leading-snug font-serif line-clamp-1 transition-colors duration-300 ${dark ? "text-marble group-hover:text-[#D4AF37]" : "text-[#1A1A1A] group-hover:text-[#4A0404]"}`}>
             {product.name}
           </h3>
         </Link>
-        <div className="flex items-center justify-center gap-2 font-sans font-medium">
-          <span className="text-[#4A0404]">₹{product.price.toLocaleString('en-IN')}</span>
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className={`font-serif text-base ${dark ? "text-marble/90" : "text-[#4A0404]"}`}>
+            ₹{product.price.toLocaleString("en-IN")}
+          </span>
         </div>
       </div>
     </div>

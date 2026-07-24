@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import SectionHeader from "@/components/ui/SectionHeader";
 
 const MOTIFS = [
     {
@@ -18,7 +19,7 @@ const MOTIFS = [
 
 export default function LegacySection() {
     return (
-        <section className="relative bg-obsidian py-24 md:py-32 px-6 overflow-hidden">
+        <section className="texture-silk relative bg-obsidian py-28 md:py-32 px-6 overflow-hidden">
             {/* Ambient gold glow */}
             <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px] pointer-events-none" aria-hidden="true" />
 
@@ -26,7 +27,7 @@ export default function LegacySection() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                     {/* Editorial imagery */}
                     <div className="relative">
-                        <div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-gold/10">
+                        <div className="relative aspect-[4/5] overflow-hidden border border-gold/10">
                             <Image
                                 src="/srivari-legacy.png"
                                 alt="A master weaver's silk saree from The Srivari legacy collection"
@@ -37,7 +38,7 @@ export default function LegacySection() {
                             <div className="absolute inset-0 bg-gradient-to-t from-obsidian/60 via-transparent to-transparent" />
                         </div>
                         {/* Overlapping temple accent */}
-                        <div className="absolute -bottom-8 -right-4 md:-right-8 w-36 md:w-48 aspect-[3/4] overflow-hidden rounded-sm border border-gold/30 shadow-[0_20px_60px_rgba(0,0,0,0.7)] hidden sm:block">
+                        <div className="absolute -bottom-8 -right-4 md:-right-8 w-36 md:w-48 aspect-[3/4] overflow-hidden border border-gold/30 shadow-[0_20px_60px_rgba(0,0,0,0.7)] hidden sm:block">
                             <Image
                                 src="/tirumala-temple.png"
                                 alt="The Tirumala temple, inspiration behind The Srivari name"
@@ -50,10 +51,12 @@ export default function LegacySection() {
 
                     {/* Copy */}
                     <div className="lg:pl-4">
-                        <span className="text-gold uppercase tracking-[0.3em] text-xs md:text-sm">Heritage · Craftsmanship</span>
-                        <h2 className="text-4xl md:text-6xl font-serif text-marble mt-4 leading-tight">
-                            The Srivari <span className="italic text-gold">Legacy</span>
-                        </h2>
+                        <SectionHeader
+                            kicker="HERITAGE · CRAFTSMANSHIP"
+                            title="The Srivari Legacy"
+                            accent="Legacy"
+                            tone="dark"
+                        />
                         <p className="mt-8 text-marble/70 leading-relaxed font-light">
                             Named for the Lord of the Seven Hills, The Srivari carries the devotion of South India&apos;s
                             great weaving houses into the modern wardrobe. Our sarees are sourced directly from master
@@ -76,7 +79,7 @@ export default function LegacySection() {
                         </div>
 
                         {/* Silk Mark authenticity */}
-                        <div className="mt-12 flex items-center gap-5 glass-card rounded-sm p-5">
+                        <div className="mt-12 flex items-center gap-5 border border-gold/20 bg-white/[0.03] p-5">
                             <Image
                                 src="/silk-mark.png"
                                 alt="Silk Mark certification of pure silk authenticity"
@@ -93,10 +96,7 @@ export default function LegacySection() {
                             </div>
                         </div>
 
-                        <Link
-                            href="/about"
-                            className="mt-10 inline-block text-xs uppercase tracking-[0.25em] text-gold border border-gold/40 hover:bg-gold hover:text-obsidian px-8 py-4 transition-colors duration-500"
-                        >
+                        <Link href="/about" className="btn-royal mt-10">
                             Our Story
                         </Link>
                     </div>

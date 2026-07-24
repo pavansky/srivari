@@ -10,6 +10,8 @@ import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Accordion from "@/components/Accordion";
 import ProductCard from "@/components/ProductCard";
+import SectionHeader from "@/components/ui/SectionHeader";
+import ZariDivider from "@/components/ui/ZariDivider";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductActions from "@/components/product/ProductActions";
 import RecentlyViewed from "@/components/product/RecentlyViewed";
@@ -176,39 +178,35 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                     <div className="lg:col-span-5 flex flex-col pt-4">
                         <div className="space-y-10">
                             {/* Branding Header */}
-                            <div className="space-y-4">
-                                <span className="text-[#D4AF37] text-xs font-sans font-bold uppercase tracking-[0.3em] pl-1">
+                            <div className="space-y-5">
+                                <span className="kicker kicker--plain">
                                     Srivari Royal Edition
                                 </span>
-                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-[#1A1A1A] leading-[1.1]">
+                                <h1 className="text-4xl sm:text-5xl font-serif text-[#1A1A1A] leading-[1.05] tracking-tight">
                                     {product.name}
                                 </h1>
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/5 pb-6">
-                                    <p className="text-3xl text-[#1A1A1A] font-serif">
+                                <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-black/10 pb-6">
+                                    <p className="font-serif text-2xl text-[#4A0404]">
                                         ₹{product.price.toLocaleString("en-IN")}
                                     </p>
-                                    <div className="flex items-center gap-2">
-                                        {product.stock > 0 ? (
-                                            product.stock < 5 ? (
-                                                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/50">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></div>
-                                                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider">
-                                                        Only {product.stock} left in stock
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200/50">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
-                                                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider">In Stock</span>
-                                                </div>
-                                            )
+                                    {product.stock > 0 ? (
+                                        product.stock < 5 ? (
+                                            <span className="flex items-center gap-2 text-[9px] font-sans uppercase tracking-[0.3em] text-[#1A1A1A]/60">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse"></span>
+                                                Only {product.stock} remain
+                                            </span>
                                         ) : (
-                                            <div className="flex items-center gap-2 text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200/50">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-red-600"></div>
-                                                <span className="text-[10px] font-sans font-bold uppercase tracking-wider">Sold Out</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                            <span className="flex items-center gap-2 text-[9px] font-sans uppercase tracking-[0.3em] text-[#1A1A1A]/60">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"></span>
+                                                In Stock
+                                            </span>
+                                        )
+                                    ) : (
+                                        <span className="flex items-center gap-2 text-[9px] font-sans uppercase tracking-[0.3em] text-[#4A0404]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#4A0404]/60"></span>
+                                            Sold Out
+                                        </span>
+                                    )}
                                 </div>
                                 {reviewStats.count > 0 && (
                                     <a href="#reviews" className="inline-flex items-center gap-2 text-xs font-sans text-neutral-500 hover:text-[#4A0404] transition-colors">
@@ -224,17 +222,17 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
                             {/* Narrative */}
                             <div className="font-sans text-[#595959] font-light leading-relaxed text-sm tracking-wide space-y-6">
-                                <p className="text-base">
-                                    <span className="text-[#D4AF37] font-bold tracking-widest uppercase text-xs mr-2">
-                                        Note from the Artisan:
+                                <div className="space-y-3">
+                                    <span className="block text-[#D4AF37] text-[10px] font-sans uppercase tracking-[0.35em]">
+                                        Note from the Artisan
                                     </span>
-                                    {narrative}
-                                </p>
+                                    <p className="text-base">{narrative}</p>
+                                </div>
 
                                 {care && (
-                                    <div className="bg-[#FAF8F5] p-6 border border-[#D4AF37]/20 rounded-sm">
-                                        <h2 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                            <Sparkles size={14} className="text-[#D4AF37] fill-[#D4AF37]/20" aria-hidden="true" />
+                                    <div className="bg-[#F9F5F0] p-6 border border-black/10">
+                                        <h2 className="text-[10px] text-[#1A1A1A] uppercase tracking-[0.3em] mb-4 flex items-center gap-2 font-sans">
+                                            <Sparkles size={13} className="text-[#D4AF37] fill-[#D4AF37]/20" aria-hidden="true" />
                                             Wash &amp; Care Instructions
                                         </h2>
                                         <div className="text-xs text-[#595959] space-y-2 leading-relaxed whitespace-pre-line">{care}</div>
@@ -254,19 +252,19 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                                             content: (
                                                 <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-xs font-sans text-neutral-600 leading-relaxed pt-2">
                                                     <div>
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Category</span>
+                                                        <span className="block text-[10px] text-[#1A1A1A] uppercase tracking-[0.25em] mb-1.5">Category</span>
                                                         {product.category}
                                                     </div>
                                                     <div>
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Material</span>
+                                                        <span className="block text-[10px] text-[#1A1A1A] uppercase tracking-[0.25em] mb-1.5">Material</span>
                                                         {details.material}
                                                     </div>
                                                     <div className="col-span-2">
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Weave</span>
+                                                        <span className="block text-[10px] text-[#1A1A1A] uppercase tracking-[0.25em] mb-1.5">Weave</span>
                                                         {details.weave}
                                                     </div>
                                                     <div className="col-span-2">
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Wash &amp; Care</span>
+                                                        <span className="block text-[10px] text-[#1A1A1A] uppercase tracking-[0.25em] mb-1.5">Wash &amp; Care</span>
                                                         <span className="whitespace-pre-line">{care || DEFAULT_CARE}</span>
                                                     </div>
                                                 </div>
@@ -298,22 +296,19 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Journey of the Saree / Provenance Section */}
-            <div className="bg-[#050505] text-[#FDFBF7] py-24 mt-8 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
-                <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none"></div>
+            <ZariDivider tone="light" className="container mx-auto px-4" />
+            <section className="py-28" aria-label="Provenance">
+                <div className="container mx-auto px-4 md:px-6">
+                    <SectionHeader
+                        tone="light"
+                        kicker="Provenance"
+                        title="The Journey of the Saree"
+                        accent="Journey"
+                        note="Every masterpiece carries the legacy of centuries — from pure silk thread to authentic gold zari."
+                        className="mb-20"
+                    />
 
-                <div className="container mx-auto px-6 relative z-10">
-                    <div className="max-w-3xl mx-auto text-center mb-20">
-                        <span className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.4em] mb-6 block">Provenance</span>
-                        <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">The Journey of the Saree</h2>
-                        <p className="font-light text-white/70 leading-relaxed text-sm md:text-base">
-                            Every masterpiece in our collection carries the legacy of centuries. From the careful selection of pure
-                            silk threads to the intricate winding of the authentic gold zari, witness the dedication woven into
-                            every inch.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-20 text-center max-w-5xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x md:divide-black/10 border-t border-black/10">
                         {[
                             {
                                 numeral: "I",
@@ -331,43 +326,49 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                                 copy: "Taking upwards of 45 days, each complex motif is painstakingly hand-woven without jacquard machines.",
                             },
                         ].map((step) => (
-                            <div key={step.numeral} className="group">
-                                <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
-                                    <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">
-                                        {step.numeral}
-                                    </span>
-                                </div>
-                                <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">{step.title}</h3>
-                                <p className="text-sm font-light text-white/50 leading-loose">{step.copy}</p>
+                            <div key={step.numeral} className="pt-12 pb-4 md:px-10 md:first:pl-0 md:last:pr-0">
+                                <span
+                                    className="block w-2 h-2 rotate-45 border border-[#D4AF37] bg-[#D4AF37]/30 mb-8"
+                                    aria-hidden="true"
+                                ></span>
+                                <span className="block text-[10px] font-sans uppercase tracking-[0.35em] text-[#D4AF37] mb-3">
+                                    {step.numeral}
+                                </span>
+                                <h3 className="font-serif text-2xl text-[#1A1A1A] mb-4">{step.title}</h3>
+                                <p className="text-sm font-sans font-light text-[#595959] leading-loose">{step.copy}</p>
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
+            </section>
 
             {/* Related Products — server-rendered */}
             {relatedProducts.length > 0 && (
-                <section className="container mx-auto px-4 md:px-6 py-16 md:py-24" aria-label="Related products">
-                    <div className="text-center mb-12">
-                        <span className="text-[#D4AF37] text-[10px] font-sans font-bold uppercase tracking-[0.4em] block mb-3">
-                            From the Same Loom
-                        </span>
-                        <h2 className="text-3xl md:text-4xl font-serif text-[#1A1A1A]">You May Also Adore</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {relatedProducts.map((related) => (
-                            <ProductCard key={related.id} product={related} />
-                        ))}
-                    </div>
-                    <div className="text-center mt-12">
-                        <Link
-                            href={`/shop?category=${encodeURIComponent(product.category)}`}
-                            className="inline-block px-10 py-4 border border-[#1A1A1A] text-[#1A1A1A] uppercase tracking-widest text-xs font-bold hover:bg-[#1A1A1A] hover:text-[#D4AF37] transition-all duration-300"
-                        >
-                            View All {product.category}
-                        </Link>
-                    </div>
-                </section>
+                <>
+                    <ZariDivider tone="light" className="container mx-auto px-4" />
+                    <section className="container mx-auto px-4 md:px-6 py-28" aria-label="Related products">
+                        <SectionHeader
+                            tone="light"
+                            kicker="From the Same Loom"
+                            title="You May Also Adore"
+                            accent="Adore"
+                            className="mb-14"
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
+                            {relatedProducts.map((related) => (
+                                <ProductCard key={related.id} product={related} tone="light" />
+                            ))}
+                        </div>
+                        <div className="mt-14">
+                            <Link
+                                href={`/shop?category=${encodeURIComponent(product.category)}`}
+                                className="btn-thread font-sans text-[#4A0404]"
+                            >
+                                View All {product.category}
+                            </Link>
+                        </div>
+                    </section>
+                </>
             )}
 
             {/* Reviews */}

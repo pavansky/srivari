@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { chatComplete, isLLMConfigured } from '@/lib/llm';
 import { requireAdmin } from '@/lib/adminAuth';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+export const maxDuration = 90;
+
+/**
+ * AI Image Studio — generates product photography via Pollinations
+ * (https://pollinations.ai): free, keyless image generation backed by open
+ * models (FLUX). No Gemini, no paid APIs.
+ *
+ * If a text LLM endpoint is configured, it first expands the admin's short
+ * prompt into an art-directed photography prompt; otherwise a solid template
+ * is used. A reference image ("remix" mode) informs the prompt only — the
+ * image itself is not uploaded to any third party.
+ */
+const STYLE_DIRECTION: Record<string, string> = {
+    "Editorial": "high-fashion Vogue India editorial photograph, elegant Indian model wearing the saree, palatial heritage backdrop, cinematic golden-hour light",
+    "Flat Lay": "luxury flat-lay product photograph of the folded saree on dark marble, styled with brass temple lamps and jasmine, soft studio light from above",
+    "Texture Macro": "extreme macro photograph of the saree fabric, silk sheen and intricate gold zari threadwork filling the frame, shallow depth of field",
+    "Ghost Mannequin": "ghost mannequin product photograph of the draped saree on an invisible form, seamless dark studio background, even softbox lighting",
+};
 
 export async function POST(req: NextRequest) {
     const denied = await requireAdmin(req);
@@ -10,73 +27,50 @@ export async function POST(req: NextRequest) {
 
     try {
         const formData = await req.formData();
-        const prompt = formData.get('prompt') as string;
-        const imageFile = formData.get('image') as File | null;
-        const stylePreset = formData.get('style') as string || 'Cinematic';
+        const prompt = (formData.get('prompt') as string) || '';
+        const stylePreset = (formData.get('style') as string) || 'Editorial';
+        const hasReference = !!formData.get('image');
 
-        if (!process.env.GEMINI_API_KEY) {
-            return NextResponse.json({ error: 'API Key not configured' }, { status: 500 });
+        if (!prompt && !hasReference) {
+            return NextResponse.json({ error: 'Describe the shot you want.' }, { status: 400 });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+        const direction = STYLE_DIRECTION[stylePreset] || STYLE_DIRECTION["Editorial"];
+        let finalPrompt = `${direction}. ${prompt}. Photorealistic, 8k detail, rich silk texture, authentic Indian craftsmanship, no text, no watermark.`;
 
-        let finalPrompt = `
-        Create a professional, high-end product photograph.
-        Subject: ${prompt}
-        Style: ${stylePreset}
-        Lighting: Studio lighting, soft shadows, 8k resolution.
-        `;
-
-        const parts: any[] = [finalPrompt];
-
-        if (imageFile) {
-            const bytes = await imageFile.arrayBuffer();
-            const buffer = Buffer.from(bytes);
-            parts.push({
-                inlineData: {
-                    data: buffer.toString('base64'),
-                    mimeType: imageFile.type
-                }
-            });
-            finalPrompt += "\nUse the provided image as a strict reference for the product's shape and color.";
-        }
-
-        // Generating content
-        // Note: For image generation models, the response structure ensures an image is returned in the 'parts'.
-        const result = await model.generateContent(parts);
-        const response = await result.response;
-
-        // Extracting image data from response
-        // The SDK returns image bits in various ways depending on version, 
-        // usually verify if 'inlineData' or similar exists in candidates.
-        // For 'gemini-3-pro-image-preview', it returns an image in the parts.
-
-        // Simplified extraction logic provided SDK version guarantees
-        // We will inspect the first part of the first candidate
-        const candidates = response.candidates;
-        if (candidates && candidates.length > 0) {
-            const firstPart = candidates[0].content.parts[0];
-            if (firstPart.inlineData) {
-                return NextResponse.json({
-                    imageData: firstPart.inlineData.data,
-                    mimeType: firstPart.inlineData.mimeType
+        // Optional: let the configured free/local LLM art-direct the prompt
+        if (isLLMConfigured() && prompt) {
+            try {
+                finalPrompt = await chatComplete({
+                    system: 'You write single-paragraph text-to-image prompts for luxury saree product photography. Return ONLY the prompt text, under 90 words.',
+                    prompt: `Style: ${stylePreset} — ${direction}\nRequest: ${prompt}${hasReference ? "\n(The admin supplied a reference photo; describe a faithful, elevated studio recreation of such a saree.)" : ""}`,
+                    maxTokens: 220,
+                    temperature: 0.8,
                 });
+            } catch (e) {
+                console.warn('Prompt enhancement skipped:', (e as Error)?.message);
             }
         }
 
-        return NextResponse.json({ error: 'No image generated' }, { status: 500 });
+        // Pollinations: free, keyless, open-model image generation
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=1024&model=flux&nologo=true&seed=${Math.floor(Math.random() * 1e6)}`;
+        const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(80_000) });
 
+        if (!imgRes.ok) {
+            console.error('Pollinations generation failed:', imgRes.status);
+            return NextResponse.json({ error: 'Image generation is busy — please try again in a moment.' }, { status: 502 });
+        }
+
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const mimeType = imgRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+
+        return NextResponse.json({
+            imageData: buffer.toString('base64'),
+            mimeType,
+            promptUsed: finalPrompt,
+        });
     } catch (error: any) {
-        console.error("AI Studio Error Details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-
-        const errorMessage = error.message.toLowerCase();
-        if (errorMessage.includes('quota') || errorMessage.includes('429')) {
-            return NextResponse.json({ error: 'Quota Exceeded. Please try again in a minute or add billing.' }, { status: 429 });
-        }
-        if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
-            return NextResponse.json({ error: 'Model overloaded. Please try again shortly.' }, { status: 503 });
-        }
-
-        return NextResponse.json({ error: 'Failed to generate image', details: error.message }, { status: 500 });
+        console.error('AI Studio Error:', error?.message);
+        return NextResponse.json({ error: 'Failed to generate image' }, { status: 500 });
     }
 }

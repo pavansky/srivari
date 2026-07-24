@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { chatComplete, isLLMConfigured, LLM_NOT_CONFIGURED_MSG } from '@/lib/llm';
 import { requireAdmin } from '@/lib/adminAuth';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
     const denied = await requireAdmin(req);
@@ -11,34 +11,30 @@ export async function POST(req: NextRequest) {
     try {
         const { prompt: userPrompt } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY) {
-            return NextResponse.json({ error: 'API Key not configured' }, { status: 500 });
+        if (!isLLMConfigured()) {
+            return NextResponse.json({ error: LLM_NOT_CONFIGURED_MSG }, { status: 503 });
         }
 
-        // Use Pro model for better understanding of art styles and lighting
-        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-
-        const enhancementPrompt = `
-        Act as a professional photographer and art director.
+        const refinedPrompt = await chatComplete({
+            system: 'You are a professional photographer and art director for luxury Indian fashion.',
+            prompt: `
         Refine the following user input into a highly detailed text-to-image prompt suitable for a high-end fashion photoshoot.
-        
+
         User Input: "${userPrompt}"
-        
+
         Requirements:
-        - Subject: Indian Saree / Tradition Fashion.
+        - Subject: Indian Saree / Traditional Fashion.
         - Lighting: Cinematic, Golden Hour, or Studio Softbox.
         - Style: Photorealistic, 8k, Vogue India Editorial.
         - Add details about texture like silk sheen, zari work, and intricate borders.
         - Return ONLY the refined prompt text.
-        `;
-
-        const result = await model.generateContent(enhancementPrompt);
-        const refinedPrompt = result.response.text();
+        `,
+            maxTokens: 400,
+        });
 
         return NextResponse.json({ refinedPrompt });
-
-    } catch (error) {
-        console.error("Gemini API Error:", error);
+    } catch (error: any) {
+        console.error("AI Prompt Helper Error:", error?.message);
         return NextResponse.json({ error: 'Failed to generate prompt' }, { status: 500 });
     }
 }
