@@ -95,10 +95,10 @@ function TryOnContent() {
     return (
         <div className="container mx-auto px-4 pt-32 pb-20">
             <div className="text-center mb-12">
-                <span className="text-[#D4AF37] text-xs font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-[0.3em] block mb-2">
+                <span className="text-[#D4AF37] text-xs font-sans font-bold uppercase tracking-[0.3em] block mb-2">
                     AI Virtual Mirror
                 </span>
-                <h1 className="text-4xl md:text-5xl font-[family-name:var(--font-playfair)] text-[#1A1A1A]">
+                <h1 className="text-4xl md:text-5xl font-serif text-[#1A1A1A]">
                     Experience the Drape
                 </h1>
             </div>
@@ -112,7 +112,7 @@ function TryOnContent() {
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#1A1A1A]/5">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-serif text-sm">1</div>
-                            <h2 className="font-[family-name:var(--font-playfair)] text-xl text-[#1A1A1A]">Upload Your Photo</h2>
+                            <h2 className="font-serif text-xl text-[#1A1A1A]">Upload Your Photo</h2>
                         </div>
 
                         <div className="relative aspect-[3/4] bg-[#F5F5F0] rounded-xl overflow-hidden border-2 border-dashed border-[#1A1A1A]/10 hover:border-[#D4AF37] transition-colors group cursor-pointer">
@@ -164,7 +164,7 @@ function TryOnContent() {
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#1A1A1A]/5">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-serif text-sm">2</div>
-                            <h2 className="font-[family-name:var(--font-playfair)] text-xl text-[#1A1A1A]">Select Saree</h2>
+                            <h2 className="font-serif text-xl text-[#1A1A1A]">Select Saree</h2>
                         </div>
 
                         {selectedProduct ? (
@@ -200,7 +200,7 @@ function TryOnContent() {
                     <button
                         onClick={handleGenerate}
                         disabled={!userImage || !selectedProduct || isGenerating}
-                        className={`w-full py-6 rounded-xl font-[family-name:var(--font-montserrat)] text-sm font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all
+                        className={`w-full py-6 rounded-xl font-sans text-sm font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all
                             ${!userImage || !selectedProduct
                                 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
                                 : 'bg-[#1A1A1A] text-white hover:bg-[#D4AF37] hover:text-[#1A1A1A] shadow-xl'
@@ -221,7 +221,7 @@ function TryOnContent() {
                         <div className="relative w-full h-full min-h-[500px] rounded-lg overflow-hidden shadow-2xl animate-in fade-in duration-1000">
                             <Image src={resultImage} alt="Result" fill className="object-cover" />
                             <div className="absolute bottom-6 left-6 right-6">
-                                <button className="w-full bg-white/10 backdrop-blur-md text-white py-4 font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors">
+                                <button className="w-full bg-white/10 backdrop-blur-md text-white py-4 font-sans text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors">
                                     Add to Cart
                                 </button>
                             </div>
@@ -229,7 +229,7 @@ function TryOnContent() {
                     ) : (
                         <div className="text-center space-y-4 opacity-50">
                             <Shirt size={48} className="mx-auto" />
-                            <p className="font-[family-name:var(--font-playfair)] text-2xl">Your Masterpiece Awaits</p>
+                            <p className="font-serif text-2xl">Your Masterpiece Awaits</p>
                             <p className="text-sm font-light">Upload your photo and select a saree to see the magic.</p>
                         </div>
                     )}

@@ -51,9 +51,10 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     {/* Close Button */}
                     <button
                         onClick={onClose}
+                        aria-label="Close quick view"
                         className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-[#1A1A1A] hover:text-[#D4AF37] text-gray-800 rounded-full backdrop-blur-md transition-colors"
                     >
-                        <X size={20} />
+                        <X size={20} aria-hidden="true" />
                     </button>
 
                     {/* Image Gallery */}
@@ -71,6 +72,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                                     <button
                                         key={idx}
                                         onClick={() => setActiveImage(idx)}
+                                        aria-label={`View image ${idx + 1} of ${product.name}`}
                                         className={`w-2 h-2 rounded-full transition-all ${activeImage === idx ? "bg-[#D4AF37] w-6" : "bg-white/60 hover:bg-white"
                                             }`}
                                     />

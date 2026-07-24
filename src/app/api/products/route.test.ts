@@ -44,7 +44,8 @@ describe('Product API', () => {
         it('should save product and return 200', async () => {
             const mockProduct = { name: 'New Saree' };
             const req = {
-                json: async () => mockProduct
+                json: async () => mockProduct,
+                headers: new Headers(),
             } as any;
 
             (saveProduct as any).mockResolvedValue({ id: '123', ...mockProduct });
@@ -54,6 +55,23 @@ describe('Product API', () => {
 
             expect(response.status).toBe(200);
             expect(json.product.id).toBe('123'); // Fixed: accessed nested product
+        });
+
+        it('should reject unauthenticated writes with 401 when the dev bypass is off', async () => {
+            const prev = process.env.ADMIN_DEV_BYPASS;
+            delete process.env.ADMIN_DEV_BYPASS;
+            try {
+                const req = {
+                    json: async () => ({ name: 'Sneaky Saree' }),
+                    headers: new Headers(),
+                } as any;
+
+                const response = await POST(req);
+                expect(response.status).toBe(401);
+                expect(saveProduct).not.toHaveBeenCalled();
+            } finally {
+                process.env.ADMIN_DEV_BYPASS = prev;
+            }
         });
     });
 });

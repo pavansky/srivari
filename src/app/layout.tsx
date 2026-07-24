@@ -114,8 +114,6 @@ export const viewport: Viewport = {
     themeColor: "#1A1A1A",
     width: "device-width",
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
 };
 
 export default function RootLayout({
@@ -158,7 +156,7 @@ export default function RootLayout({
                             "brand": "The Srivari",
                             "contactPoint": {
                                 "@type": "ContactPoint",
-                                "telephone": "+91-XXXXXXXXXX",
+                                "telephone": "+91-9739988771",
                                 "contactType": "Customer Service",
                                 "areaServed": "IN",
                                 "availableLanguage": ["en", "hi", "te", "ta"]

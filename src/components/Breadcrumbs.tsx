@@ -10,9 +10,10 @@ export default function Breadcrumbs() {
 
     if (paths.length === 0) return null;
 
+    // Rendered on the light cream pages (shop, product) — dark text, oxblood accent
     return (
-        <nav aria-label="Breadcrumb" className="flex items-center text-[10px] md:text-xs uppercase tracking-widest text-marble/60 mb-6 font-sans">
-            <Link href="/" className="hover:text-gold transition-colors flex items-center">
+        <nav aria-label="Breadcrumb" className="flex items-center text-[10px] md:text-xs uppercase tracking-widest text-[#8A8680] mb-6 font-sans">
+            <Link href="/" className="hover:text-[#4A0404] transition-colors flex items-center">
                 <Home className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                 HOME
             </Link>
@@ -25,13 +26,13 @@ export default function Breadcrumbs() {
 
                 return (
                     <div key={path} className="flex items-center">
-                        <ChevronRight className="w-3 h-3 mx-2 text-gold/50" />
+                        <ChevronRight className="w-3 h-3 mx-2 text-[#C8AA6E]" />
                         {isLast ? (
-                            <span className="text-gold font-medium truncate max-w-[150px] md:max-w-none">
+                            <span className="text-[#4A0404] font-semibold truncate max-w-[150px] md:max-w-none">
                                 {label}
                             </span>
                         ) : (
-                            <Link href={href} className="hover:text-gold transition-colors">
+                            <Link href={href} className="hover:text-[#4A0404] transition-colors">
                                 {label}
                             </Link>
                         )}

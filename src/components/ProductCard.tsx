@@ -100,7 +100,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
             {product.name}
           </h3>
         </Link>
-        <div className="flex items-center justify-center gap-2 font-body font-medium">
+        <div className="flex items-center justify-center gap-2 font-sans font-medium">
           <span className="text-[#4A0404]">₹{product.price.toLocaleString('en-IN')}</span>
         </div>
       </div>

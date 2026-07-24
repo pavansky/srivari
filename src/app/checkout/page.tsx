@@ -3,18 +3,25 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import Footer from "@/components/Footer";
-import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, ShoppingBag, MapPin, CheckCircle2, WalletCards } from "lucide-react";
+import { Truck, ShieldCheck, ShoppingBag, MapPin, CheckCircle2, WalletCards, TicketPercent, X, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Script from "next/script";
+import SrivariImage from "@/components/SrivariImage";
+
+interface AppliedCoupon {
+    code: string;
+    discount: number;
+    description?: string;
+}
 
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'COD'>('Razorpay');
+    const [checkoutError, setCheckoutError] = useState("");
 
     // Form State
     const [formData, setFormData] = useState({
@@ -30,7 +37,15 @@ export default function CheckoutPage() {
 
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const shipping = 0; // VIP Free Shipping for Srivari
-    const total = subtotal + shipping;
+
+    // Coupon state
+    const [couponInput, setCouponInput] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+    const [couponError, setCouponError] = useState("");
+    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+    const discount = appliedCoupon?.discount || 0;
+    const total = Math.max(0, subtotal - discount) + shipping;
 
     const [user, setUser] = useState<any>(null);
     const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -47,6 +62,33 @@ export default function CheckoutPage() {
         };
         loadUser();
     }, []);
+
+    // Re-validate the applied coupon whenever the subtotal changes (cart edits)
+    useEffect(() => {
+        if (!appliedCoupon || subtotal <= 0) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch("/api/coupons/validate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: appliedCoupon.code, subtotal })
+                });
+                const data = await res.json();
+                if (cancelled) return;
+                if (data.valid) {
+                    setAppliedCoupon({ code: data.code, discount: data.discount, description: data.description });
+                } else {
+                    setAppliedCoupon(null);
+                    setCouponError(data.error || "Coupon is no longer valid for this order.");
+                }
+            } catch {
+                // Keep the coupon; the server re-validates at order creation anyway
+            }
+        })();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [subtotal]);
 
     const fetchAddresses = async (token: string) => {
         try {
@@ -67,8 +109,8 @@ export default function CheckoutPage() {
 
     const applyAddress = (addr: any) => {
         setSelectedAddressId(addr.id);
-        setFormData({
-            email: user?.email || "",
+        setFormData(prev => ({
+            email: prev.email,
             firstName: addr.firstName,
             lastName: addr.lastName,
             address: `${addr.addressLine1}${addr.addressLine2 ? ', ' + addr.addressLine2 : ''}${addr.landmark ? ' (Landmark: ' + addr.landmark + ')' : ''}`,
@@ -76,7 +118,7 @@ export default function CheckoutPage() {
             state: addr.state,
             pincode: addr.pincode,
             phone: addr.phone
-        });
+        }));
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,40 +126,81 @@ export default function CheckoutPage() {
         if (selectedAddressId) setSelectedAddressId(""); // Unselect if modified
     };
 
+    const handleApplyCoupon = async () => {
+        const code = couponInput.trim().toUpperCase();
+        if (!code) {
+            setCouponError("Please enter a coupon code.");
+            return;
+        }
+        setIsApplyingCoupon(true);
+        setCouponError("");
+        try {
+            const res = await fetch("/api/coupons/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code, subtotal })
+            });
+            const data = await res.json();
+            if (data.valid) {
+                setAppliedCoupon({ code: data.code, discount: data.discount, description: data.description });
+                setCouponInput("");
+            } else {
+                setCouponError(data.error || "This coupon cannot be applied.");
+            }
+        } catch {
+            setCouponError("Could not verify the coupon. Please try again.");
+        } finally {
+            setIsApplyingCoupon(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponError("");
+    };
+
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
+        setCheckoutError("");
 
         try {
             const orderPayload = {
                 ...formData,
-                items: cart,
-                total: total,
-                userId: user?.id,
+                address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+                items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                shippingCost: shipping,
+                couponCode: appliedCoupon?.code,
                 paymentMethod: paymentMethod
             };
 
+            // The server links the order to the account via this token — it
+            // ignores any client-claimed userId.
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+
             const response = await fetch("/api/orders/create", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify(orderPayload)
             });
 
             const data = await response.json();
 
-            if (!response.ok) throw new Error(data.message || "Checkout failed");
+            if (!response.ok || !data.success) throw new Error(data.message || "Checkout failed");
 
             if (paymentMethod === 'COD') {
                 clearCart();
                 router.push(`/order-tracking?id=${data.orderId}`);
             } else {
-                // Initialize Razorpay
+                // Initialize Razorpay — amount and total are server-derived
                 const options = {
                     key: data.key,
                     amount: data.amount,
                     currency: "INR",
                     name: "The Srivari",
-                    description: "Luxury Heirloom Purchase",
+                    description: `Luxury Heirloom Purchase — ₹${Number(data.total).toLocaleString('en-IN')}`,
                     order_id: data.razorpayOrderId,
                     handler: async function (response: any) {
                         const verifyRes = await fetch("/api/payment/verify", {
@@ -134,7 +217,7 @@ export default function CheckoutPage() {
                             clearCart();
                             router.push(`/order-tracking?id=${data.orderId}`);
                         } else {
-                            alert("Payment verification failed. Please contact support.");
+                            setCheckoutError("Payment verification failed. Please contact support with your order ID: " + data.orderId);
                         }
                     },
                     prefill: {
@@ -150,7 +233,7 @@ export default function CheckoutPage() {
                 setIsProcessing(false);
             }
         } catch (error: any) {
-            alert(error.message || "Checkout failed. Please try again.");
+            setCheckoutError(error.message || "Checkout failed. Please try again.");
             setIsProcessing(false);
         }
     };
@@ -159,7 +242,7 @@ export default function CheckoutPage() {
         return (
             <main className="bg-[#FDFBF7] min-h-screen">
                 <div className="container mx-auto px-6 py-32 text-center">
-                    <ShoppingBag className="mx-auto w-16 h-16 text-[#D4AF37]/20 mb-6" />
+                    <ShoppingBag className="mx-auto w-16 h-16 text-[#D4AF37]/20 mb-6" aria-hidden="true" />
                     <h1 className="text-3xl font-serif text-[#1A1A1A] mb-4">Your bag is empty</h1>
                     <p className="text-neutral-500 mb-8 max-w-md mx-auto">Explore our collections and discover the masterpiece waiting for you.</p>
                     <Link href="/shop" className="inline-block bg-[#1A1A1A] text-marble px-8 py-3 rounded-sm hover:bg-[#D4AF37] hover:text-white transition-all uppercase tracking-widest text-sm font-bold">
@@ -185,14 +268,14 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                    {/* Checkout Form Form */}
+                    {/* Checkout Form */}
                     <div className="lg:col-span-7">
                         <form onSubmit={handleCheckout} className="space-y-10">
 
                             {user && savedAddresses.length > 0 && (
                                 <section className="bg-white border border-gold/10 p-6 rounded-sm shadow-sm">
                                     <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gold mb-4 flex items-center gap-2">
-                                        <MapPin size={14} /> Select Registered Residence
+                                        <MapPin size={14} aria-hidden="true" /> Select Registered Residence
                                     </h3>
                                     <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                                         {savedAddresses.map((addr) => (
@@ -218,8 +301,9 @@ export default function CheckoutPage() {
                                 <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Delivery Information</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">First Name</label>
+                                        <label htmlFor="co-firstName" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">First Name</label>
                                         <input
+                                            id="co-firstName"
                                             required
                                             name="firstName"
                                             value={formData.firstName}
@@ -228,8 +312,9 @@ export default function CheckoutPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Last Name</label>
+                                        <label htmlFor="co-lastName" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Last Name</label>
                                         <input
+                                            id="co-lastName"
                                             required
                                             name="lastName"
                                             value={formData.lastName}
@@ -239,8 +324,9 @@ export default function CheckoutPage() {
                                     </div>
                                 </div>
                                 <div className="mt-6 space-y-2">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Address</label>
+                                    <label htmlFor="co-address" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Address</label>
                                     <input
+                                        id="co-address"
                                         required
                                         name="address"
                                         value={formData.address}
@@ -250,8 +336,9 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">City</label>
+                                        <label htmlFor="co-city" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">City</label>
                                         <input
+                                            id="co-city"
                                             required
                                             name="city"
                                             value={formData.city}
@@ -260,8 +347,9 @@ export default function CheckoutPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Pincode</label>
+                                        <label htmlFor="co-pincode" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Pincode</label>
                                         <input
+                                            id="co-pincode"
                                             required
                                             pattern="[0-9]{6}"
                                             name="pincode"
@@ -272,8 +360,9 @@ export default function CheckoutPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Phone</label>
+                                        <label htmlFor="co-phone" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Phone</label>
                                         <input
+                                            id="co-phone"
                                             required
                                             type="tel"
                                             pattern="[0-9]{10,12}"
@@ -298,13 +387,13 @@ export default function CheckoutPage() {
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <WalletCards className={paymentMethod === 'Razorpay' ? "text-gold" : "text-neutral-400"} />
+                                            <WalletCards className={paymentMethod === 'Razorpay' ? "text-gold" : "text-neutral-400"} aria-hidden="true" />
                                             <div className="text-left">
                                                 <p className="text-xs font-bold uppercase tracking-wider">Online Payment</p>
                                                 <p className="text-[10px] text-neutral-500">UPI, Cards, NetBanking</p>
                                             </div>
                                         </div>
-                                        {paymentMethod === 'Razorpay' && <CheckCircle2 size={16} className="text-gold" />}
+                                        {paymentMethod === 'Razorpay' && <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />}
                                     </button>
 
                                     <button
@@ -316,13 +405,13 @@ export default function CheckoutPage() {
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <Truck className={paymentMethod === 'COD' ? "text-gold" : "text-neutral-400"} />
+                                            <Truck className={paymentMethod === 'COD' ? "text-gold" : "text-neutral-400"} aria-hidden="true" />
                                             <div className="text-left">
                                                 <p className="text-xs font-bold uppercase tracking-wider">Cash on Delivery</p>
                                                 <p className="text-[10px] text-neutral-500">Pay at your doorstep</p>
                                             </div>
                                         </div>
-                                        {paymentMethod === 'COD' && <CheckCircle2 size={16} className="text-gold" />}
+                                        {paymentMethod === 'COD' && <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />}
                                     </button>
                                 </div>
                             </section>
@@ -330,8 +419,9 @@ export default function CheckoutPage() {
                             <section>
                                 <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Contact</h2>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Email Address</label>
+                                    <label htmlFor="co-email" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Email Address</label>
                                     <input
+                                        id="co-email"
                                         required
                                         type="email"
                                         name="email"
@@ -344,6 +434,12 @@ export default function CheckoutPage() {
                             </section>
 
                             <div className="pt-6">
+                                {checkoutError && (
+                                    <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-sm text-sm" role="alert">
+                                        <AlertCircle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
+                                        <span>{checkoutError}</span>
+                                    </div>
+                                )}
                                 <button
                                     type="submit"
                                     disabled={isProcessing}
@@ -357,14 +453,14 @@ export default function CheckoutPage() {
                                     ) : paymentMethod === 'COD' ? "Place COD Order" : "Proceed to Secure Payment"}
                                 </button>
                                 <div className="mt-6 flex items-center justify-center gap-6 opacity-30">
-                                    <ShieldCheck size={20} />
+                                    <ShieldCheck size={20} aria-hidden="true" />
                                     <span className="text-[10px] uppercase tracking-widest font-bold font-sans">Secure RSA 2048-bit Encrypted</span>
                                 </div>
                             </div>
                         </form>
                     </div>
 
-                    {/* Order Summary Summary */}
+                    {/* Order Summary */}
                     <div className="lg:col-span-5">
                         <div className="bg-white border border-black/[0.03] p-8 md:p-10 sticky top-32 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
                             <h3 className="text-xl font-serif mb-8 border-b pb-4">Order Summary</h3>
@@ -373,8 +469,14 @@ export default function CheckoutPage() {
                                 {cart.map((item) => (
                                     <div key={item.id} className="flex gap-4">
                                         <div className="relative w-16 h-20 bg-neutral-100 shrink-0">
-                                            <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-                                            <span className="absolute -top-2 -right-2 h-5 w-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                                            <SrivariImage
+                                                src={item.images[0]}
+                                                alt={item.name}
+                                                fill
+                                                sizes="64px"
+                                                className="object-cover"
+                                            />
+                                            <span className="absolute -top-2 -right-2 h-5 w-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full font-bold z-10">
                                                 {item.quantity}
                                             </span>
                                         </div>
@@ -389,11 +491,70 @@ export default function CheckoutPage() {
                                 ))}
                             </div>
 
+                            {/* Coupon */}
+                            <div className="mb-8">
+                                {appliedCoupon ? (
+                                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-sm">
+                                        <div className="flex items-center gap-3">
+                                            <TicketPercent size={16} className="text-emerald-600 shrink-0" aria-hidden="true" />
+                                            <div>
+                                                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">{appliedCoupon.code} applied</p>
+                                                <p className="text-[10px] text-emerald-600">
+                                                    {appliedCoupon.description || `You save ₹${appliedCoupon.discount.toLocaleString('en-IN')}`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={removeCoupon}
+                                            aria-label="Remove coupon"
+                                            className="p-1.5 text-emerald-500 hover:text-red-500 transition-colors"
+                                        >
+                                            <X size={14} aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label htmlFor="coupon-code" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 mb-2 block">
+                                            Coupon Code
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                id="coupon-code"
+                                                type="text"
+                                                value={couponInput}
+                                                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyCoupon(); } }}
+                                                placeholder="E.g. ROYALWELCOME"
+                                                className="flex-1 min-w-0 bg-[#FDFBF7] border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm text-sm uppercase placeholder:normal-case placeholder:text-neutral-300"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleApplyCoupon}
+                                                disabled={isApplyingCoupon}
+                                                className="px-5 py-3 bg-[#1A1A1A] text-[#D4AF37] rounded-sm uppercase tracking-widest text-[10px] font-bold hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-colors disabled:opacity-60 shrink-0"
+                                            >
+                                                {isApplyingCoupon ? "..." : "Apply"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                {couponError && (
+                                    <p className="text-red-600 text-xs mt-2" role="alert">{couponError}</p>
+                                )}
+                            </div>
+
                             <div className="space-y-4 pt-4 border-t border-dashed">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-neutral-500">Subtotal</span>
                                     <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                 </div>
+                                {appliedCoupon && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-emerald-600">Discount ({appliedCoupon.code})</span>
+                                        <span className="text-emerald-600 font-medium">−₹{discount.toLocaleString('en-IN')}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-sm">
                                     <span className="text-neutral-500">Shipping (Royal Complimentary)</span>
                                     <span className="text-green-600 font-bold tracking-tight">FREE</span>
@@ -406,7 +567,7 @@ export default function CheckoutPage() {
 
                             <div className="mt-10 space-y-4">
                                 <div className="flex items-center gap-3 text-[10px] text-neutral-400 p-4 bg-neutral-50/50 rounded-sm italic">
-                                    <Truck size={14} className="shrink-0" />
+                                    <Truck size={14} className="shrink-0" aria-hidden="true" />
                                     <span>Estimated delivery: 3-5 business days across India.</span>
                                 </div>
                             </div>

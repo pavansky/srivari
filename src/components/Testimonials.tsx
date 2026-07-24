@@ -34,57 +34,60 @@ export default function Testimonials() {
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrent((prev) => (prev + 1) % testimonials.length);
-        }, 5000);
+        }, 6000);
         return () => clearInterval(timer);
     }, []);
 
     return (
-        <section className="py-20 bg-[#FDFBF7] relative overflow-hidden">
+        <section className="py-24 md:py-32 bg-obsidian relative overflow-hidden">
             {/* Background Decor */}
-            <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-[#D4AF37]/20 rounded-tl-3xl m-10" />
-            <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-[#D4AF37]/20 rounded-br-3xl m-10" />
+            <div className="absolute top-0 left-0 w-32 h-32 border-t border-l border-gold/20 rounded-tl-3xl m-6 md:m-10" aria-hidden="true" />
+            <div className="absolute bottom-0 right-0 w-32 h-32 border-b border-r border-gold/20 rounded-br-3xl m-6 md:m-10" aria-hidden="true" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gold/5 rounded-full blur-[120px] pointer-events-none" aria-hidden="true" />
 
-            <div className="container mx-auto px-4 text-center relative z-10">
-                <h2 className="text-3xl md:text-4xl font-heading text-[#4A0404] mb-12">
+            <div className="container mx-auto px-6 text-center relative z-10">
+                <span className="text-gold uppercase tracking-[0.3em] text-xs md:text-sm">Voices of Our Patrons</span>
+                <h2 className="text-4xl md:text-5xl font-serif text-marble mt-4 mb-14">
                     Royal Patrons
                 </h2>
 
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-3xl mx-auto">
                     <AnimatePresence mode="wait">
-                        <motion.div
+                        <motion.figure
                             key={current}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.5 }}
-                            className="bg-white p-10 md:p-14 shadow-xl border border-[#D4AF37]/30 rounded-lg relative"
+                            className="glass-card p-10 md:p-14 rounded-lg relative"
                         >
-                            <Quote className="absolute top-6 left-6 text-[#D4AF37]/20 rotate-180" size={64} />
+                            <Quote className="absolute top-6 left-6 text-gold/15 rotate-180" size={64} aria-hidden="true" />
 
-                            <p className="text-lg md:text-xl text-[#595959] italic font-serif leading-relaxed mb-8 relative z-10">
-                                "{testimonials[current].text}"
-                            </p>
+                            <blockquote className="text-lg md:text-xl text-marble/80 italic font-serif leading-relaxed mb-8 relative z-10">
+                                &ldquo;{testimonials[current].text}&rdquo;
+                            </blockquote>
 
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="flex gap-1 mb-2">
+                            <figcaption className="flex flex-col items-center gap-1">
+                                <div className="flex gap-1 mb-2" aria-label={`Rated ${testimonials[current].rating} out of 5 stars`}>
                                     {[...Array(testimonials[current].rating)].map((_, i) => (
-                                        <span key={i} className="text-[#B8860B] text-lg">★</span>
+                                        <span key={i} className="text-gold text-lg" aria-hidden="true">★</span>
                                     ))}
                                 </div>
-                                <h4 className="font-heading text-xl text-[#4A0404]">{testimonials[current].name}</h4>
-                                <span className="text-sm font-sans tracking-widest uppercase text-[#D4AF37]">{testimonials[current].role}</span>
-                            </div>
-                        </motion.div>
+                                <span className="font-serif text-xl text-marble">{testimonials[current].name}</span>
+                                <span className="text-xs font-sans tracking-[0.25em] uppercase text-gold">{testimonials[current].role}</span>
+                            </figcaption>
+                        </motion.figure>
                     </AnimatePresence>
 
                     {/* Indicators */}
-                    <div className="flex justify-center gap-3 mt-8">
-                        {testimonials.map((_, index) => (
+                    <div className="flex justify-center gap-3 mt-10">
+                        {testimonials.map((t, index) => (
                             <button
-                                key={index}
+                                key={t.id}
                                 onClick={() => setCurrent(index)}
-                                className={`w-3 h-3 rounded-full transition-all duration-300 ${current === index ? "bg-[#4A0404] w-8" : "bg-[#D4AF37]/40"
-                                    }`}
+                                aria-label={`Show testimonial from ${t.name}`}
+                                aria-current={current === index}
+                                className={`h-2 rounded-full transition-all duration-300 ${current === index ? "bg-gold w-8" : "bg-gold/30 w-2 hover:bg-gold/60"}`}
                             />
                         ))}
                     </div>

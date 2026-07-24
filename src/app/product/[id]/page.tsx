@@ -1,449 +1,294 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { cache } from "react";
+import { Metadata } from "next";
 import Link from "next/link";
-import Footer from "@/components/Footer";
-import { SITE_CONFIG } from "@/config/site";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import Image from "next/image";
-import SrivariImage from "@/components/SrivariImage";
-import { Check, Truck, ShieldCheck, Share2, Heart, Sparkles, X } from "lucide-react";
-import Accordion from "@/components/Accordion";
-import { useCart } from "@/context/CartContext";
-import { useWishlist } from "@/context/WishlistContext";
+import { notFound } from "next/navigation";
+import { Sparkles } from "lucide-react";
+import { getProducts } from "@/lib/db";
+import prisma from "@/lib/prisma";
 import { Product } from "@/types";
+import Footer from "@/components/Footer";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import Accordion from "@/components/Accordion";
+import ProductCard from "@/components/ProductCard";
+import ProductGallery from "@/components/product/ProductGallery";
+import ProductActions from "@/components/product/ProductActions";
+import RecentlyViewed from "@/components/product/RecentlyViewed";
+import ReviewsSection from "@/components/reviews/ReviewsSection";
 
-export default function ProductPage() {
-    const params = useParams();
-    const id = params?.id as string;
-    const [isLoading, setIsLoading] = useState(true);
-    const [product, setProduct] = useState<Product | undefined>(undefined);
-    const [activeImage, setActiveImage] = useState("");
-    const [quantity, setQuantity] = useState(1);
-    const { addToCart } = useCart();
-    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+export const dynamic = "force-dynamic";
 
-    useEffect(() => {
-        if (!id) return;
+const CARE_DELIMITER = "--- \n**Wash & Care Instructions:**\n";
+const DEFAULT_CARE =
+    "Professional dry clean only. Store wrapped in soft muslin, away from direct sunlight and moisture. Air the drape gently every few months to preserve the zari.";
 
-        const normalizeId = (val: any) => String(val).trim();
-        const targetId = normalizeId(id);
+/** Strip internal cost/supplier fields so they never reach the client payload. */
+function toPublicProduct(p: Product): Product {
+    const { priceCps, shipping, supplierId, supplierName, locationBin, ...rest } = p;
+    return rest as Product;
+}
 
-        const loadProduct = async () => {
-            let found: Product | undefined;
+const getCatalogue = cache(async (): Promise<Product[]> => {
+    return (await getProducts()) as Product[];
+});
 
-            // Fetch from Database API (single source of truth)
-            try {
-                const res = await fetch(`/api/products?t=${Date.now()}`);
-                if (res.ok) {
-                    const dbProducts: Product[] = await res.json();
-                    found = dbProducts.find(p => normalizeId(p.id) === targetId);
-                }
-            } catch (error) {
-                console.error("Failed to fetch product from DB:", error);
-            }
+const getProduct = cache(async (id: string): Promise<Product | undefined> => {
+    const normalize = (val: unknown) => String(val).trim();
+    const target = normalize(decodeURIComponent(id));
+    const products = await getCatalogue();
+    const found = products.find((p) => normalize(p.id) === target);
+    if (!found || found.isArchived) return undefined;
+    return found;
+});
 
-            setProduct(found);
-            if (found) {
-                const validImage = found.images?.find(img => img && img.trim() !== "") || "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1000&auto=format&fit=crop";
-                setActiveImage(validImage);
-            }
-            setIsLoading(false);
-        };
-
-        loadProduct();
-    }, [id]);
-
-    const handleAddToCart = () => {
-        if (product) {
-            addToCart(product, quantity);
-
-            // Graceful Toast Notification
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-24 right-6 bg-[#000000]/90 backdrop-blur-md border border-[#D4AF37]/50 text-white px-6 py-4 flex items-center gap-4 z-[100] shadow-2xl transition-all duration-500 ease-out transform translate-x-full opacity-0';
-
-            toast.innerHTML = `
-                <div className="w-10 h-10 relative rounded overflow-hidden shadow-inner flex-shrink-0">
-                    <img src="${activeImage}" alt="${product.name}" class="w-10 h-10 object-cover rounded border border-[#D4AF37]/30" />
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold">Added to Cart</span>
-                    <span class="text-sm font-sans truncate max-w-[200px]">${product.name} (x${quantity})</span>
-                </div>
-                <div class="ml-4 pl-4 border-l border-white/10">
-                    <a href="/cart" class="text-xs text-white hover:text-[#D4AF37] uppercase tracking-widest transition-colors font-bold whitespace-nowrap">View Cart</a>
-                </div>
-            `;
-
-            document.body.appendChild(toast);
-
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-            });
-
-            // Animate out and remove
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 500); // Wait for transition
-            }, 4000);
-        }
-    };
-    const showToast = (message: string) => {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-24 right-6 bg-[#000000]/90 backdrop-blur-md border border-[#D4AF37]/50 text-[#D4AF37] px-6 py-4 flex items-center gap-3 z-[100] shadow-2xl transition-all duration-500 ease-out transform translate-x-full opacity-0 rounded-sm font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-bold';
-        
-        toast.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            <span>${message}</span>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
-        
-        setTimeout(() => {
-            toast.classList.add('translate-x-full', 'opacity-0');
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    };
-
-    const handleShare = () => {
-        if (!product) return;
-        const shareUrl = window.location.href;
-        
-        try {
-            const shareData = {
-                title: `Srivari - ${product.name}`,
-                text: `Check out this beautiful ${product.name} on Srivari!`,
-                url: shareUrl,
-            };
-
-            if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-                navigator.share(shareData).catch((err) => {
-                    console.log("Share API error:", err);
-                    if (err.name !== 'AbortError') copyFallback(shareUrl);
-                });
-            } else {
-                copyFallback(shareUrl);
-            }
-        } catch (error) {
-            console.error(error);
-            copyFallback(shareUrl);
-        }
-    };
-
-    const copyFallback = (text: string) => {
-        try {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast("Link copied to clipboard!");
-            }).catch(() => fallbackInputCopy(text));
-        } catch (e) {
-            fallbackInputCopy(text);
-        }
-    };
-
-    const fallbackInputCopy = (text: string) => {
-        try {
-            const el = document.createElement('textarea');
-            el.value = text;
-            el.style.position = 'fixed';
-            el.style.top = '0';
-            el.style.left = '0';
-            el.style.opacity = '0';
-            document.body.appendChild(el);
-            el.focus();
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            showToast("Link copied to clipboard!");
-        } catch (err) {
-            showToast("Please copy the URL manually");
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D4AF37]"></div>
-            </div>
-        );
+const getReviewStats = cache(async (productId: string): Promise<{ count: number; average: number }> => {
+    try {
+        const agg = await prisma.review.aggregate({
+            where: { productId, isApproved: true },
+            _count: { _all: true },
+            _avg: { rating: true },
+        });
+        const count = agg._count._all;
+        const average = count ? Math.round((agg._avg.rating || 0) * 10) / 10 : 0;
+        return { count, average };
+    } catch {
+        return { count: 0, average: 0 };
     }
+});
 
+function splitDescription(description: string): { narrative: string; care: string | null } {
+    if (description?.includes(CARE_DELIMITER)) {
+        const [narrative, care] = description.split(CARE_DELIMITER);
+        return { narrative: narrative.trim(), care: (care || "").trim() || null };
+    }
+    return { narrative: description || "", care: null };
+}
+
+function categoryDetails(category: string): { material: string; weave: string } {
+    const key = (category || "").toLowerCase();
+    if (key.includes("kanjivaram") || key.includes("kanchipuram"))
+        return { material: "Pure Mulberry Silk", weave: "Kanjivaram Zari, hand-loomed in Kanchipuram" };
+    if (key.includes("banarasi"))
+        return { material: "Pure Katan Silk", weave: "Banarasi brocade with woven zari motifs" };
+    if (key.includes("mysore"))
+        return { material: "Pure Mysore Crepe Silk", weave: "Traditional Mysore weave with gold border" };
+    if (key.includes("tussar") || key.includes("tussah"))
+        return { material: "Wild Tussar Silk", weave: "Handloom Tussar with natural texture" };
+    if (key.includes("organza"))
+        return { material: "Silk Organza", weave: "Sheer handwoven organza" };
+    if (key.includes("cotton"))
+        return { material: "Fine Handloom Cotton", weave: "Traditional pit-loom cotton weave" };
+    if (key.includes("georgette"))
+        return { material: "Pure Silk Georgette", weave: "Lightweight georgette drape" };
+    return { material: `Handpicked ${category || "Silk"}`, weave: `Traditional ${category || "handloom"} craftsmanship` };
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id } = await params;
+    const product = await getProduct(id);
     if (!product) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-4 text-center">
-                <h1 className="text-3xl font-serif text-[#4A0404]">Product not found</h1>
-                <Link href="/shop" className="mt-8 px-6 py-2 bg-[#D4AF37] text-white font-bold uppercase text-sm tracking-widest hover:bg-[#B5952F] transition-colors">
-                    Back to Shop
-                </Link>
-            </div>
-        );
+        return { title: "Product Not Found" };
     }
 
-    // WhatsApp Order Logic
-    const message = `Hi, I'd like to order *${product.name}* (Price: ₹${product.price}). Qty: ${quantity}. Please confirm availability.`;
-    const whatsappUrl = SITE_CONFIG.links.whatsapp(message);
+    const { narrative } = splitDescription(product.description);
+    const description =
+        narrative.length > 160 ? `${narrative.slice(0, 157).trimEnd()}...` : narrative || `${product.name} — ${product.category} saree from The Srivari.`;
+    const image = product.images?.find((img) => img && img.trim() !== "");
+
+    // Bare name — the root layout's title template appends "| The Srivari"
+    return {
+        title: product.name,
+        description,
+        alternates: { canonical: `/product/${product.id}` },
+        openGraph: {
+            title: `${product.name} | The Srivari`,
+            description,
+            type: "website",
+            url: `https://thesrivari.com/product/${product.id}`,
+            ...(image ? { images: [{ url: image, alt: product.name }] } : {}),
+        },
+    };
+}
+
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const product = await getProduct(id);
+    if (!product) notFound();
+
+    const [catalogue, reviewStats] = await Promise.all([getCatalogue(), getReviewStats(product.id)]);
+
+    const publicProduct = toPublicProduct(product);
+    const { narrative, care } = splitDescription(product.description);
+    const details = categoryDetails(product.category);
+
+    const relatedProducts = catalogue
+        .filter(
+            (p) =>
+                p.category === product.category &&
+                String(p.id) !== String(product.id) &&
+                p.stock > 0 &&
+                !p.isArchived
+        )
+        .slice(0, 4)
+        .map(toPublicProduct);
+
+    const validImages = (product.images || []).filter((img) => img && img.trim() !== "");
+
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name,
+        ...(validImages.length ? { image: validImages } : {}),
+        description: narrative,
+        ...(product.sku ? { sku: product.sku } : {}),
+        brand: { "@type": "Brand", name: "The Srivari" },
+        category: product.category,
+        offers: {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: product.price,
+            availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: `https://thesrivari.com/product/${product.id}`,
+        },
+        ...(reviewStats.count > 0
+            ? {
+                  aggregateRating: {
+                      "@type": "AggregateRating",
+                      ratingValue: reviewStats.average,
+                      reviewCount: reviewStats.count,
+                  },
+              }
+            : {}),
+    };
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-            {/* Luxury V2 Layout */}
             <div className="container mx-auto px-4 pt-32 pb-20">
                 <Breadcrumbs />
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 relative">
-
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 relative">
                     {/* Left: Gallery (Sticky) */}
                     <div className="lg:col-span-7">
-                        <div className="sticky top-32 space-y-8">
-                            {/* Main Image - Art Frame Style */}
-                            <div className="relative aspect-[3/4] w-full bg-[#f0eee6] overflow-hidden group">
-                                {activeImage && (
-                                    <SrivariImage
-                                        src={activeImage}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover transition-transform duration-[1.5s] ease-in-out group-hover:scale-105"
-                                    />
-                                )}
-                                {/* Minimalist Badge */}
-                                <div className="absolute top-0 left-0 p-6 z-10">
-                                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 border border-[#D4AF37]/20 shadow-sm">
-                                        <span className="text-[#1A1A1A] text-[10px] font-[family-name:var(--font-montserrat)] uppercase tracking-[0.25em] font-bold">
-                                            {product.category}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* AI Try-On Overlay Button */}
-                                <Link
-                                    href={`/try-on?product=${encodeURIComponent(activeImage)}`}
-                                    className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-[#D4AF37]/30 text-[#4A0404] hover:bg-[#4A0404] hover:text-white transition-all duration-300 group/tryon"
-                                >
-                                    <Sparkles size={16} className="text-[#D4AF37] group-hover/tryon:text-white transition-colors" />
-                                    <span className="text-xs font-bold font-[family-name:var(--font-montserrat)] uppercase tracking-widest">
-                                        Virtual Try-On
-                                    </span>
-                                </Link>
-                            </div>
-
-                            {/* Gallery Strip */}
-                            <div className="flex items-center gap-4 py-2 border-t border-[#D4AF37]/10">
-                                <span className="text-[10px] font-[family-name:var(--font-montserrat)] uppercase tracking-widest text-neutral-400">Gallery</span>
-                                <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                                    {product.images?.filter(img => img && img.trim() !== "").map((img, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setActiveImage(img)}
-                                            className={`relative w-16 h-20 flex-shrink-0 transition-opacity duration-300
-                                                ${activeImage === img ? 'opacity-100 ring-1 ring-[#D4AF37]' : 'opacity-40 hover:opacity-80'}
-                                            `}
-                                            aria-label={`View gallery image ${i + 1}`}
-                                        >
-                                            <SrivariImage src={img} alt="Thumbnail" fill className="object-cover" />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        <ProductGallery name={product.name} category={product.category} images={product.images || []} />
                     </div>
 
                     {/* Right: Info & Actions */}
                     <div className="lg:col-span-5 flex flex-col pt-4">
                         <div className="space-y-10">
-
                             {/* Branding Header */}
                             <div className="space-y-4">
-                                <span className="text-[#D4AF37] text-xs font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-[0.3em] pl-1">
+                                <span className="text-[#D4AF37] text-xs font-sans font-bold uppercase tracking-[0.3em] pl-1">
                                     Srivari Royal Edition
                                 </span>
-                                <h1 className="text-5xl lg:text-6xl font-[family-name:var(--font-playfair)] text-[#1A1A1A] leading-[1.1]">
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-[#1A1A1A] leading-[1.1]">
                                     {product.name}
                                 </h1>
-                                <div className="flex items-center justify-between border-b border-black/5 pb-6">
-                                    <p className="text-3xl text-[#1A1A1A] font-[family-name:var(--font-playfair)]">
-                                        ₹{product.price.toLocaleString('en-IN')}
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/5 pb-6">
+                                    <p className="text-3xl text-[#1A1A1A] font-serif">
+                                        ₹{product.price.toLocaleString("en-IN")}
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {product.stock > 0 ? (
                                             product.stock < 5 ? (
                                                 <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/50">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></div>
-                                                    <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">Only {product.stock} left in stock</span>
+                                                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider">
+                                                        Only {product.stock} left in stock
+                                                    </span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200/50">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
-                                                    <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">In Stock</span>
+                                                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider">In Stock</span>
                                                 </div>
                                             )
                                         ) : (
                                             <div className="flex items-center gap-2 text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200/50">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-red-600"></div>
-                                                <span className="text-[10px] font-[family-name:var(--font-montserrat)] font-bold uppercase tracking-wider">Sold Out</span>
+                                                <span className="text-[10px] font-sans font-bold uppercase tracking-wider">Sold Out</span>
                                             </div>
                                         )}
                                     </div>
                                 </div>
+                                {reviewStats.count > 0 && (
+                                    <a href="#reviews" className="inline-flex items-center gap-2 text-xs font-sans text-neutral-500 hover:text-[#4A0404] transition-colors">
+                                        <span className="text-[#D4AF37]" aria-hidden="true">
+                                            {"★".repeat(Math.round(reviewStats.average))}
+                                        </span>
+                                        <span>
+                                            {reviewStats.average.toFixed(1)} · {reviewStats.count} review{reviewStats.count > 1 ? "s" : ""}
+                                        </span>
+                                    </a>
+                                )}
                             </div>
 
                             {/* Narrative */}
-                            <div className="font-[family-name:var(--font-montserrat)] text-[#595959] font-light leading-relaxed text-sm tracking-wide text-justify space-y-6">
-                                <div>
-                                    <p className="mb-4 text-base">
-                                        <span className="text-[#D4AF37] font-bold tracking-widest uppercase text-xs mr-2">Note from the Artisan:</span>
-                                        {/* Split by our exact template delimiter */}
-                                        {product.description.split('--- \n**Wash & Care Instructions:**\n')[0] || product.description}
-                                    </p>
-                                </div>
-                                
-                                {/* Dynamic Wash & Care Block */}
-                                {product.description.includes('--- \n**Wash & Care Instructions:**\n') && (
+                            <div className="font-sans text-[#595959] font-light leading-relaxed text-sm tracking-wide space-y-6">
+                                <p className="text-base">
+                                    <span className="text-[#D4AF37] font-bold tracking-widest uppercase text-xs mr-2">
+                                        Note from the Artisan:
+                                    </span>
+                                    {narrative}
+                                </p>
+
+                                {care && (
                                     <div className="bg-[#FAF8F5] p-6 border border-[#D4AF37]/20 rounded-sm">
-                                        <h3 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                            <Sparkles size={14} className="text-[#D4AF37] fill-[#D4AF37]/20" />
-                                            Wash & Care Instructions
-                                        </h3>
-                                        <div className="text-xs text-[#595959] space-y-2 leading-relaxed whitespace-pre-line">
-                                            {product.description.split('--- \n**Wash & Care Instructions:**\n')[1]}
-                                        </div>
+                                        <h2 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                            <Sparkles size={14} className="text-[#D4AF37] fill-[#D4AF37]/20" aria-hidden="true" />
+                                            Wash &amp; Care Instructions
+                                        </h2>
+                                        <div className="text-xs text-[#595959] space-y-2 leading-relaxed whitespace-pre-line">{care}</div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Designer Action Bar */}
-                            <div className="space-y-6">
-                                <div className="flex flex-col gap-3">
-                                    {/* Quantity Selector */}
-                                    {product.stock > 0 && (
-                                        <div className="flex items-center gap-6 mb-4">
-                                            <span className="text-xs font-[family-name:var(--font-montserrat)] uppercase tracking-widest font-bold text-[#1A1A1A]">
-                                                Quantity
-                                            </span>
-                                            <div className="flex items-center border border-[#1A1A1A] bg-white">
-                                                <button
-                                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                                    className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
-                                                    aria-label="Decrease quantity"
-                                                >-</button>
-                                                <span className="w-12 h-12 flex items-center justify-center font-[family-name:var(--font-playfair)] text-xl text-[#4A0404] font-medium border-l border-r border-[#1A1A1A]/20">
-                                                    {quantity}
-                                                </span>
-                                                <button
-                                                    onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
-                                                    className="w-12 h-12 flex items-center justify-center text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-colors text-xl font-light"
-                                                    aria-label="Increase quantity"
-                                                >+</button>
-                                            </div>
-                                        </div>
-                                    )}
+                            {/* Actions: quantity, add-to-bag, WhatsApp, wishlist, share */}
+                            <ProductActions product={publicProduct} />
 
-                                    {product.stock > 0 ? (
-                                        <>
-                                            <a
-                                                href={whatsappUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="w-full bg-[#1A1A1A] text-white h-14 flex items-center justify-center gap-4 hover:bg-[#D4AF37] hover:text-[#1A1A1A] transition-all duration-500 shadow-xl shadow-black/5 group"
-                                            >
-                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Acquire via WhatsApp</span>
-                                                <Share2 size={18} className="transition-transform group-hover:translate-x-1" />
-                                            </a>
-
-                                            <button
-                                                onClick={handleAddToCart}
-                                                className="w-full bg-transparent border border-[#1A1A1A] text-[#1A1A1A] h-14 flex items-center justify-center gap-4 hover:bg-[#1A1A1A] hover:text-white transition-all duration-500"
-                                            >
-                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Add to Bag</span>
-                                                <Truck size={18} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            <div className="w-full bg-neutral-100 text-neutral-400 h-14 flex items-center justify-center gap-4 cursor-not-allowed border border-neutral-200">
-                                                <span className="font-[family-name:var(--font-montserrat)] text-xs font-bold uppercase tracking-[0.2em]">Currently Unavailable</span>
-                                                <X size={18} />
-                                            </div>
-                                            <p className="text-[10px] text-center text-neutral-400 font-medium tracking-wide">
-                                                This masterpiece has been acquired. <Link href="/shop" className="underline hover:text-[#D4AF37]">Explore similar treasures</Link>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center justify-center gap-8 border-t border-b border-black/5 py-4 relative z-50">
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (product) {
-                                                isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product);
-                                            }
-                                        }}
-                                        className={`group flex items-center gap-2 transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none p-4 -m-4
-                                            ${isInWishlist(product?.id || '') ? 'text-red-600' : 'text-neutral-500 hover:text-black'}
-                                        `}
-                                        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                                    >
-                                        <Heart
-                                            size={16}
-                                            className={`transition-transform duration-300 pointer-events-none ${isInWishlist(product?.id || '') ? 'fill-current scale-110' : 'group-hover:scale-110'}`}
-                                        />
-                                        <span className="pointer-events-none">{isInWishlist(product?.id || '') ? 'Saved' : 'Wishlist'}</span>
-                                    </button>
-
-                                    <div className="w-[1px] h-4 bg-neutral-300"></div>
-
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            handleShare();
-                                        }}
-                                        className="group flex items-center gap-2 text-neutral-500 hover:text-black transition-colors font-[family-name:var(--font-montserrat)] text-xs uppercase tracking-widest font-medium cursor-pointer touch-manipulation relative z-50 select-none p-4 -m-4"
-                                        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                                    >
-                                        <Share2 size={16} className="group-hover:-translate-y-0.5 transition-transform pointer-events-none" />
-                                        <span className="pointer-events-none">Share</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Minimal Details */}
+                            {/* Details Accordion — derived from the product itself */}
                             <div>
                                 <Accordion
                                     items={[
                                         {
                                             title: "Details & Care",
                                             content: (
-                                                <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-xs font-[family-name:var(--font-montserrat)] text-neutral-600 leading-relaxed pt-2">
+                                                <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-xs font-sans text-neutral-600 leading-relaxed pt-2">
+                                                    <div>
+                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Category</span>
+                                                        {product.category}
+                                                    </div>
                                                     <div>
                                                         <span className="block text-black font-bold uppercase tracking-wider mb-1">Material</span>
-                                                        Pure Handloom Silk
-                                                    </div>
-                                                    <div>
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Weave</span>
-                                                        Kanjivaram Zari
+                                                        {details.material}
                                                     </div>
                                                     <div className="col-span-2">
-                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Care</span>
-                                                        Professional dry clean only. Preserve in muslin.
+                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Weave</span>
+                                                        {details.weave}
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <span className="block text-black font-bold uppercase tracking-wider mb-1">Wash &amp; Care</span>
+                                                        <span className="whitespace-pre-line">{care || DEFAULT_CARE}</span>
                                                     </div>
                                                 </div>
-                                            )
+                                            ),
+                                        },
+                                        {
+                                            title: "About this Piece",
+                                            content: (
+                                                <p className="text-xs font-sans text-neutral-600 leading-relaxed pt-2">
+                                                    {narrative || `A handpicked ${product.category} drape from The Srivari collection.`}
+                                                </p>
+                                            ),
                                         },
                                         {
                                             title: "Authenticity & Shipping",
                                             content: (
-                                                <div className="text-xs font-[family-name:var(--font-montserrat)] text-neutral-600 leading-relaxed space-y-3 pt-2">
+                                                <div className="text-xs font-sans text-neutral-600 leading-relaxed space-y-3 pt-2">
                                                     <p>Includes Silk Mark Certificate of Authenticity.</p>
                                                     <p>Ships within 24 hours. Complimentary express delivery globally on orders above ₹20,000.</p>
                                                 </div>
-                                            )
-                                        }
+                                            ),
+                                        },
                                     ]}
                                 />
                             </div>
@@ -453,49 +298,87 @@ export default function ProductPage() {
             </div>
 
             {/* Journey of the Saree / Provenance Section */}
-            <div className="bg-[#050505] text-[#FDFBF7] py-24 mt-20 relative overflow-hidden">
+            <div className="bg-[#050505] text-[#FDFBF7] py-24 mt-8 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
-
-                {/* Diagonal abstract silk line decoration */}
                 <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
-                    <div className="max-w-3xl mx-auto text-center mb-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                    <div className="max-w-3xl mx-auto text-center mb-20">
                         <span className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.4em] mb-6 block">Provenance</span>
                         <h2 className="text-4xl md:text-5xl font-serif mb-6 text-white">The Journey of the Saree</h2>
                         <p className="font-light text-white/70 leading-relaxed text-sm md:text-base">
-                            Every masterpiece in our collection carries the legacy of centuries. From the careful selection of pure silk threads to the intricate winding of the authentic gold zari, witness the dedication woven into every inch.
+                            Every masterpiece in our collection carries the legacy of centuries. From the careful selection of pure
+                            silk threads to the intricate winding of the authentic gold zari, witness the dedication woven into
+                            every inch.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-20 text-center max-w-5xl mx-auto">
-                        <div className="group">
-                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
-                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">I</span>
+                        {[
+                            {
+                                numeral: "I",
+                                title: "The Loom",
+                                copy: "Woven on ancestral pit looms traversing generations of master artisan families in Kanchipuram.",
+                            },
+                            {
+                                numeral: "II",
+                                title: "The Zari",
+                                copy: "Authentic silver wire delicately electroplated with pure gold, defining the classic lustrous borders.",
+                            },
+                            {
+                                numeral: "III",
+                                title: "The Time",
+                                copy: "Taking upwards of 45 days, each complex motif is painstakingly hand-woven without jacquard machines.",
+                            },
+                        ].map((step) => (
+                            <div key={step.numeral} className="group">
+                                <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
+                                    <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">
+                                        {step.numeral}
+                                    </span>
+                                </div>
+                                <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">{step.title}</h3>
+                                <p className="text-sm font-light text-white/50 leading-loose">{step.copy}</p>
                             </div>
-                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Loom</h3>
-                            <p className="text-sm font-light text-white/50 leading-loose">Woven on ancestral pit looms traversing generations of master artisan families in Kanchipuram.</p>
-                        </div>
-                        <div className="group">
-                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
-                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">II</span>
-                            </div>
-                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Zari</h3>
-                            <p className="text-sm font-light text-white/50 leading-loose">Authentic silver wire delicately electroplated with pure gold, defining the classic lustrous borders.</p>
-                        </div>
-                        <div className="group">
-                            <div className="w-16 h-16 mx-auto border border-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 group-hover:border-[#D4AF37] transition-colors duration-500 bg-white/5">
-                                <span className="text-[#D4AF37] font-serif text-xl italic group-hover:scale-110 transition-transform duration-500">III</span>
-                            </div>
-                            <h3 className="text-xl font-serif mb-4 text-white/90 tracking-wide">The Time</h3>
-                            <p className="text-sm font-light text-white/50 leading-loose">Taking upwards of 45 days, each complex motif is painstakingly hand-woven without jacquard machines.</p>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            <Footer />
+            {/* Related Products — server-rendered */}
+            {relatedProducts.length > 0 && (
+                <section className="container mx-auto px-4 md:px-6 py-16 md:py-24" aria-label="Related products">
+                    <div className="text-center mb-12">
+                        <span className="text-[#D4AF37] text-[10px] font-sans font-bold uppercase tracking-[0.4em] block mb-3">
+                            From the Same Loom
+                        </span>
+                        <h2 className="text-3xl md:text-4xl font-serif text-[#1A1A1A]">You May Also Adore</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {relatedProducts.map((related) => (
+                            <ProductCard key={related.id} product={related} />
+                        ))}
+                    </div>
+                    <div className="text-center mt-12">
+                        <Link
+                            href={`/shop?category=${encodeURIComponent(product.category)}`}
+                            className="inline-block px-10 py-4 border border-[#1A1A1A] text-[#1A1A1A] uppercase tracking-widest text-xs font-bold hover:bg-[#1A1A1A] hover:text-[#D4AF37] transition-all duration-300"
+                        >
+                            View All {product.category}
+                        </Link>
+                    </div>
+                </section>
+            )}
 
+            {/* Reviews */}
+            <div id="reviews">
+                <ReviewsSection productId={String(product.id)} productName={product.name} />
+            </div>
+
+            {/* Recently viewed — records this product on mount */}
+            <RecentlyViewed currentProductId={String(product.id)} />
+
+            <Footer />
         </main>
     );
 }

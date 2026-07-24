@@ -11,7 +11,8 @@ const config: Config = {
             colors: {
                 obsidian: "#0A0A0A",
                 gold: {
-                    DEFAULT: "#F1D592",
+                    DEFAULT: "#D4AF37",
+                    light: "#F2D06B",
                     dim: "#C8AA6E",
                 },
                 marble: "#F5F5F5",

@@ -1,41 +1,25 @@
 "use client";
 
 import { useScroll, useTransform, motion } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
-import Image from "next/image";
+import { useRef } from "react";
 import SrivariImage from "@/components/SrivariImage";
 import Link from "next/link";
 import { Product } from "@/types";
-// Imports already at top of file
+
+interface AntiGravityGalleryProps {
+    products: Product[];
+}
 
 /**
  * AntiGravityGallery Component
- * 
+ *
  * Displays a curated list of featured products with a parallax scrolling effect.
- * Fetches product data from the API on mount suitable for the Home Page.
+ * Receives products from the server (homepage) — no client-side fetching.
  */
-export default function AntiGravityGallery() {
+export default function AntiGravityGallery({ products }: AntiGravityGalleryProps) {
     const containerRef = useRef(null);
-    const [products, setProducts] = useState<Product[]>([]);
 
-
-
-    useEffect(() => {
-        async function loadProducts() {
-            try {
-                const res = await fetch('/api/products');
-                if (res.ok) {
-                    const data = await res.json();
-                    setProducts(data);
-                }
-            } catch (error) {
-                console.error("Failed to load products", error);
-            }
-        }
-        loadProducts();
-    }, []);
-
-    const featuredProducts = products.filter(p => p.isFeatured).slice(0, 4);
+    const featuredProducts = products.slice(0, 4);
 
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -45,20 +29,23 @@ export default function AntiGravityGallery() {
     const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
     const y2 = useTransform(scrollYProgress, [0, 1], [0, -200]); // Moves faster (closer depth)
 
+    if (featuredProducts.length === 0) return null;
+
     return (
-        <section id="featured-collections" ref={containerRef} className="py-32 px-6 min-h-screen bg-obsidian relative">
+        <section id="featured-collections" ref={containerRef} className="py-32 px-6 bg-obsidian relative">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
                     <div>
                         <span className="text-gold uppercase tracking-widest text-sm">Curated Selection</span>
-                        <h2 className="text-4xl md:text-6xl font-serif text-marble mt-4">Anti-Gravity<br />Series</h2>
+                        <h2 className="text-4xl md:text-6xl font-serif text-marble mt-4">Featured<br />Masterpieces</h2>
                     </div>
                     <p className="text-marble/60 max-w-sm text-sm leading-relaxed">
-                        Our latest collection defies gravity, featuring lightweight silks that float around you.
+                        Handpicked weaves that defy gravity — lightweight silks that float around you,
+                        each one a signed work of the loom.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12 md:gap-24">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24">
                     {featuredProducts.map((product, index) => {
                         const displayImage = product.images.find(img => img && img.trim() !== "") || "";
 
@@ -74,6 +61,7 @@ export default function AntiGravityGallery() {
                                             src={displayImage}
                                             alt={product.name}
                                             fill
+                                            sizes="(max-width: 768px) 100vw, 50vw"
                                             className="object-cover transition-transform duration-700 group-hover:scale-110"
                                         />
 
@@ -84,12 +72,15 @@ export default function AntiGravityGallery() {
                                         </div>
                                     </div>
                                 </Link>
-                                <div className="mt-6 flex justify-between items-center bg-transparent">
+                                <div className="mt-6 flex justify-between items-center gap-4 bg-transparent">
                                     <Link href={`/product/${product.id}`}>
                                         <h3 className="text-2xl font-serif text-marble group-hover:text-gold transition-colors">{product.name}</h3>
                                     </Link>
-                                    <Link href={`/product/${product.id}`}>
-                                        <button className="text-sm uppercase tracking-widest text-marble/60 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1">View</button>
+                                    <Link
+                                        href={`/product/${product.id}`}
+                                        className="text-sm uppercase tracking-widest text-marble/60 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1 shrink-0"
+                                    >
+                                        View
                                     </Link>
                                 </div>
                             </motion.div>

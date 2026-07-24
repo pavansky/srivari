@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient() as any;
+import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function GET(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const { searchParams } = new URL(request.url);
         const productId = searchParams.get('id');
@@ -13,7 +16,7 @@ export async function GET(request: Request) {
 
         const history = await prisma.inventoryTransaction.findMany({
             where: { productId },
-            orderBy: { timestamp: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 50
         });
 

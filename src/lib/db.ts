@@ -82,6 +82,17 @@ export async function getProducts(includeArchived: boolean = false): Promise<any
  * @param {Product} product - The product object to save
  * @returns {Promise<Product>} The saved product
  */
+/**
+ * Strips internal-only fields (cost price, shipping cost, supplier, warehouse
+ * bin) before a product is serialized into any public payload — API responses
+ * AND props passed to client components from server pages (RSC flight data is
+ * visible to visitors).
+ */
+export function toPublicProduct<T extends Record<string, any>>(product: T) {
+    const { priceCps, shipping, supplierId, supplierName, locationBin, ...publicFields } = product;
+    return publicFields;
+}
+
 export async function saveProduct(product: any) {
     // Normalize data: ensure numbers are numbers and optional strings are handled
     const normalizedData = {
@@ -94,6 +105,7 @@ export async function saveProduct(product: any) {
         stock: Number(product.stock) || 0,
         lowStockThreshold: Number(product.lowStockThreshold) || 5,
         images: product.images,
+        video: (product.video && String(product.video).trim() !== "") ? String(product.video).trim() : null,
         isFeatured: Boolean(product.isFeatured),
         priceCps: product.priceCps ? Number(product.priceCps) : null,
         shipping: product.shipping ? Number(product.shipping) : null,
@@ -177,6 +189,11 @@ export async function restoreProduct(id: string) {
 }
 
 // --- Orders ---
+
+// Orders in these statuses have had their stock decremented. 'Pending' means a
+// Razorpay order that was created but never paid — stock is NOT reserved for it.
+const STOCK_HOLDING_STATUSES = ['Placed', 'Paid', 'Shipped', 'Delivered'];
+
 export async function getOrders(): Promise<Order[]> {
     try {
         const orders = await prisma.order.findMany({
@@ -186,11 +203,20 @@ export async function getOrders(): Promise<Order[]> {
             const customer = o.customer as any;
             return {
                 id: o.id,
+                userId: o.userId || undefined,
                 customerName: customer?.name || "Unknown",
                 customerPhone: customer?.phone || "",
                 customerEmail: customer?.email || "",
+                customerAddress: customer?.address || "",
+                coupon: customer?.coupon || undefined,
                 totalAmount: o.total,
-                status: o.status as 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled',
+                amount: o.amount,
+                shippingCost: o.shipping_cost,
+                status: o.status as Order['status'],
+                paymentMethod: o.payment_method as any,
+                trackingNumber: o.tracking_number || undefined,
+                trackingUrl: o.tracking_url || undefined,
+                deliveryEta: o.delivery_eta || undefined,
                 date: o.createdAt.toISOString(),
                 items: o.items as any[]
             };
@@ -201,8 +227,12 @@ export async function getOrders(): Promise<Order[]> {
     }
 }
 
-export async function createOrder(order: Order) {
-    // Start a transaction to ensure both order creation and stock deduction succeed or fail together
+/**
+ * Creates an order. Stock is decremented atomically unless `skipStockDecrement`
+ * is set — used for Razorpay orders, where stock is only taken once payment is
+ * verified (see markOrderPaid) so abandoned checkouts don't leak inventory.
+ */
+export async function createOrder(order: Order, opts: { skipStockDecrement?: boolean } = {}) {
     return await prisma.$transaction(async (tx) => {
         // 1. Create the Order
         const newOrder = await tx.order.create({
@@ -213,10 +243,12 @@ export async function createOrder(order: Order) {
                     name: order.customerName,
                     phone: order.customerPhone,
                     email: order.customerEmail,
-                    address: (order as any).address // Store full address string in JSON for history
+                    address: (order as any).address, // Store full address string in JSON for history
+                    coupon: (order as any).coupon || undefined
                 },
                 items: order.items,
-                amount: order.totalAmount, // Assuming logic
+                amount: (order as any).amount ?? order.totalAmount,
+                shipping_cost: (order as any).shippingCost ?? 0,
                 total: order.totalAmount,
                 status: order.status || 'Pending',
                 payment_method: (order as any).paymentMethod || "Razorpay",
@@ -224,36 +256,65 @@ export async function createOrder(order: Order) {
             }
         });
 
-        // 2. Deduct Stock for each item
-        if (order.items && Array.isArray(order.items)) {
-            for (const item of order.items) {
-                if (item.productId && item.quantity) {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: {
-                            stock: {
-                                decrement: item.quantity
-                            }
-                        }
-                    });
-
-                    // Log InventoryTransaction
-                    await (tx as any).inventoryTransaction.create({
-                         data: {
-                             productId: item.productId,
-                             quantity: -item.quantity,
-                             type: "ORDER",
-                             actor: "Customer Order",
-                             reference: order.id,
-                             notes: `Order #${order.id}`
-                         }
-                    });
-                }
-            }
+        // 2. Deduct Stock for each item — strict: concurrent orders can't oversell
+        if (!opts.skipStockDecrement && order.items && Array.isArray(order.items)) {
+            await adjustStockForOrder(tx, order.items, order.id, -1, { strict: true });
         }
 
         return newOrder;
     });
+}
+
+/**
+ * Decrement (direction = -1) or restore (direction = +1) stock for order items.
+ * With `strict`, a decrement only succeeds if enough stock exists at write time
+ * (guards against concurrent-order oversell); insufficient stock throws
+ * INSUFFICIENT_STOCK and rolls back the enclosing transaction. Non-strict mode
+ * is for post-payment/admin flows where the money or decision already happened —
+ * stock may go negative there, which surfaces the oversell to the admin instead
+ * of failing a completed payment.
+ */
+async function adjustStockForOrder(tx: any, items: any[], orderId: string, direction: 1 | -1, opts: { strict?: boolean } = {}) {
+    for (const item of items) {
+        if (item.productId && item.quantity) {
+            const qty = item.quantity * direction;
+
+            if (direction === -1 && opts.strict) {
+                const res = await tx.product.updateMany({
+                    where: { id: item.productId, stock: { gte: item.quantity } },
+                    data: { stock: { decrement: item.quantity } }
+                });
+                if (res.count === 0) {
+                    const exists = await tx.product.findUnique({ where: { id: item.productId }, select: { name: true } });
+                    if (exists) throw new Error(`INSUFFICIENT_STOCK:${exists.name}`);
+                    console.warn(`Stock adjust skipped for missing product ${item.productId}`);
+                    continue;
+                }
+            } else {
+                try {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stock: { increment: qty } }
+                    });
+                } catch (e: any) {
+                    // Product row gone (P2025) — don't fail the whole order update
+                    console.warn(`Stock adjust skipped for ${item.productId}:`, e?.message);
+                    continue;
+                }
+            }
+
+            await tx.inventoryTransaction.create({
+                data: {
+                    productId: item.productId,
+                    quantity: qty,
+                    type: "ORDER",
+                    actor: direction === -1 ? "Customer Order" : "Order Cancelled",
+                    reference: orderId,
+                    notes: direction === -1 ? `Order #${orderId}` : `Restock from cancelled #${orderId}`
+                }
+            });
+        }
+    }
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -269,30 +330,93 @@ export async function getOrder(id: string): Promise<Order | null> {
         customerEmail: customer?.email || "",
         customerAddress: customer?.address || "",
         totalAmount: order.total,
+        amount: order.amount,
+        shippingCost: order.shipping_cost,
         status: order.status as any,
         date: order.createdAt.toISOString(),
         items: order.items as any[],
         paymentMethod: order.payment_method as any,
-        razorpayOrderId: order.razorpay_order_id || undefined
+        razorpayOrderId: order.razorpay_order_id || undefined,
+        trackingNumber: order.tracking_number || undefined,
+        trackingUrl: order.tracking_url || undefined,
+        deliveryEta: order.delivery_eta || undefined
     };
 }
 
+/**
+ * Marks a Razorpay order as Paid after signature verification and takes the
+ * stock it reserved. Idempotent: a second call for an already-paid order is a
+ * no-op, so retried webhooks/verifications can't double-decrement — and a
+ * Cancelled order is terminal (a replayed verify cannot resurrect it or take
+ * stock again). The coupon's redemption count is consumed here, only once the
+ * payment is real (offline orders redeem at creation instead).
+ */
 export async function updateOrderPayment(razorpayOrderId: string, paymentId: string) {
-    return await prisma.order.update({
-        where: { razorpay_order_id: razorpayOrderId },
-        data: {
-            status: 'Paid',
-            // Store payment ID in metadata if needed
+    const result = await prisma.$transaction(async (tx) => {
+        const existing = await tx.order.findUnique({ where: { razorpay_order_id: razorpayOrderId } });
+        if (!existing) throw new Error(`Order not found for razorpay id ${razorpayOrderId}`);
+
+        // Atomic claim of the Pending -> Paid transition: with two concurrent
+        // verify calls (client callback + gateway webhook), only the one whose
+        // conditional update matches a still-'Pending' row proceeds to take
+        // stock — a plain read-then-write check would let both through.
+        const claimed = await tx.order.updateMany({
+            where: { razorpay_order_id: razorpayOrderId, status: 'Pending' },
+            data: { status: 'Paid' }
+        });
+        if (claimed.count === 0) {
+            return { order: existing, newlyPaid: false, couponCode: undefined as string | undefined };
         }
+
+        // Non-strict: the customer has already paid — never fail the payment
+        // over stock; a negative count surfaces the oversell to the admin.
+        await adjustStockForOrder(tx, existing.items as any[], existing.id, -1);
+
+        const updated = await tx.order.findUnique({ where: { razorpay_order_id: razorpayOrderId } });
+        return { order: updated ?? existing, newlyPaid: true, couponCode: (existing.customer as any)?.coupon?.code as string | undefined };
     });
+
+    // Outside the transaction: a missing Coupon table must never roll back a payment.
+    if (result.newlyPaid && result.couponCode) {
+        const { redeemCoupon } = await import('./coupons');
+        await redeemCoupon(result.couponCode);
+    }
+
+    return result.order;
 }
 
+/**
+ * Updates an order's status and/or tracking details. Cancelling an order whose
+ * stock was decremented restores that stock (and re-cancelling is a no-op).
+ */
 export async function updateOrder(order: Partial<Order> & { id: string }) {
-    return await prisma.order.update({
-        where: { id: order.id },
-        data: {
-            status: order.status
+    return await prisma.$transaction(async (tx) => {
+        const existing = await tx.order.findUnique({ where: { id: order.id } });
+        if (!existing) throw new Error(`Order ${order.id} not found`);
+
+        const data: any = {};
+        if (order.status) data.status = order.status;
+        if ((order as any).trackingNumber !== undefined) data.tracking_number = (order as any).trackingNumber || null;
+        if ((order as any).trackingUrl !== undefined) data.tracking_url = (order as any).trackingUrl || null;
+        if ((order as any).deliveryEta !== undefined) data.delivery_eta = (order as any).deliveryEta || null;
+
+        const updated = await tx.order.update({
+            where: { id: order.id },
+            data
+        });
+
+        // Stock reconciliation on status transitions
+        if (order.status && order.status !== existing.status) {
+            const hadStock = STOCK_HOLDING_STATUSES.includes(existing.status);
+            const hasStock = STOCK_HOLDING_STATUSES.includes(order.status);
+            if (hadStock && !hasStock) {
+                await adjustStockForOrder(tx, existing.items as any[], existing.id, 1);
+            } else if (!hadStock && hasStock) {
+                await adjustStockForOrder(tx, existing.items as any[], existing.id, -1);
+            }
         }
+
+        return updated;
     });
 }
 

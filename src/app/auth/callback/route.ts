@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { isAdminEmail } from '@/lib/adminAuth'
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
             const { data: { user } } = await supabase.auth.getUser();
             let finalNext = next;
 
-            if (user?.email === 'support@thesrivari.com') {
+            if (isAdminEmail(user?.email)) {
                 finalNext = '/admin';
             }
 

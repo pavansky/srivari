@@ -1,106 +1,171 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Sparkles, X, ArrowRight } from "lucide-react";
 
 interface GlassSearchProps {
-    onSearch: (query: string) => void;
-    onHashtagSelect: (tag: string) => void;
-    activeHashtag: string | null;
-    trendingTags: string[];
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-export default function GlassSearch({ onSearch, onHashtagSelect, activeHashtag, trendingTags }: GlassSearchProps) {
-    const [query, setQuery] = useState("");
-    const [isFocused, setIsFocused] = useState(false);
+const TRENDING = ["Kanjivaram", "Banarasi", "Mysore Silk", "Cotton", "Tussar"];
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setQuery(val);
-        onSearch(val);
+/**
+ * GlassSearch — full-screen glassmorphism search overlay.
+ * Opened from the Navbar search icon. Submitting navigates to /shop?q=term.
+ * Queries that look like an order id (SR- / ORD- / #) shortcut to order tracking.
+ */
+// Real order ids are "SR-XXXXXX" (see /api/orders/create); ORD-/# kept as aliases.
+// The hyphen is required so product searches like "sri silk" aren't hijacked.
+const isOrderIdLike = (q: string) => /^(SR-|ORD-|#)/i.test(q.trim());
+
+export default function GlassSearch({ isOpen, onClose }: GlassSearchProps) {
+    const [query, setQuery] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
+
+    const looksLikeOrder = isOrderIdLike(query);
+
+    const close = useCallback(() => {
+        setQuery("");
+        onClose();
+    }, [onClose]);
+
+    // Focus input when opened, close on Escape, lock body scroll
+    useEffect(() => {
+        if (!isOpen) return;
+        const t = setTimeout(() => inputRef.current?.focus(), 100);
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") close();
+        };
+        window.addEventListener("keydown", onKey);
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            clearTimeout(t);
+            window.removeEventListener("keydown", onKey);
+            document.body.style.overflow = prevOverflow;
+        };
+    }, [isOpen, close]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const term = query.trim();
+        if (!term) return;
+        if (isOrderIdLike(term)) {
+            router.push(`/order-tracking?id=${encodeURIComponent(term.replace(/^#/, ""))}`);
+        } else {
+            router.push(`/shop?q=${encodeURIComponent(term)}`);
+        }
+        close();
     };
 
-    const clearActiveTag = () => {
-        onHashtagSelect("");
+    const goToCategory = (tag: string) => {
+        router.push(`/shop?category=${encodeURIComponent(tag)}`);
+        close();
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto mb-12 relative px-4">
-            <div
-                className={`relative group bg-white/80 backdrop-blur-md rounded-2xl border transition-all duration-300 ${isFocused ? 'border-[#D4AF37] shadow-lg shadow-[#D4AF37]/10' : 'border-neutral-200'}`}
-            >
-                {/* Search Input */}
-                <div className="flex items-center px-6 py-4 gap-4">
-                    <Search className={`w-5 h-5 transition-colors ${isFocused ? 'text-[#D4AF37]' : 'text-neutral-400'}`} />
-                    <input
-                        type="text"
-                        placeholder="Search for 'Kanjivaram', 'Red Wedding', or '#RoyalVibes'..."
-                        className="w-full bg-transparent outline-none text-[#4A0404] placeholder:text-neutral-400 font-medium"
-                        value={query}
-                        onChange={handleSearch}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                    />
-                    {query && (
-                        <div className="flex items-center gap-2">
-                            {/* Order Tracking Shortcut */}
-                            {(query.toUpperCase().startsWith("ORD-") || query.startsWith("#")) && (
-                                <a
-                                    href="/order-tracking"
-                                    className="hidden md:flex items-center gap-1 bg-[#4A0404] text-gold text-[10px] font-bold uppercase px-3 py-1.5 rounded-full hover:bg-black transition-colors mr-2"
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="fixed inset-0 z-[70] bg-obsidian/80 backdrop-blur-xl flex items-start justify-center px-4 pt-[18vh]"
+                    onClick={close}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Search the store"
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: -24, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="w-full max-w-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Search Input */}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="relative glass-card rounded-2xl border border-gold/20 shadow-[0_20px_60px_rgba(0,0,0,0.6)] focus-within:border-gold/50 transition-colors"
+                        >
+                            <div className="flex items-center px-6 py-5 gap-4">
+                                <Search className="w-5 h-5 text-gold shrink-0" aria-hidden="true" />
+                                <label htmlFor="glass-search-input" className="sr-only">
+                                    Search sarees or track an order
+                                </label>
+                                <input
+                                    id="glass-search-input"
+                                    ref={inputRef}
+                                    type="text"
+                                    placeholder="Search 'Kanjivaram', 'Bridal Red'… or an order id"
+                                    className="w-full bg-transparent outline-none text-marble placeholder:text-marble/40 font-light tracking-wide"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    autoComplete="off"
+                                />
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Order Tracking Shortcut */}
+                                    {looksLikeOrder && (
+                                        <Link
+                                            href="/order-tracking"
+                                            onClick={close}
+                                            className="hidden md:flex items-center gap-1 bg-gold text-obsidian text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full hover:bg-white transition-colors"
+                                        >
+                                            Track Order <ArrowRight size={12} aria-hidden="true" />
+                                        </Link>
+                                    )}
+                                    {query && (
+                                        <button
+                                            type="button"
+                                            onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                                            className="text-marble/40 hover:text-marble transition-colors"
+                                            aria-label="Clear search"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={close}
+                                        className="text-marble/40 hover:text-gold transition-colors border-l border-white/10 pl-3"
+                                        aria-label="Close search"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        {/* Trending Tags */}
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                            <span className="flex items-center gap-2 text-gold text-xs uppercase tracking-[0.3em] font-medium mr-1">
+                                <Sparkles size={14} aria-hidden="true" /> Trending
+                            </span>
+                            {TRENDING.map((tag) => (
+                                <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => goToCategory(tag)}
+                                    className="px-4 py-1.5 rounded-full text-xs tracking-widest uppercase border border-white/15 text-marble/70 hover:border-gold hover:text-gold transition-all duration-300"
                                 >
-                                    Track Order <ArrowRight size={12} />
-                                </a>
-                            )}
-                            <button
-                                onClick={() => { setQuery(""); onSearch(""); }}
-                                className="text-neutral-400 hover:text-black"
-                                aria-label="Clear search"
-                            >
-                                <X size={18} />
-                            </button>
+                                    {tag}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                </div>
-            </div>
 
-            {/* Trending Tags & Active Filter Display */}
-            <div className="mt-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-
-                {/* Trending Section */}
-                <div className="flex flex-wrap gap-2 items-center">
-                    <div className="flex items-center gap-2 text-[#D4AF37] text-xs uppercase tracking-widest font-bold mr-2">
-                        <Sparkles size={14} /> Trending
-                    </div>
-                    {trendingTags.map((tag) => (
-                        <button
-                            key={tag}
-                            onClick={() => onHashtagSelect(tag === activeHashtag ? "" : tag)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 border ${activeHashtag === tag
-                                ? 'bg-[#4A0404] text-[#D4AF37] border-[#4A0404]'
-                                : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#D4AF37] hover:text-[#D4AF37]'
-                                }`}
-                        >
-                            {tag}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Active Filter Indicator (if hashtag selected) */}
-                {activeHashtag && (
-                    <div className="flex items-center gap-2 bg-[#4A0404]/5 px-4 py-1.5 rounded-lg border border-[#4A0404]/10">
-                        <span className="text-xs text-[#595959]">Filtering by:</span>
-                        <span className="text-sm font-bold text-[#4A0404]">{activeHashtag}</span>
-                        <button
-                            onClick={clearActiveTag}
-                            className="ml-2 text-[#4A0404] hover:bg-[#4A0404]/10 rounded-full p-0.5"
-                            aria-label="Remove filter"
-                        >
-                            <X size={14} />
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
+                        <p className="mt-6 text-center text-[11px] uppercase tracking-[0.25em] text-marble/30">
+                            Press Enter to search · Esc to close
+                        </p>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }

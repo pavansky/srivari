@@ -2,12 +2,18 @@
 
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck, MessageCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAudio } from '@/context/AudioContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SrivariImage from '@/components/SrivariImage';
 import { SITE_CONFIG } from '@/config/site';
+
+interface CartToast {
+    message: string;
+    tone: 'success' | 'error';
+}
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
@@ -31,6 +37,22 @@ export default function CartPage() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [modalError, setModalError] = useState('');
+
+    const [toast, setToast] = useState<CartToast | null>(null);
+    const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const showToast = (message: string, tone: CartToast['tone'] = 'error') => {
+        if (toastTimer.current) clearTimeout(toastTimer.current);
+        setToast({ message, tone });
+        toastTimer.current = setTimeout(() => setToast(null), 3500);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (toastTimer.current) clearTimeout(toastTimer.current);
+        };
+    }, []);
 
     const [shippingCost, setShippingCost] = useState(0); // 0 = Complimentary or Not Calculated
     const [pincode, setPincode] = useState('');
@@ -44,26 +66,14 @@ export default function CartPage() {
 
     // Auto-recalculate shipping on cart change
     useEffect(() => {
-        console.log("Cart/Pincode changed. Cart:", cart.length, "Pincode:", pincode);
         if (pincode && pincode.length === 6 && cart.length > 0) {
             checkShipping(true); // Silent update
         }
     }, [cart, pincode]); // Dependencies: cart contents or pincode changes
 
-    // Load Razorpay Script
-    const loadRazorpay = () => {
-        return new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        });
-    };
-
     const checkShipping = async (silent = false) => {
         if (!pincode || pincode.length < 6) {
-            if (!silent) alert("Please enter a valid 6-digit pincode.");
+            if (!silent) showToast("Please enter a valid 6-digit pincode.");
             return;
         }
 
@@ -87,121 +97,43 @@ export default function CartPage() {
                     state: data.state,
                     eta: data.eta
                 });
-                setUserDetails(prev => ({ ...prev, address: `${prev.address ? prev.address + ', ' : ''}Pincode: ${pincode}` }));
-                // Auto-append pincode to address if not there, or just useful for context
+                // Record the pincode once — strip any previously appended one
+                // first so recalculations don't pile up duplicates.
+                setUserDetails(prev => {
+                    const base = prev.address.replace(/(,\s*)?Pincode:\s*\d{6}/g, "").trim().replace(/,\s*$/, "");
+                    return { ...prev, address: `${base ? base + ', ' : ''}Pincode: ${pincode}` };
+                });
             } else {
-                if (!silent) alert("Shipping not serviceable to this pincode.");
+                if (!silent) showToast("Shipping not serviceable to this pincode.");
                 setShippingCost(0);
                 setShippingDetails({ city: '', state: '', eta: '' });
             }
         } catch (err) {
             console.error(err);
-            alert("Unable to fetch shipping rates.");
+            if (!silent) showToast("Unable to fetch shipping rates.");
         } finally {
             setIsCheckingPincode(false);
         }
     };
 
-    const handlePayment = async () => {
-        const res = await loadRazorpay();
-
-        if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
-            return;
-        }
-
-        if (!userDetails.name || !userDetails.phone || !userDetails.email) {
-            alert("Please fill in all your details first.");
-            return;
-        }
-
-        const subtotal = calculateTotal();
-        const total = subtotal + shippingCost;
-
-        // 1. Create Order
-        const response = await fetch('/api/payment/create-order', {
-            method: 'POST',
-            body: JSON.stringify({
-                amount: subtotal, // Sending subtotal
-                shipping_cost: shippingCost,
-                items: cart.map(i => ({
-                    productId: i.id,
-                    name: i.name,
-                    price: i.price,
-                    quantity: i.quantity
-                })),
-                customer: {
-                    name: userDetails.name,
-                    phone: userDetails.phone,
-                    email: userDetails.email,
-                    address: userDetails.address + (pincode ? ` - ${pincode}` : '')
-                }
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!data) {
-            alert("Server error. Are you online?");
-            return;
-        }
-
-        // 2. Initialize Razorpay
-        const options = {
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Enter the Key ID generated from the Dashboard
-            amount: data.amount,
-            currency: data.currency,
-            name: "The Srivari",
-            description: "Luxury Saree Purchase",
-            image: "/logo.png", // Use local logo if available or fallback
-            order_id: data.id,
-            handler: async function (response: any) {
-                // 3. Verify Payment
-                const verifyRes = await fetch("/api/payment/verify", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_signature: response.razorpay_signature,
-                    }),
-                });
-
-                const verifyData = await verifyRes.json();
-
-                if (verifyData.success) {
-                    alert("Payment Successful!");
-                    // Ideally we should empty the cart here
-                    // clearCart(); -> Need to destructure this from useCart if available, or just reload for now
-                    window.location.reload();
-                } else {
-                    alert("Payment Verification Failed");
-                }
-            },
-            prefill: {
-                name: userDetails.name || "",
-                email: userDetails.email || "",
-                contact: userDetails.phone || "",
-            },
-            theme: {
-                color: "#D4AF37", // Matching our Gold theme
-            },
-        };
-
-        const paymentObject = new (window as any).Razorpay(options);
-        paymentObject.open();
-    };
-
     const handleWhatsAppCheckout = async () => {
         // Validate required fields
         if (!userDetails.name || !userDetails.phone || !userDetails.email) {
-            alert("To ensure we can send you tracking updates, Email is now required.");
+            setModalError("To ensure we can send you tracking updates, name, phone and email are required.");
+            return;
+        }
+        // Order tracking matches on the last 10 digits — a short phone number
+        // would make the order untrackable for the customer.
+        if (userDetails.phone.replace(/\D/g, "").length < 10) {
+            setModalError("Please enter a valid 10-digit phone number.");
             return;
         }
 
         setIsSubmitting(true);
+        setModalError('');
 
         try {
-            // 1. Create Order on Server
+            // 1. Create Order on Server — concierge orders are settled offline via WhatsApp
             const res = await fetch('/api/orders/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -211,21 +143,16 @@ export default function CartPage() {
                     phone: userDetails.phone,
                     email: userDetails.email,
                     address: userDetails.address,
-                    items: cart.map(i => ({
-                        name: i.name,
-                        price: i.price,
-                        quantity: i.quantity,
-                        id: i.id
-                    })),
-                    total: calculateTotal(),
+                    items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+                    shippingCost: shippingCost,
                     paymentMethod: 'WhatsApp'
                 })
             });
 
             const data = await res.json();
 
-            if (!data.success) {
-                alert("Failed to create order. Please try again.");
+            if (!res.ok || !data.success) {
+                setModalError(data.message || "Failed to create order. Please try again.");
                 setIsSubmitting(false);
                 return;
             }
@@ -259,9 +186,10 @@ export default function CartPage() {
 
             // Close modal / Clear cart if needed (optional, keeping cart for now in case user comes back)
             setIsCheckoutModalOpen(false);
+            showToast(`Order ${orderId} placed — continue on WhatsApp`, 'success');
 
         } catch (error) {
-            alert("Something went wrong. Please check your connection.");
+            setModalError("Something went wrong. Please check your connection.");
         } finally {
             setIsSubmitting(false);
         }
@@ -269,6 +197,24 @@ export default function CartPage() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen flex flex-col font-sans text-obsidian relative">
+
+            {/* Inline feedback toast */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        role="status"
+                        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] backdrop-blur-md border px-6 py-3 rounded-sm shadow-2xl text-xs uppercase tracking-widest font-bold max-w-[calc(100vw-2rem)] text-center ${toast.tone === 'success'
+                            ? 'bg-black/90 border-[#D4AF37]/50 text-[#D4AF37]'
+                            : 'bg-[#4A0404]/95 border-red-200/30 text-white'
+                            }`}
+                    >
+                        {toast.message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Header / Page Title - Premium Style */}
             <div className="pt-32 pb-12 bg-black/90 text-white text-center relative overflow-hidden">
@@ -374,17 +320,18 @@ export default function CartPage() {
                                                             if (data.city || data.principalSubdivision) {
                                                                 const locString = [data.city, data.principalSubdivision, data.postcode].filter(Boolean).join(", ");
                                                                 setUserDetails(prev => ({ ...prev, address: locString }));
+                                                                setModalError('');
                                                             } else {
-                                                                alert("Could not detect precise location. Please enter manually.");
+                                                                setModalError("Could not detect precise location. Please enter manually.");
                                                             }
                                                         } catch (e) {
-                                                            alert("Failed to get location details.");
+                                                            setModalError("Failed to get location details.");
                                                         }
                                                     }, () => {
-                                                        alert("Location permission denied. Please enter manually.");
+                                                        setModalError("Location permission denied. Please enter manually.");
                                                     });
                                                 } else {
-                                                    alert("Geolocation is not supported by your browser.");
+                                                    setModalError("Geolocation is not supported by your browser.");
                                                 }
                                             }}
                                             className="bg-[#fcfcfa] border border-neutral-200 rounded-xl text-neutral-500 px-4 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:bg-white transition-all shadow-sm shrink-0 flex items-center justify-center gap-2 text-xs font-bold uppercase"
@@ -396,6 +343,12 @@ export default function CartPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {modalError && (
+                            <p className="mt-6 text-red-600 text-xs text-center bg-red-50 border border-red-100 rounded-xl px-4 py-3" role="alert">
+                                {modalError}
+                            </p>
+                        )}
 
                         <button
                             onClick={handleWhatsAppCheckout}
@@ -560,18 +513,18 @@ export default function CartPage() {
                                                                 if (data.postcode) {
                                                                     setPincode(data.postcode);
                                                                     // Optional: Auto-check
-                                                                    // checkShipping(); 
+                                                                    // checkShipping();
                                                                 } else {
-                                                                    alert("Could not detect pincode from location.");
+                                                                    showToast("Could not detect pincode from location.");
                                                                 }
                                                             } catch (e) {
-                                                                alert("Failed to get location details.");
+                                                                showToast("Failed to get location details.");
                                                             }
                                                         }, () => {
-                                                            alert("Location permission denied.");
+                                                            showToast("Location permission denied.");
                                                         });
                                                     } else {
-                                                        alert("Geolocation is not supported by your browser.");
+                                                        showToast("Geolocation is not supported by your browser.");
                                                     }
                                                 }}
                                                 className="bg-[#fcfcfa] border border-neutral-200 rounded-xl text-neutral-500 p-3 hover:text-[#D4AF37] hover:border-[#D4AF37] hover:bg-white transition-all shadow-sm shadow-[#D4AF37]/5 shrink-0"
@@ -629,7 +582,7 @@ export default function CartPage() {
                                 </Link>
 
                                 <button
-                                    onClick={() => setIsCheckoutModalOpen(true)}
+                                    onClick={() => { setModalError(''); setIsCheckoutModalOpen(true); }}
                                     className="w-full py-4 bg-white border border-[#1A1A1A]/10 text-[#1A1A1A] rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-neutral-50 transition-all duration-300 flex items-center justify-center gap-3 group"
                                 >
                                     <span>WhatsApp Concierge</span>

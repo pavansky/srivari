@@ -29,13 +29,16 @@ export default function InstallPrompt() {
             setShowPrompt(true);
         });
 
-        // For iOS, show the prompt
+        // For iOS, show the prompt — but honor a dismissal for 14 days so the
+        // banner doesn't nag on every single page load.
         if (isIosDevice) {
             const timer = setTimeout(() => {
-                const hasSeenPrompt = localStorage.getItem("srivari_pwa_prompt_dismissed");
-                // In dev mode or for immediate visibility tests, we can bypass this check temporarily
-                // but for now let's just show it if we aren't completely standalone
-                if (true) { 
+                const dismissedAt = Number(localStorage.getItem("srivari_pwa_prompt_dismissed_at") || 0);
+                const legacyDismissed = localStorage.getItem("srivari_pwa_prompt_dismissed") === "true";
+                const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+                const recentlyDismissed = (dismissedAt && Date.now() - dismissedAt < fourteenDays) ||
+                    (legacyDismissed && !dismissedAt);
+                if (!recentlyDismissed) {
                     setShowPrompt(true);
                 }
             }, 500);
@@ -59,6 +62,7 @@ export default function InstallPrompt() {
         setShowPrompt(false);
         if (isIOS) {
             localStorage.setItem("srivari_pwa_prompt_dismissed", "true");
+            localStorage.setItem("srivari_pwa_prompt_dismissed_at", String(Date.now()));
         }
     };
 

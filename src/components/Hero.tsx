@@ -1,11 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MagneticButton } from "./ui/MagneticButton";
 import { ArrowDown } from "lucide-react";
-import Link from "next/link";
+import { useAudio } from "@/context/AudioContext";
 
 export default function Hero() {
+    const { playBell } = useAudio();
+
+    const scrollToCollections = () => {
+        const target =
+            document.getElementById("collections") ||
+            document.getElementById("featured-collections");
+        target?.scrollIntoView({ behavior: "smooth" });
+    };
+
     return (
         <section className="relative h-screen w-full overflow-hidden flex items-center justify-center">
             {/* Cinematic Background Video */}
@@ -14,6 +22,7 @@ export default function Hero() {
                 loop
                 muted
                 playsInline
+                poster="/og-image.png"
                 className="absolute top-0 left-0 w-full h-full object-cover opacity-60 z-0"
             >
                 <source src="/hero-video.mp4" type="video/mp4" />
@@ -30,7 +39,7 @@ export default function Hero() {
                     transition={{ delay: 0.5, duration: 1 }}
                     className="text-gold tracking-[0.3em] uppercase text-sm md:text-base font-medium"
                 >
-                    Anti-Gravity Luxury
+                    Royalty Woven
                 </motion.p>
                 <div className="relative inline-block">
                     <motion.h1
@@ -44,7 +53,7 @@ export default function Hero() {
                             initial={{ opacity: 0, x: -10, rotate: -5 }}
                             animate={{ opacity: 1, x: 0, rotate: 0 }}
                             transition={{ delay: 1.8, duration: 1.2, ease: "easeOut" }}
-                            className="text-[#D4AF37] font-serif italic text-4xl md:text-6xl lg:text-8xl -ml-2 select-none"
+                            className="text-gold font-serif italic text-4xl md:text-6xl lg:text-8xl -ml-2 select-none"
                             style={{ textShadow: '0 0 30px rgba(212,175,55,0.4)' }}
                         >
                             &apos;S
@@ -57,7 +66,7 @@ export default function Hero() {
                     transition={{ delay: 1.2, duration: 1 }}
                     className="text-marble/80 text-lg md:text-xl font-light tracking-wide max-w-2xl"
                 >
-                    Where tradition meets weightlessness. Experience the ether of high fashion.
+                    Handwoven silk sarees for the modern royalty — where every thread carries a legacy.
                 </motion.p>
 
                 <motion.div
@@ -67,7 +76,7 @@ export default function Hero() {
                     className="mt-8"
                 >
                     <button
-                        onClick={() => document.getElementById('featured-collections')?.scrollIntoView({ behavior: 'smooth' })}
+                        onClick={() => { playBell(); scrollToCollections(); }}
                         className="px-8 py-4 bg-gold text-obsidian font-semibold tracking-widest text-sm uppercase rounded-full hover:bg-white transition-colors"
                     >
                         Explore Collection
@@ -81,7 +90,8 @@ export default function Hero() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 2.5, duration: 1 }}
                 className="absolute bottom-10 z-20 animate-bounce cursor-pointer p-4"
-                onClick={() => document.getElementById('featured-collections')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={scrollToCollections}
+                aria-hidden="true"
             >
                 <ArrowDown className="w-6 h-6 text-gold/80" />
             </motion.div>

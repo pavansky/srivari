@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { requireAdmin } from '@/lib/adminAuth';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
+    const denied = await requireAdmin(req);
+    if (denied) return denied;
+
     try {
         const { prompt: userPrompt } = await req.json();
 

@@ -1,6 +1,7 @@
 import { getProducts } from '@/lib/db';
 import ShopClient from './ShopClient';
 import { Metadata } from 'next';
+import { Product } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,11 +16,25 @@ export const metadata: Metadata = {
     },
 };
 
-export default async function ShopPage() {
-    // Fetch data directly from the DB on the server
-    const products = await getProducts();
+interface ShopSearchParams {
+    category?: string;
+    q?: string;
+}
+
+export default async function ShopPage({ searchParams }: { searchParams: Promise<ShopSearchParams> }) {
+    const { category, q } = await searchParams;
+
+    // Fetch data directly from the DB on the server, stripping internal
+    // cost/supplier fields so they never reach the client payload.
+    const products = ((await getProducts()) as Product[]).map(
+        ({ priceCps, shipping, supplierId, supplierName, locationBin, ...rest }) => rest as Product
+    );
 
     return (
-        <ShopClient initialProducts={products} />
+        <ShopClient
+            initialProducts={products}
+            initialCategory={typeof category === 'string' ? category : undefined}
+            initialQuery={typeof q === 'string' ? q : undefined}
+        />
     );
 }

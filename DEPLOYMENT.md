@@ -2,6 +2,32 @@
 
 Since your project uses **Next.js**, **Supabase**, and **Google Auth**, there are a few specific settings you must configure on Vercel for the app to work correctly.
 
+## 0. ⚠️ URGENT — one-time security cleanup (July 2026 upgrade)
+
+`.env.production` was previously **committed to this public repository**, exposing live credentials. Removing the file from the tip is not enough — it remains in git history. Do all of the following:
+
+1. **Rotate every exposed credential** (in the provider dashboards, then update Vercel env vars):
+   - Supabase database password (`DATABASE_URL` / `DIRECT_URL`) — Supabase → Settings → Database → Reset password.
+   - Cloudinary API secret — Cloudinary console → Settings → Access Keys.
+   - Gemini API key (`GEMINI_API_KEY`) — Google AI Studio → delete + recreate the key.
+   - Shiprocket account password (`SHIPROCKET_PASSWORD`).
+2. **Purge the file from git history** before the next push, e.g.:
+   ```bash
+   brew install git-filter-repo
+   git filter-repo --invert-paths --path .env.production
+   git push --force origin main
+   ```
+   (Alternatively use BFG Repo-Cleaner. Anyone who cloned before the purge still has the old secrets — rotation is what actually revokes them.)
+3. **Push the new schema** (adds Review, Coupon, NewsletterSubscriber tables — additive, no data loss):
+   ```bash
+   npx prisma db push
+   ```
+4. **Set the new env vars in Vercel**:
+   - `ADMIN_EMAILS` — comma-separated admin logins (defaults to support@thesrivari.com).
+   - `SHIPROCKET_WEBHOOK_SECRET` — also set the same value as the `x-api-key` header in your Shiprocket webhook settings (delivery updates are rejected until this is configured).
+   - `RAZORPAY_WEBHOOK_SECRET` — create a webhook in the Razorpay dashboard pointing to `https://thesrivari.com/api/payment/webhook` for the `payment.captured` event with this secret. This marks orders Paid even when the customer's browser closes before returning from the payment popup.
+   - Do **not** set `ADMIN_DEV_BYPASS` in Vercel — it is a local-development flag only.
+
 ## 1. Push Code to GitHub
 
 Ensure your latest code (including the `prisma` folder and `package.json` updates) is pushed to your GitHub repository.

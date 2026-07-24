@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { getProducts } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Allow responses up to 30 seconds for complex reasoning
 export const maxDuration = 30;
@@ -21,6 +22,11 @@ export async function POST(req: Request) {
     try {
         if (!process.env.GEMINI_API_KEY) {
             return Response.json({ error: "KEY_MISSING" }, { status: 500 });
+        }
+
+        const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+        if (!rateLimit(`stylist:${ip}`, 20).success) {
+            return Response.json({ error: 'Too many requests' }, { status: 429 });
         }
 
         const body = await req.json();

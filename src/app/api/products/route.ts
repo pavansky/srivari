@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getProducts, saveProduct, deleteProduct, lastGetProductsError } from '@/lib/db';
+import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,14 +9,12 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET Handler
- * Retrieves all products.
- * 
- * @returns {NextResponse} JSON array of products or 500 Error
+ * Retrieves all products. Public — but archived products (and admin-only cost
+ * fields) are only included for authenticated admins.
  */
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const includeArchived = searchParams.get('archived') === 'true';
-    const debug = searchParams.get('debug') === 'true';
 
     try {
         // Simple Rate Limiting (100 reqs/min)
@@ -26,49 +25,37 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
-        const products = await getProducts(includeArchived);
-        
-        if (debug && products.length === 0) {
-            // Debug: Try a raw prisma query to see the exact error
-            const prisma = (await import('@/lib/prisma')).default;
-            try {
-                const count = await prisma.product.count();
-                return NextResponse.json({ debug: true, productCount: count, products, dbConnected: true, getProductsError: lastGetProductsError });
-            } catch (dbError: any) {
-                return NextResponse.json({ 
-                    debug: true, 
-                    dbConnected: false, 
-                    error: dbError.message,
-                    code: dbError.code,
-                    meta: dbError.meta,
-                    hasDbUrl: !!process.env.DATABASE_URL,
-                    hasDirectUrl: !!process.env.DIRECT_URL
-                });
-            }
+        let isAdmin = false;
+        if (includeArchived) {
+            isAdmin = !(await requireAdmin(request));
         }
 
-        return NextResponse.json(products);
+        const products = await getProducts(includeArchived && isAdmin);
+
+        if (isAdmin) return NextResponse.json(products);
+
+        // Strip internal cost/supplier fields from the public payload
+        const publicProducts = products.map(({ priceCps, shipping, supplierId, supplierName, locationBin, ...rest }) => rest);
+        return NextResponse.json(publicProducts);
     } catch (e: any) {
         console.error(e);
-        if (debug) {
-            return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 });
-        }
         return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
     }
 }
 
 /**
- * POST Handler
+ * POST Handler — admin only.
  * Saves (Create/Update) a product.
- * Expects a JSON body matching the Product interface.
- * 
- * @param {Request} request - The incoming HTTP request
- * @returns {NextResponse} JSON with success status and saved product, or 500 Error
  */
 export async function POST(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const body = await request.json();
-        console.log("POST /api/products body:", JSON.stringify(body, null, 2));
+        if (!body?.name || typeof body.name !== 'string') {
+            return NextResponse.json({ error: 'Product name is required' }, { status: 400 });
+        }
         const saved = await saveProduct(body);
         return NextResponse.json({ success: true, product: saved });
     } catch (e) {
@@ -78,10 +65,13 @@ export async function POST(request: Request) {
 }
 
 /**
- * PUT Handler
+ * PUT Handler — admin only.
  * Same as POST, handles updates for inline stock editing and bulk operations.
  */
 export async function PUT(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const body = await request.json();
         const saved = await saveProduct(body);
@@ -93,13 +83,13 @@ export async function PUT(request: Request) {
 }
 
 /**
- * DELETE Handler
- * Deletes a product by ID (passed as query param).
- * 
- * @param {Request} request - The incoming HTTP request containing ?id=...
- * @returns {NextResponse} JSON success status or error
+ * DELETE Handler — admin only.
+ * Soft-deletes (archives) a product by ID (passed as query param).
  */
 export async function DELETE(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
@@ -113,15 +103,18 @@ export async function DELETE(request: Request) {
 }
 
 /**
- * PATCH Handler
+ * PATCH Handler — admin only.
  * Restores a softly deleted product by ID (passed as query param).
  */
 export async function PATCH(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         const action = searchParams.get('action');
-        
+
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
         if (action === 'restore') {
@@ -129,7 +122,7 @@ export async function PATCH(request: Request) {
             await restoreProduct(id);
             return NextResponse.json({ success: true });
         }
-        
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (e) {
         return NextResponse.json({ error: 'Failed to process patch' }, { status: 500 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { Product } from "@/types";
 
 interface WishlistContextType {
@@ -8,12 +8,18 @@ interface WishlistContextType {
     addToWishlist: (product: Product) => void;
     removeFromWishlist: (productId: string) => void;
     isInWishlist: (productId: string) => boolean;
+    /**
+     * Re-syncs saved wishlist entries against the live catalogue:
+     * updates price/stock/images and drops products that no longer exist.
+     */
+    refreshWishlist: () => Promise<void>;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     const [wishlist, setWishlist] = useState<Product[]>([]);
+    const [isLoaded, setIsLoaded] = useState(false);
 
     // Load from LocalStorage on mount
     useEffect(() => {
@@ -25,12 +31,18 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
                 console.error("Failed to load wishlist", e);
             }
         }
+        setIsLoaded(true);
     }, []);
 
-    // Save to LocalStorage on change
+    // Save to LocalStorage on change (only after the initial load)
     useEffect(() => {
-        localStorage.setItem("srivari_wishlist", JSON.stringify(wishlist));
-    }, [wishlist]);
+        if (!isLoaded) return;
+        try {
+            localStorage.setItem("srivari_wishlist", JSON.stringify(wishlist));
+        } catch (e) {
+            console.error("Failed to persist wishlist", e);
+        }
+    }, [wishlist, isLoaded]);
 
     const addToWishlist = (product: Product) => {
         setWishlist((prev) => {
@@ -47,8 +59,26 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         return wishlist.some((p) => p.id === productId);
     };
 
+    const refreshWishlist = useCallback(async () => {
+        try {
+            const res = await fetch("/api/products");
+            if (!res.ok) return;
+            const products: Product[] = await res.json();
+            // A DB hiccup returns 200 with [] (getProducts never throws) —
+            // treat that as "no data", not "everything was deleted".
+            if (!Array.isArray(products) || products.length === 0) return;
+            setWishlist((prev) =>
+                prev
+                    .map((item) => products.find((p) => String(p.id) === String(item.id)))
+                    .filter((p): p is Product => Boolean(p))
+            );
+        } catch (e) {
+            console.error("Failed to refresh wishlist", e);
+        }
+    }, []);
+
     return (
-        <WishlistContext.Provider value={{ wishlist, addToWishlist, removeFromWishlist, isInWishlist }}>
+        <WishlistContext.Provider value={{ wishlist, addToWishlist, removeFromWishlist, isInWishlist, refreshWishlist }}>
             {children}
         </WishlistContext.Provider>
     );

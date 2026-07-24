@@ -27,9 +27,48 @@ model Product {
   supplierId        String?
   supplier          Supplier?              @relation(fields: [supplierId], references: [id])
   transactions      InventoryTransaction[]
+  reviews           Review[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  deletedAt         DateTime?              // Soft-delete mechanism 
+  deletedAt         DateTime?              // Soft-delete mechanism
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  rating     Int // 1-5
+  title      String?
+  comment    String
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([productId, isApproved])
+}
+
+model Coupon {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  description String?
+  type        String // "PERCENT" | "FLAT"
+  value       Float
+  minOrder    Float     @default(0)
+  maxDiscount Float? // Cap for PERCENT coupons
+  usageLimit  Int? // Null = unlimited
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  source    String? // e.g. "footer", "checkout"
+  createdAt DateTime @default(now())
 }
 
 model InventoryTransaction {

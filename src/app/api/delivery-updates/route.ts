@@ -1,20 +1,24 @@
 
 import { NextResponse } from 'next/server';
-import { updateOrder, getOrders } from '@/lib/orders';
+import { updateOrder } from '@/lib/db';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 1. Authenticate (Basic Token Check) - In production, verify x-api-key header
-        const token = req.headers.get('x-api-key');
-        // Ideally, store this secret in .env
-        const SECRET = "srivari_secret_webhook_token_123";
+        // 1. Authenticate the webhook. Set SHIPROCKET_WEBHOOK_SECRET in the env
+        // and configure the same value as the x-api-key header in Shiprocket.
+        // No fallback secret: anything committed to a public repo is burned.
+        const SECRET = process.env.SHIPROCKET_WEBHOOK_SECRET;
+        if (!SECRET) {
+            console.warn("Webhook rejected: SHIPROCKET_WEBHOOK_SECRET is not configured");
+            return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+        }
 
+        const token = req.headers.get('x-api-key');
         if (token !== SECRET) {
-            // For now, ignoring strict auth to allow easier testing if user doesn't set it perfectly yet.
-            // But normally: return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-            console.log("Webhook Warning: x-api-key mismatch or missing", token);
+            console.warn("Webhook rejected: x-api-key mismatch or missing");
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         console.log("Shiprocket Webhook Payload:", body);
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
             // Since we haven't implemented "Push Order to Shiprocket" explicitly, we rely on the manual entry 
             // of our Order ID into Shiprocket panel by the user.
 
-            await updateOrder(order_id, { status: newStatus as any });
+            await updateOrder({ id: order_id, status: newStatus as any });
             return NextResponse.json({ success: true, message: `Updated order ${order_id} to ${newStatus}` });
         }
 

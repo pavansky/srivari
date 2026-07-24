@@ -58,9 +58,25 @@ A catalog of the bespoke engineering implemented to ensure elite performance, a 
 
 ### 3. The Command Center (Admin Dashboard)
 
-*   **Dynamic Command Palette (Cmd+K):** A unified search bar to instantly jump to orders, products, or customers.
-*   **Live Analytics & Inventory Health:** Real-time metrics on revenue, low stock alerts, and customer insights.
-*   **Activity Feed:** A chronological ledger of all significant actions.
+A multi-page admin console at `/admin` (sidebar navigation, dark/light themes), protected by **server-side Supabase auth** on every API route:
+
+*   **Dashboard** — revenue trend, needs-attention panel, recent orders.
+*   **Products** — full inventory workspace: add/edit form with zero-token description templates, AI enhancement, Cloudinary uploads and an AI Image Studio; filters, bulk actions, inline stock steppers, stock history timeline, CSV import/export.
+*   **Orders** — status tabs, search, fulfilment editor (tracking number/URL/ETA), WhatsApp deep-links, manual order entry, automatic restock on cancellation.
+*   **Customers** — derived CRM: lifetime value, repeat/VIP badges, per-customer order jump links.
+*   **Analytics** — 7/30/90-day revenue, AOV, estimated gross profit, funnel, top sellers/customers, inventory health.
+*   **Coupons** — percent/flat discount codes with min-order, caps, usage limits and expiry (validated server-side at checkout).
+*   **Reviews** — moderation queue; only approved reviews appear on product pages.
+*   **Suppliers** — vendor directory linked to products.
+*   **Dynamic Command Palette (Cmd+K)** — jump to any page, order, or product.
+
+### 4. Customer Features
+
+*   **Product reviews & ratings** with JSON-LD `aggregateRating` for rich search results.
+*   **Wishlist page** (`/wishlist`) with stale-data refresh, plus related-products and recently-viewed rails on product pages.
+*   **Coupons at checkout** with server-side validation and totals recomputed from the database (client prices are never trusted).
+*   **Order tracking** (`/order-tracking`) via Order ID + phone — no OTP delivery dependency.
+*   **Newsletter signups** stored in the database (homepage band + footer).
 
 ---
 
@@ -87,14 +103,16 @@ srivari/
 │   │   ├── robots.ts           # robots.txt generator
 │   │   │
 │   │   ├── about/              # Heritage page (Tirumala temple backdrop)
-│   │   ├── admin/              # Admin dashboard (product & order management)
+│   │   ├── admin/              # Multi-page admin console (dashboard, products,
+│   │   │                       #   orders, customers, analytics, coupons, reviews, suppliers)
 │   │   ├── auth/               # Auth callback handler
 │   │   ├── cart/               # Shopping cart + checkout flow
 │   │   ├── collections/        # Saree collection browser
 │   │   ├── contact/            # Contact form
 │   │   ├── login/              # OTP-based login
-│   │   ├── order-tracking/     # Customer order tracking
-│   │   ├── orders/             # Order history
+│   │   ├── order-tracking/     # Order tracking (order ID + phone)
+│   │   ├── orders/             # Redirects to /account
+│   │   ├── wishlist/           # Saved pieces
 │   │   ├── product/            # Individual product detail page
 │   │   ├── returns/            # Return policy
 │   │   ├── shipping-policy/    # Shipping policy
@@ -105,9 +123,11 @@ srivari/
 │   │       ├── admin/          # Admin CRUD (products, orders, uploads)
 │   │       ├── chat/           # AI chatbot (Gemini)
 │   │       ├── delivery-updates/ # Shipping status webhooks
-│   │       ├── orders/         # Order creation & retrieval
-│   │       ├── otp/            # Send & verify OTP
-│   │       ├── payment/        # Razorpay order creation & verification
+│   │       ├── orders/         # Order creation, tracking & admin ledger
+│   │       ├── coupons/        # Coupon validation
+│   │       ├── reviews/        # Product reviews
+│   │       ├── newsletter/     # Newsletter signups
+│   │       ├── payment/        # Razorpay payment verification
 │   │       ├── products/       # Public product listing
 │   │       ├── shiprocket/     # Shipping serviceability check
 │   │       ├── test/           # Health check endpoint
@@ -134,18 +154,14 @@ srivari/
 │   │   ├── CartContext          # Shopping cart state (localStorage-backed)
 │   │   └── WishlistContext     # Wishlist state
 │   │
-│   ├── data/                   # Static seed data
-│   │   └── products.ts         # Initial product catalog
-│   │
 │   ├── lib/                    # Core Business Logic
 │   │   ├── db.ts               # Database operations (CRUD for Products & Orders)
 │   │   ├── prisma.ts           # Prisma client singleton
-│   │   ├── orders.ts           # Order processing logic
+│   │   ├── coupons.ts          # Coupon validation & redemption
+│   │   ├── adminAuth.ts        # Server-side admin authorization
 │   │   ├── shiprocket.ts       # Shiprocket API integration
 │   │   ├── emailProvider.ts    # Nodemailer email service
 │   │   ├── smsProvider.ts      # SMS notification service
-│   │   ├── otp.ts              # OTP generation & verification
-│   │   ├── seo-ai.ts           # AI-driven SEO metadata generation
 │   │   ├── supabaseClient.ts   # Supabase client instance
 │   │   └── utils.ts            # Shared utility functions
 │   │
@@ -270,7 +286,17 @@ EMAIL_HOST="smtp.gmail.com"
 EMAIL_PORT=587
 EMAIL_USER="your@gmail.com"
 EMAIL_PASS="your_app_password"
+
+# Access control
+ADMIN_EMAILS="support@thesrivari.com"          # comma-separated admin logins
+SHIPROCKET_WEBHOOK_SECRET="a-long-random-token" # must match the x-api-key configured in Shiprocket
+
+# Local development only — bypasses admin auth. NEVER set in production.
+# ADMIN_DEV_BYPASS="1"
+# NEXT_PUBLIC_ADMIN_DEV_BYPASS="1"
 ```
+
+> **Never commit env files.** `.gitignore` excludes `.env*`; production values live in Vercel project settings.
 
 ### 3. Database Setup
 
@@ -300,21 +326,30 @@ npm start
 
 All API routes are under `/api/`. They accept and return JSON.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/products` | List all products |
-| `POST` | `/api/products` | Create a product (admin) |
-| `POST` | `/api/orders/create` | Place a new order |
-| `GET` | `/api/orders` | List all orders (admin) |
-| `POST` | `/api/payment/create-order` | Create a Razorpay order |
-| `POST` | `/api/payment/verify` | Verify Razorpay payment signature |
-| `POST` | `/api/shiprocket/serviceability` | Check shipping to a pincode |
-| `POST` | `/api/otp/send` | Send OTP to phone |
-| `POST` | `/api/otp/verify` | Verify OTP |
-| `POST` | `/api/chat` | AI chatbot (Gemini) |
-| `POST` | `/api/virtual-try-on` | AI saree try-on |
-| `POST` | `/api/admin/upload` | Upload images to Cloudinary |
-| `GET` | `/api/test` | Health check |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/products` | Public | List products (cost/supplier fields stripped; `?archived=true` requires admin) |
+| `POST/PUT` | `/api/products` | **Admin** | Create / update a product |
+| `DELETE/PATCH` | `/api/products` | **Admin** | Archive / restore a product |
+| `POST` | `/api/products/import` | **Admin** | Bulk CSV import |
+| `GET` | `/api/products/history` | **Admin** | Inventory transaction log |
+| `POST` | `/api/orders/create` | Public (rate-limited) | Place an order — prices re-derived server-side |
+| `GET/PUT` | `/api/orders` | **Admin** | Order ledger / status & tracking updates |
+| `POST` | `/api/orders/track` | Public (rate-limited) | Track an order by ID + phone |
+| `POST` | `/api/payment/verify` | Signature | Verify Razorpay payment (stock reserved here) |
+| `POST` | `/api/coupons/validate` | Public (rate-limited) | Validate a coupon against the subtotal |
+| `GET/POST/DELETE` | `/api/admin/coupons` | **Admin** | Coupon CRUD |
+| `GET/POST` | `/api/reviews` | Public (rate-limited) | Approved reviews / submit for moderation |
+| `GET/PATCH/DELETE` | `/api/admin/reviews` | **Admin** | Review moderation |
+| `POST` | `/api/newsletter` | Public (rate-limited) | Newsletter signup |
+| `GET/POST/DELETE` | `/api/admin/suppliers` | **Admin** | Supplier CRUD |
+| `POST` | `/api/admin/ai-*` | **Admin** | Gemini description/image studio helpers |
+| `POST` | `/api/chat`, `/api/stylist` | Public (rate-limited) | AI copywriter / Royal Stylist |
+| `POST` | `/api/virtual-try-on` | Public (rate-limited) | AI saree try-on (Vertex AI) |
+| `POST` | `/api/delivery-updates` | Webhook secret | Shiprocket status webhook |
+| `GET/POST/DELETE` | `/api/user/*` | Bearer token | Current user's orders, addresses, sync |
+
+**Admin auth** = a valid Supabase session whose email is in the `ADMIN_EMAILS` env var (comma-separated; defaults to the store owner). Enforced server-side in `src/lib/adminAuth.ts` — the client-side gate on `/admin` is UX only.
 
 ---
 

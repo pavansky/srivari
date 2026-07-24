@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { saveProduct } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const ip = request.headers.get('x-forwarded-for') || 'anonymous';
         const limiter = rateLimit(ip, 20); // Stricter limit for bulk imports

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleAuth } from 'google-auth-library';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Helper to get access token
 async function getAccessToken() {
@@ -20,13 +21,21 @@ async function getAccessToken() {
 
 export async function POST(request: Request) {
     try {
+        const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+        if (!rateLimit(`tryon:${ip}`, 5).success) {
+            return NextResponse.json({ error: 'Too many requests — please try again in a minute.' }, { status: 429 });
+        }
+
         const { user_image, product_image, category } = await request.json();
 
         if (!user_image || !product_image) {
             return NextResponse.json({ error: "Missing images" }, { status: 400 });
         }
 
-        const projectId = process.env.GOOGLE_PROJECT_ID || "gen-lang-client-0727105651";
+        const projectId = process.env.GOOGLE_PROJECT_ID;
+        if (!projectId) {
+            return NextResponse.json({ error: "Virtual try-on is not configured" }, { status: 503 });
+        }
         const location = "us-central1";
         const modelId = "virtual-try-on-001";
         const apiKey = process.env.GOOGLE_API_KEY;
@@ -79,23 +88,11 @@ export async function POST(request: Request) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Vertex AI Error:", errorText);
-
-            // Check for Billing/Permission issues
-            if (response.status === 403 || errorText.includes("BILLING_DISABLED")) {
-                return NextResponse.json(
-                    {
-                        error: "Google Cloud Billing Disabled",
-                        details: "The Project ID in .env does not have billing enabled. Please verify you are using the correct Project ID from Google Cloud Console.",
-                        suggestion: "Go to console.cloud.google.com, copy your ACTIVE Project ID, and update GOOGLE_PROJECT_ID in your .env file."
-                    },
-                    { status: 403 }
-                );
-            }
-
+            // Full details go to server logs only — never to the public client.
+            console.error("Vertex AI Error:", response.status, errorText);
             return NextResponse.json(
-                { error: `Vertex AI Failed: ${response.statusText}`, details: errorText },
-                { status: response.status }
+                { error: "The virtual try-on studio is temporarily unavailable. Please try again later." },
+                { status: 502 }
             );
         }
 
@@ -116,10 +113,10 @@ export async function POST(request: Request) {
         });
 
     } catch (error) {
+        // Details stay in server logs — never returned to the public client.
         console.error("Try-On API Error:", error);
         return NextResponse.json({
-            error: "Try-On Failed",
-            details: error instanceof Error ? error.message : String(error)
+            error: "The virtual try-on studio is temporarily unavailable. Please try again later."
         }, { status: 500 });
     }
 }

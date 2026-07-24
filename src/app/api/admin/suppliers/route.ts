@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getSuppliers, saveSupplier, deleteSupplier } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const suppliers = await getSuppliers();
         return NextResponse.json(suppliers);
@@ -12,8 +16,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const supplier = await request.json();
+        if (!supplier?.name) return NextResponse.json({ error: 'Supplier name required' }, { status: 400 });
         const saved = await saveSupplier(supplier);
         return NextResponse.json(saved);
     } catch (error) {
@@ -23,6 +31,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
+
     try {
         const { id } = await request.json();
         await deleteSupplier(id);

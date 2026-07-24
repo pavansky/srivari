@@ -29,6 +29,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
+    // Persist only after a successful hydration OR a deliberate user change —
+    // a failed /api/products fetch must never overwrite the saved cart with [].
+    const [canPersist, setCanPersist] = useState(false);
     const { playBell } = useAudio();
 
     // Helper to find a product by ID from localStorage or static data
@@ -43,36 +46,48 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
             // Fetch live products from the DB API
             let allProducts: Product[] = [];
+            let fetchOk = false;
             try {
                 const res = await fetch(`/api/products?t=${Date.now()}`);
-                if (res.ok) allProducts = await res.json();
+                if (res.ok) {
+                    allProducts = await res.json();
+                    fetchOk = allProducts.length > 0;
+                }
             } catch (e) {
                 console.error("Failed to fetch products for cart hydration", e);
             }
 
-            if (storedCartJSON) {
+            if (storedCartJSON && fetchOk) {
                 try {
                     const storedItems: StoredCartItem[] = JSON.parse(storedCartJSON);
                     const hydratedCart: CartItem[] = [];
 
                     for (const item of storedItems) {
                         const pid = item.productId || (item as any).id;
-                        let product = getProductById(pid, allProducts);
+                        const product = getProductById(pid, allProducts);
 
-                        if (product) {
+                        // Deleted or sold-out products drop out; quantities are
+                        // clamped to the stock available right now.
+                        if (product && (product.stock || 0) > 0) {
                             hydratedCart.push({
                                 ...product,
                                 uniqueId: Math.random().toString(36).substr(2, 9),
-                                quantity: item.quantity || 1
+                                quantity: Math.min(item.quantity || 1, product.stock)
                             });
                         }
                     }
 
                     setCart(hydratedCart);
+                    setCanPersist(true);
                 } catch (e) {
                     console.error("Failed to parse cart", e);
+                    setCanPersist(true); // corrupted JSON — safe to overwrite
                 }
+            } else if (!storedCartJSON) {
+                setCanPersist(true); // nothing saved yet — nothing to protect
             }
+            // else: fetch failed with a saved cart — keep storage untouched
+            // until the user actively modifies the cart this session.
             setIsLoaded(true);
         };
 
@@ -81,7 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     // Save to localStorage
     useEffect(() => {
-        if (isLoaded) {
+        if (isLoaded && canPersist) {
             const itemsToStore: StoredCartItem[] = cart.map(item => ({
                 productId: item.id,
                 quantity: item.quantity
@@ -92,10 +107,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 console.error("Cart storage quota exceeded", e);
             }
         }
-    }, [cart, isLoaded]);
+    }, [cart, isLoaded, canPersist]);
 
     const addToCart = (product: Product, quantity: number = 1) => {
         playBell();
+        setCanPersist(true);
         setCart((prev) => {
             const existingItem = prev.find(item => item.id === product.id);
             const currentQty = existingItem ? existingItem.quantity : 0;
@@ -151,10 +167,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     const removeFromCart = (productId: string) => {
+        setCanPersist(true);
         setCart((prev) => prev.filter((item) => item.id !== productId));
     };
 
     const clearCart = () => {
+        setCanPersist(true);
         setCart([]);
     };
 
