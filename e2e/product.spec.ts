@@ -230,10 +230,12 @@ test.describe('Product page — content sections', () => {
 });
 
 test.describe('Product page — error handling', () => {
-    test('unknown product id renders the 404 page', async ({ page }) => {
+    test('unknown product id renders the product-specific 404 page', async ({ page }) => {
         await page.goto('/product/definitely-not-a-real-product-id-e2e');
-        await expect(page.getByRole('heading', { name: 'Page Not Found' })).toBeVisible({ timeout: 15000 });
+        // /product/* uses its own cream 404 (the root one is obsidian, which would
+        // clash with the light navbar this route renders).
+        await expect(page.getByRole('heading', { name: /left the atelier/i })).toBeVisible({ timeout: 15000 });
         await expect(page.getByText('404', { exact: true })).toBeVisible();
-        await expect(page.getByRole('link', { name: 'Browse Shop' })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Browse the Collection' })).toBeVisible();
     });
 });

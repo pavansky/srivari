@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerSupabase } from '@/utils/supabase/server';
 import { supabase as tokenClient } from '@/lib/supabaseClient';
+import { DEFAULT_ADMIN, emailIsAdmin } from '@/lib/adminEmails';
 
 /**
  * Server-side admin authorization for API routes.
@@ -11,17 +12,10 @@ import { supabase as tokenClient } from '@/lib/supabaseClient';
  * Authorization: Bearer <access_token> header.
  */
 
-const DEFAULT_ADMIN = 'support@thesrivari.com';
-
-function adminEmails(): string[] {
-    return (process.env.ADMIN_EMAILS || DEFAULT_ADMIN)
-        .split(',')
-        .map(e => e.trim().toLowerCase())
-        .filter(Boolean);
-}
+export { DEFAULT_ADMIN };
 
 export function isAdminEmail(email?: string | null): boolean {
-    return !!email && adminEmails().includes(email.toLowerCase());
+    return emailIsAdmin(email, process.env.ADMIN_EMAILS);
 }
 
 export async function getAdminUser(request?: Request) {

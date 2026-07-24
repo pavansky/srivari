@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import ZariDivider from '@/components/ui/ZariDivider';
 
 export default function Error({
     error,
@@ -16,27 +17,29 @@ export default function Error({
     }, [error]);
 
     return (
-        <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6">
-            <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-6">
-                <span className="text-3xl">⚠️</span>
+        <div className="texture-silk bg-obsidian min-h-[85vh] flex flex-col items-center justify-center text-center px-6 pt-36 pb-28">
+            {/* Square hairline monogram — the maison's mark, even in failure */}
+            <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center border border-[#D4AF37]/35 mb-12">
+                <span className="font-serif text-3xl md:text-4xl leading-none text-[#D4AF37]">S</span>
             </div>
-            <h2 className="text-2xl font-serif text-[#D4AF37] mb-3">
-                Something went wrong
+
+            <span className="kicker kicker--plain mb-6">A Knot in the Weave</span>
+
+            <h2 className="font-serif text-4xl md:text-6xl leading-[1.05] tracking-tight text-marble max-w-2xl">
+                Something went <em className="italic text-[#D4AF37]">wrong</em>
             </h2>
-            <p className="text-marble/60 max-w-md mb-8 leading-relaxed">
+
+            <p className="text-marble/50 max-w-md mt-8 leading-relaxed text-sm font-sans">
                 We encountered an unexpected error. Our artisans have been notified and are weaving a fix.
             </p>
-            <div className="flex gap-4">
-                <button
-                    onClick={reset}
-                    className="px-6 py-3 bg-[#D4AF37] text-[#0a0a0a] font-semibold rounded-lg hover:bg-[#C5A028] transition-colors"
-                >
+
+            <ZariDivider tone="dark" className="w-full max-w-md my-14" />
+
+            <div className="flex flex-col sm:flex-row items-center gap-8">
+                <button onClick={reset} className="btn-royal">
                     Try Again
                 </button>
-                <a
-                    href="/"
-                    className="px-6 py-3 border border-[#D4AF37]/30 text-[#D4AF37] font-semibold rounded-lg hover:bg-[#D4AF37]/10 transition-colors"
-                >
+                <a href="/" className="btn-thread text-[#D4AF37]">
                     Go Home
                 </a>
             </div>

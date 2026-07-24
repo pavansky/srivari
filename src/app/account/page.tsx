@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Footer from "@/components/Footer";
+import SectionHeader from "@/components/ui/SectionHeader";
+import ZariDivider from "@/components/ui/ZariDivider";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ShoppingBag, MapPin, User, LogOut, Package,
-    ChevronRight, Clock, Star, Edit3, Trash2, Plus, X,
+    ChevronDown, Clock, Edit3, Trash2, Plus, X,
     Mail, Phone, CalendarDays, ExternalLink
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -41,11 +43,29 @@ const EMPTY_ADDRESS: AddressForm = {
     isDefault: false,
 };
 
+type TabId = "orders" | "addresses" | "profile";
+
+const TABS: { id: TabId; label: string; icon: typeof Package }[] = [
+    { id: "orders", label: "Order History", icon: Package },
+    { id: "addresses", label: "Address Book", icon: MapPin },
+    { id: "profile", label: "My Profile", icon: User },
+];
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+/** Underline field — the house input treatment. */
+const FIELD =
+    "w-full bg-transparent border-0 border-b border-black/20 py-3 font-serif text-lg text-[#1A1A1A] tracking-wide placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-neutral-400 focus:border-[#D4AF37] focus:outline-none transition-colors duration-500";
+
+const FIELD_LABEL = "block text-[9px] font-sans uppercase tracking-[0.3em] text-[#4A0404]/70 mb-1";
+
+const MICRO = "text-[9px] font-sans uppercase tracking-[0.3em]";
+
 export default function AccountPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [token, setToken] = useState<string>("");
-    const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "profile">("orders");
+    const [activeTab, setActiveTab] = useState<TabId>("orders");
     const [loading, setLoading] = useState(true);
 
     // Data States
@@ -215,6 +235,7 @@ export default function AccountPage() {
 
     return (
         <main className="bg-[#FDFBF7] min-h-screen text-[#1A1A1A] font-sans">
+            <h1 className="sr-only">My Account</h1>
 
             {/* Toast */}
             <AnimatePresence>
@@ -224,201 +245,236 @@ export default function AccountPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -12 }}
                         role="status"
-                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-black/90 backdrop-blur-md border border-gold/50 text-gold px-6 py-3 rounded-sm shadow-2xl text-xs uppercase tracking-widest font-bold"
+                        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-[#0A0A0A]/95 backdrop-blur-md border border-[#D4AF37]/50 text-marble px-6 py-3 shadow-2xl ${MICRO}`}
                     >
                         {toast}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Header */}
-            <section className="bg-obsidian text-marble pt-32 pb-20 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="container mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center gap-8">
-                    <div className="w-24 h-24 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-4xl font-serif shadow-2xl">
-                        {user.email?.[0].toUpperCase()}
-                    </div>
-                    <div className="text-center md:text-left">
-                        <h1 className="text-4xl font-serif text-gold mb-2">Namaste, {displayName}</h1>
-                        <p className="text-white/60 text-sm tracking-widest uppercase font-light">
-                            Srivari Royal Member • {orders.length} Order{orders.length === 1 ? "" : "s"}
+            {/* Editorial header band */}
+            <section className="texture-silk relative bg-obsidian text-marble pt-36 pb-20 px-6">
+                <div className="container mx-auto">
+                    <SectionHeader
+                        tone="dark"
+                        kicker="Your Private Atelier"
+                        title="My Account"
+                        accent="Account"
+                        note={user.email ? `Namaste, ${displayName} — ${user.email}` : `Namaste, ${displayName}`}
+                    />
+
+                    <div className="mt-12 flex flex-wrap items-center justify-between gap-6 border-t border-marble/10 pt-6">
+                        <p className={`flex items-center gap-3 ${MICRO} text-marble/50`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" aria-hidden="true"></span>
+                            Srivari Royal Member — {orders.length} Order{orders.length === 1 ? "" : "s"}
                         </p>
+                        <button
+                            onClick={handleLogout}
+                            className="btn-thread text-marble/55 hover:text-[#D4AF37] transition-colors duration-500"
+                        >
+                            <LogOut size={13} aria-hidden="true" /> Logout
+                        </button>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="md:ml-auto flex items-center gap-2 text-white/40 hover:text-gold transition-colors text-xs uppercase tracking-widest font-bold"
-                    >
-                        <LogOut size={16} aria-hidden="true" /> Logout
-                    </button>
                 </div>
+                <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent"
+                />
             </section>
 
-            {/* Content Dashboard */}
-            <section className="container mx-auto px-6 py-16 -mt-10 relative z-20">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            {/* Dashboard */}
+            <section className="container mx-auto px-6 pt-16 pb-24">
 
-                    {/* Navigation Sidebar */}
-                    <aside className="lg:col-span-3 space-y-2">
-                        <TabButton
-                            active={activeTab === "orders"}
-                            onClick={() => setActiveTab("orders")}
-                            icon={<Package size={18} aria-hidden="true" />}
-                            label="Order History"
-                        />
-                        <TabButton
-                            active={activeTab === "addresses"}
-                            onClick={() => setActiveTab("addresses")}
-                            icon={<MapPin size={18} aria-hidden="true" />}
-                            label="Address Book"
-                        />
-                        <TabButton
-                            active={activeTab === "profile"}
-                            onClick={() => setActiveTab("profile")}
-                            icon={<User size={18} aria-hidden="true" />}
-                            label="My Profile"
-                        />
-                    </aside>
+                {/* Hairline tab bar */}
+                <div role="tablist" aria-label="Account sections" className="flex flex-wrap gap-x-10 gap-y-1 border-b border-black/10">
+                    {TABS.map(({ id, label, icon: Icon }) => {
+                        const isActive = activeTab === id;
+                        return (
+                            <button
+                                key={id}
+                                id={`account-tab-${id}`}
+                                role="tab"
+                                aria-selected={isActive}
+                                aria-controls={`account-panel-${id}`}
+                                onClick={() => setActiveTab(id)}
+                                className={`relative flex items-center gap-2.5 pt-1 pb-5 ${MICRO} transition-colors duration-500 ${isActive ? "text-[#4A0404]" : "text-neutral-400 hover:text-[#1A1A1A]"
+                                    }`}
+                            >
+                                <Icon size={13} aria-hidden="true" />
+                                {label}
+                                {isActive && (
+                                    <motion.span
+                                        layoutId="account-tab-thread"
+                                        transition={{ duration: 0.6, ease: EASE }}
+                                        className="absolute inset-x-0 -bottom-px h-px bg-[#4A0404]"
+                                        aria-hidden="true"
+                                    />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                    {/* Main View Area */}
-                    <div className="lg:col-span-9 bg-white border border-gold/10 rounded-sm shadow-xl p-8 md:p-12">
-                        <AnimatePresence mode="wait">
-                            {activeTab === "orders" && (
-                                <motion.div
-                                    key="orders"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="space-y-8"
-                                >
-                                    <h3 className="text-2xl font-serif text-[#4A0404] mb-6 border-b pb-4">Past Masterpieces</h3>
-
-                                    {loading ? (
-                                        <div className="py-20 text-center text-neutral-400">Loading your collection...</div>
-                                    ) : orders.length === 0 ? (
-                                        <div className="py-20 text-center space-y-6">
-                                            <ShoppingBag className="mx-auto w-12 h-12 text-gold/20" aria-hidden="true" />
-                                            <p className="text-neutral-500 italic font-serif">Your journey with Srivari's is just beginning.</p>
-                                            <Link href="/shop" className="inline-block text-xs font-bold uppercase tracking-widest text-gold hover:text-obsidian transition-colors underline underline-offset-8">
-                                                Explore Collections
-                                            </Link>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-6">
-                                            {orders.map((order) => (
-                                                <OrderCard key={order.id} order={order} />
-                                            ))}
-                                        </div>
+                <div className="pt-14">
+                    <AnimatePresence mode="wait">
+                        {activeTab === "orders" && (
+                            <motion.div
+                                key="orders"
+                                id="account-panel-orders"
+                                role="tabpanel"
+                                aria-labelledby="account-tab-orders"
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -12 }}
+                                transition={{ duration: 0.6, ease: EASE }}
+                            >
+                                <div className="flex items-baseline justify-between border-b border-black/10 pb-4 mb-12">
+                                    <h3 className="font-serif text-2xl md:text-3xl text-[#4A0404]">Past Masterpieces</h3>
+                                    {orders.length > 0 && (
+                                        <span className={`${MICRO} text-neutral-400`}>
+                                            {orders.length} Order{orders.length === 1 ? "" : "s"}
+                                        </span>
                                     )}
-                                </motion.div>
-                            )}
+                                </div>
 
-                            {activeTab === "addresses" && (
-                                <motion.div
-                                    key="addresses"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                >
-                                    <div className="flex justify-between items-center mb-10 border-b pb-4">
-                                        <h3 className="text-2xl font-serif text-[#4A0404]">Royal Residences</h3>
-                                        <button
-                                            onClick={openAddAddress}
-                                            className="flex items-center gap-2 bg-obsidian text-gold px-4 py-2 rounded-sm text-[10px] uppercase tracking-widest font-bold hover:bg-gold hover:text-obsidian transition-all"
-                                        >
-                                            <Plus size={14} aria-hidden="true" /> Add Address
+                                {loading ? (
+                                    <p className="py-24 text-center font-serif text-xl italic text-neutral-400">
+                                        Loading your collection...
+                                    </p>
+                                ) : orders.length === 0 ? (
+                                    <div className="py-24 text-center max-w-lg mx-auto">
+                                        <ShoppingBag size={28} className="mx-auto text-[#D4AF37] mb-8" strokeWidth={1} aria-hidden="true" />
+                                        <h4 className="font-serif text-3xl md:text-4xl leading-[1.1] text-[#1A1A1A] mb-8">
+                                            Your journey with Srivari&apos;s is just <em className="italic text-[#4A0404]">beginning</em>
+                                        </h4>
+                                        <Link href="/shop" className="btn-royal btn-royal--oxblood">
+                                            Explore Collections
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {orders.map((order) => (
+                                            <OrderCard key={order.id} order={order} />
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {activeTab === "addresses" && (
+                            <motion.div
+                                key="addresses"
+                                id="account-panel-addresses"
+                                role="tabpanel"
+                                aria-labelledby="account-tab-addresses"
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -12 }}
+                                transition={{ duration: 0.6, ease: EASE }}
+                            >
+                                <div className="flex flex-wrap items-baseline justify-between gap-6 border-b border-black/10 pb-4 mb-12">
+                                    <h3 className="font-serif text-2xl md:text-3xl text-[#4A0404]">Royal Residences</h3>
+                                    <button onClick={openAddAddress} className="btn-thread text-[#4A0404]">
+                                        <Plus size={13} aria-hidden="true" /> Add Address
+                                    </button>
+                                </div>
+
+                                {loading ? (
+                                    <p className="py-24 text-center font-serif text-xl italic text-neutral-400">
+                                        Retrieving locations...
+                                    </p>
+                                ) : addresses.length === 0 ? (
+                                    <div className="py-24 text-center max-w-lg mx-auto">
+                                        <MapPin size={28} className="mx-auto text-[#D4AF37] mb-8" strokeWidth={1} aria-hidden="true" />
+                                        <h4 className="font-serif text-3xl md:text-4xl leading-[1.1] text-[#1A1A1A] mb-8">
+                                            No residences <em className="italic text-[#4A0404]">saved yet</em>
+                                        </h4>
+                                        <button onClick={openAddAddress} className="btn-royal btn-royal--oxblood">
+                                            Add your first residence
                                         </button>
                                     </div>
-
-                                    {loading ? (
-                                        <div className="py-20 text-center text-neutral-400">Retrieving locations...</div>
-                                    ) : addresses.length === 0 ? (
-                                        <div className="py-20 text-center space-y-6">
-                                            <MapPin className="mx-auto w-12 h-12 text-gold/20" aria-hidden="true" />
-                                            <p className="text-neutral-500 italic font-serif">No addresses saved yet.</p>
-                                            <button
-                                                onClick={openAddAddress}
-                                                className="inline-block text-xs font-bold uppercase tracking-widest text-gold hover:text-obsidian transition-colors underline underline-offset-8"
-                                            >
-                                                Add your first residence
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {addresses.map((address) => (
-                                                <AddressCard
-                                                    key={address.id}
-                                                    address={address}
-                                                    onEdit={() => openEditAddress(address)}
-                                                    onDelete={() => handleDeleteAddress(address.id)}
-                                                    isDeleting={deletingAddressId === address.id}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {activeTab === "profile" && (
-                                <motion.div
-                                    key="profile"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="space-y-8"
-                                >
-                                    <h3 className="text-2xl font-serif text-[#4A0404] mb-6 border-b pb-4">My Profile</h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <ProfileField
-                                            icon={<User size={16} aria-hidden="true" />}
-                                            label="Full Name"
-                                            value={user.user_metadata?.full_name || "Not provided"}
-                                        />
-                                        <ProfileField
-                                            icon={<Mail size={16} aria-hidden="true" />}
-                                            label="Email Address"
-                                            value={user.email || "—"}
-                                        />
-                                        <ProfileField
-                                            icon={<Phone size={16} aria-hidden="true" />}
-                                            label="Phone Number"
-                                            value={userPhone || "Not provided"}
-                                        />
-                                        <ProfileField
-                                            icon={<CalendarDays size={16} aria-hidden="true" />}
-                                            label="Member Since"
-                                            value={memberSince}
-                                        />
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {addresses.map((address) => (
+                                            <AddressCard
+                                                key={address.id}
+                                                address={address}
+                                                onEdit={() => openEditAddress(address)}
+                                                onDelete={() => handleDeleteAddress(address.id)}
+                                                isDeleting={deletingAddressId === address.id}
+                                            />
+                                        ))}
                                     </div>
+                                )}
+                            </motion.div>
+                        )}
 
-                                    <div className="grid grid-cols-2 gap-6 pt-4">
-                                        <div className="border border-gold/20 bg-[#FDFBF7] rounded-sm p-6 text-center">
-                                            <p className="text-4xl font-serif text-[#4A0404] mb-1">{orders.length}</p>
-                                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
-                                                Order{orders.length === 1 ? "" : "s"} Placed
-                                            </p>
-                                        </div>
-                                        <div className="border border-gold/20 bg-[#FDFBF7] rounded-sm p-6 text-center">
-                                            <p className="text-4xl font-serif text-[#4A0404] mb-1">{addresses.length}</p>
-                                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
-                                                Saved Address{addresses.length === 1 ? "" : "es"}
-                                            </p>
-                                        </div>
+                        {activeTab === "profile" && (
+                            <motion.div
+                                key="profile"
+                                id="account-panel-profile"
+                                role="tabpanel"
+                                aria-labelledby="account-tab-profile"
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -12 }}
+                                transition={{ duration: 0.6, ease: EASE }}
+                            >
+                                <div className="border-b border-black/10 pb-4 mb-12">
+                                    <h3 className="font-serif text-2xl md:text-3xl text-[#4A0404]">My Profile</h3>
+                                </div>
+
+                                <dl className="border-t border-black/10 max-w-3xl">
+                                    <ProfileRow
+                                        icon={<User size={14} aria-hidden="true" />}
+                                        label="Full Name"
+                                        value={user.user_metadata?.full_name || "Not provided"}
+                                    />
+                                    <ProfileRow
+                                        icon={<Mail size={14} aria-hidden="true" />}
+                                        label="Email Address"
+                                        value={user.email || "—"}
+                                    />
+                                    <ProfileRow
+                                        icon={<Phone size={14} aria-hidden="true" />}
+                                        label="Phone Number"
+                                        value={userPhone || "Not provided"}
+                                    />
+                                    <ProfileRow
+                                        icon={<CalendarDays size={14} aria-hidden="true" />}
+                                        label="Member Since"
+                                        value={memberSince}
+                                    />
+                                </dl>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-16 max-w-3xl">
+                                    <div className="border border-black/10 bg-[#F9F5F0] px-8 py-10">
+                                        <p className="font-serif text-5xl text-[#4A0404] leading-none mb-4">{orders.length}</p>
+                                        <p className={`${MICRO} text-neutral-400`}>
+                                            Order{orders.length === 1 ? "" : "s"} Placed
+                                        </p>
                                     </div>
+                                    <div className="border border-black/10 bg-[#F9F5F0] px-8 py-10">
+                                        <p className="font-serif text-5xl text-[#4A0404] leading-none mb-4">{addresses.length}</p>
+                                        <p className={`${MICRO} text-neutral-400`}>
+                                            Saved Address{addresses.length === 1 ? "" : "es"}
+                                        </p>
+                                    </div>
+                                </div>
 
-                                    <p className="text-xs text-neutral-400 leading-relaxed pt-2">
-                                        Your name and contact details are managed through your sign-in provider. To update
-                                        delivery details, use the Address Book tab.
-                                    </p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
+                                <p className="text-xs text-neutral-400 leading-relaxed mt-12 max-w-xl">
+                                    Your name and contact details are managed through your sign-in provider. To update
+                                    delivery details, use the Address Book tab.
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
+
+                <ZariDivider tone="light" className="mt-24" />
             </section>
 
-            {/* Address Add/Edit Modal */}
+            {/* Address Add/Edit Panel */}
             <AnimatePresence>
                 {isAddressModalOpen && (
                     <>
@@ -426,77 +482,85 @@ export default function AccountPage() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5, ease: EASE }}
                             onClick={() => setIsAddressModalOpen(false)}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                            className="fixed inset-0 bg-[#0A0A0A]/60 backdrop-blur-sm z-40"
                         />
                         <motion.div
                             initial={{ x: "100%" }}
                             animate={{ x: 0 }}
                             exit={{ x: "100%" }}
-                            transition={{ type: "spring", damping: 26, stiffness: 220 }}
-                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-white z-50 shadow-2xl flex flex-col"
+                            transition={{ duration: 0.7, ease: EASE }}
+                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-[#FDFBF7] border-l border-[#D4AF37]/30 z-50 flex flex-col"
                             role="dialog"
                             aria-modal="true"
                             aria-label={addressForm.id ? "Edit address" : "Add address"}
                         >
-                            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-100">
+                            <div className="flex items-start justify-between gap-4 px-8 py-7 border-b border-black/10">
                                 <div>
-                                    <span className="text-[10px] uppercase tracking-[0.3em] text-gold font-bold block mb-1">Address Book</span>
-                                    <h2 className="text-xl font-serif text-[#4A0404]">
+                                    <span className={`${MICRO} text-[#D4AF37] block mb-2`}>Address Book</span>
+                                    <h2 className="font-serif text-3xl leading-tight text-[#4A0404]">
                                         {addressForm.id ? "Edit Residence" : "New Residence"}
                                     </h2>
                                 </div>
                                 <button
                                     onClick={() => setIsAddressModalOpen(false)}
-                                    className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                                    className="w-9 h-9 flex items-center justify-center border border-black/10 text-neutral-400 hover:text-[#4A0404] hover:border-[#4A0404] transition-colors duration-500"
                                     aria-label="Close address form"
                                 >
-                                    <X size={20} className="text-neutral-500" aria-hidden="true" />
+                                    <X size={16} aria-hidden="true" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSaveAddress} className="flex-1 overflow-y-auto px-8 py-6 space-y-5 custom-scrollbar">
-                                <div className="space-y-2">
-                                    <label htmlFor="addr-type" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Label</label>
-                                    <select
-                                        id="addr-type"
-                                        name="type"
-                                        value={addressForm.type}
-                                        onChange={handleAddressField}
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
-                                    >
-                                        <option value="Home">Home</option>
-                                        <option value="Office">Office</option>
-                                        <option value="Other">Other</option>
-                                    </select>
+                            <form onSubmit={handleSaveAddress} className="flex-1 overflow-y-auto px-8 py-8 space-y-7 custom-scrollbar">
+                                <div>
+                                    <label htmlFor="addr-type" className={FIELD_LABEL}>Label</label>
+                                    <div className="relative">
+                                        <select
+                                            id="addr-type"
+                                            name="type"
+                                            value={addressForm.type}
+                                            onChange={handleAddressField}
+                                            className={`${FIELD} appearance-none pr-8 cursor-pointer`}
+                                        >
+                                            <option value="Home">Home</option>
+                                            <option value="Office">Office</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        <ChevronDown
+                                            size={16}
+                                            className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#D4AF37]"
+                                            aria-hidden="true"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-firstName" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">First Name</label>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label htmlFor="addr-firstName" className={FIELD_LABEL}>First Name</label>
                                         <input
                                             id="addr-firstName"
                                             name="firstName"
                                             required
                                             value={addressForm.firstName}
                                             onChange={handleAddressField}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
+                                            className={FIELD}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-lastName" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Last Name</label>
+                                    <div>
+                                        <label htmlFor="addr-lastName" className={FIELD_LABEL}>Last Name</label>
                                         <input
                                             id="addr-lastName"
                                             name="lastName"
                                             value={addressForm.lastName}
                                             onChange={handleAddressField}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
+                                            className={FIELD}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="addr-line1" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Address Line 1</label>
+                                <div>
+                                    <label htmlFor="addr-line1" className={FIELD_LABEL}>Address Line 1</label>
                                     <input
                                         id="addr-line1"
                                         name="addressLine1"
@@ -504,62 +568,62 @@ export default function AccountPage() {
                                         value={addressForm.addressLine1}
                                         onChange={handleAddressField}
                                         placeholder="House / Flat, Street"
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm placeholder:text-neutral-300"
+                                        className={FIELD}
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="addr-line2" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Address Line 2</label>
+                                <div>
+                                    <label htmlFor="addr-line2" className={FIELD_LABEL}>Address Line 2</label>
                                     <input
                                         id="addr-line2"
                                         name="addressLine2"
                                         value={addressForm.addressLine2}
                                         onChange={handleAddressField}
                                         placeholder="Area, Locality (optional)"
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm placeholder:text-neutral-300"
+                                        className={FIELD}
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="addr-landmark" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Landmark</label>
+                                <div>
+                                    <label htmlFor="addr-landmark" className={FIELD_LABEL}>Landmark</label>
                                     <input
                                         id="addr-landmark"
                                         name="landmark"
                                         value={addressForm.landmark}
                                         onChange={handleAddressField}
                                         placeholder="Near... (optional)"
-                                        className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm placeholder:text-neutral-300"
+                                        className={FIELD}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-city" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">City</label>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label htmlFor="addr-city" className={FIELD_LABEL}>City</label>
                                         <input
                                             id="addr-city"
                                             name="city"
                                             required
                                             value={addressForm.city}
                                             onChange={handleAddressField}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
+                                            className={FIELD}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-state" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">State</label>
+                                    <div>
+                                        <label htmlFor="addr-state" className={FIELD_LABEL}>State</label>
                                         <input
                                             id="addr-state"
                                             name="state"
                                             required
                                             value={addressForm.state}
                                             onChange={handleAddressField}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
+                                            className={FIELD}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-pincode" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Pincode</label>
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label htmlFor="addr-pincode" className={FIELD_LABEL}>Pincode</label>
                                         <input
                                             id="addr-pincode"
                                             name="pincode"
@@ -569,11 +633,11 @@ export default function AccountPage() {
                                             value={addressForm.pincode}
                                             onChange={handleAddressField}
                                             placeholder="6-digit PIN"
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm placeholder:text-neutral-300"
+                                            className={FIELD}
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label htmlFor="addr-phone" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Phone</label>
+                                    <div>
+                                        <label htmlFor="addr-phone" className={FIELD_LABEL}>Phone</label>
                                         <input
                                             id="addr-phone"
                                             name="phone"
@@ -582,7 +646,7 @@ export default function AccountPage() {
                                             pattern="[0-9]{10,12}"
                                             value={addressForm.phone}
                                             onChange={handleAddressField}
-                                            className="w-full bg-[#FDFBF7] border border-neutral-200 px-4 py-3 rounded-sm focus:outline-none focus:border-gold transition-colors text-sm"
+                                            className={FIELD}
                                         />
                                     </div>
                                 </div>
@@ -592,24 +656,31 @@ export default function AccountPage() {
                                         type="checkbox"
                                         checked={addressForm.isDefault}
                                         onChange={(e) => setAddressForm(prev => ({ ...prev, isDefault: e.target.checked }))}
-                                        className="w-4 h-4 accent-[#D4AF37]"
+                                        className="w-4 h-4 rounded-none accent-[#D4AF37]"
                                     />
-                                    <span className="text-sm text-neutral-600">Set as primary residence</span>
+                                    <span className={`${MICRO} text-neutral-500`}>Set as primary residence</span>
                                 </label>
 
                                 {addressError && (
-                                    <p className="text-red-600 text-xs bg-red-50 border border-red-100 rounded-sm px-4 py-3" role="alert">
+                                    <p className="text-[#4A0404] text-xs leading-relaxed border-l border-[#4A0404]/50 pl-4 py-1" role="alert">
                                         {addressError}
                                     </p>
                                 )}
 
-                                <div className="pt-4 pb-8">
+                                <div className="pt-6 pb-10 flex flex-col items-center gap-6">
                                     <button
                                         type="submit"
                                         disabled={isSavingAddress}
-                                        className="w-full py-4 bg-obsidian text-gold rounded-sm uppercase tracking-widest text-xs font-bold hover:bg-gold hover:text-obsidian transition-all disabled:opacity-60"
+                                        className="btn-royal btn-royal--oxblood w-full disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {isSavingAddress ? "Saving..." : addressForm.id ? "Update Address" : "Save Address"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddressModalOpen(false)}
+                                        className="btn-thread text-neutral-400 hover:text-[#4A0404] transition-colors duration-500"
+                                    >
+                                        Cancel
                                     </button>
                                 </div>
                             </form>
@@ -625,82 +696,57 @@ export default function AccountPage() {
 
 // --- Sub-components ---
 
-function TabButton({ active, onClick, icon, label }: {
-    active: boolean;
-    onClick: () => void;
-    icon: React.ReactNode;
-    label: string;
-}) {
+function ProfileRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
     return (
-        <button
-            onClick={onClick}
-            className={`w-full flex items-center gap-4 px-6 py-4 rounded-sm text-sm uppercase tracking-widest font-bold transition-all ${active
-                ? "bg-obsidian text-gold shadow-lg translate-x-2"
-                : "text-neutral-500 hover:bg-gold/5 hover:text-obsidian"
-                }`}
-        >
-            {icon}
-            {label}
-            {active && <ChevronRight size={14} className="ml-auto" aria-hidden="true" />}
-        </button>
-    );
-}
-
-function ProfileField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-    return (
-        <div className="border border-neutral-100 rounded-sm p-5 bg-neutral-50/30">
-            <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-2">
-                <span className="text-gold">{icon}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-[240px_1fr] gap-2 sm:gap-10 py-7 border-b border-black/10">
+            <dt className={`flex items-center gap-3 ${MICRO} text-neutral-400`}>
+                <span className="text-[#D4AF37]">{icon}</span>
                 {label}
-            </span>
-            <p className="text-sm font-medium text-[#1A1A1A] break-words">{value}</p>
+            </dt>
+            <dd className="font-serif text-xl text-[#1A1A1A] break-words">{value}</dd>
         </div>
     );
 }
 
 function OrderCard({ order }: { order: any }) {
-    const statusColors: Record<string, string> = {
-        "Paid": "bg-green-50 text-green-700 border-green-200",
-        "Shipped": "bg-blue-50 text-blue-700 border-blue-200",
-        "Delivered": "bg-gold/10 text-gold border-gold/20",
-        "Cancelled": "bg-red-50 text-red-700 border-red-200",
-        "Pending": "bg-amber-50 text-amber-700 border-amber-200",
-        "Placed": "bg-neutral-50 text-neutral-700 border-neutral-200"
-    };
+    const statusLabel = order.status === 'Pending' && order.payment_method === 'Razorpay'
+        ? 'Payment Pending'
+        : order.status;
 
     return (
-        <div className="border border-neutral-100 rounded-sm p-6 hover:shadow-md transition-shadow bg-neutral-50/30">
-            <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+        <article className="border border-black/10 bg-white px-7 py-8 md:px-9 md:py-9 transition-colors duration-500 hover:border-[#D4AF37]/50">
+            <div className="flex flex-wrap justify-between items-start gap-6 pb-6 border-b border-black/10">
                 <div>
-                    <span className="text-[10px] text-neutral-400 font-bold tracking-widest uppercase block mb-1">Order ID</span>
-                    <h4 className="font-bold text-lg">{order.id}</h4>
-                    <div className="flex items-center gap-3 mt-1">
-                        <p className="text-[10px] text-neutral-500 flex items-center gap-1">
-                            <Clock size={10} aria-hidden="true" /> {new Date(order.createdAt).toLocaleDateString()}
-                        </p>
+                    <span className={`block ${MICRO} text-neutral-400 mb-2`}>Order</span>
+                    <h4 className="font-serif text-2xl text-[#1A1A1A] leading-none">{order.id}</h4>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+                        <span className={`flex items-center gap-1.5 ${MICRO} text-neutral-400`}>
+                            <Clock size={11} aria-hidden="true" /> {new Date(order.createdAt).toLocaleDateString()}
+                        </span>
                         <span className="w-1 h-1 rounded-full bg-neutral-300" aria-hidden="true"></span>
-                        <p className="text-[10px] font-bold text-gold uppercase tracking-tighter">
+                        <span className={`${MICRO} text-[#4A0404]`}>
                             {order.payment_method === 'COD' ? 'Cash on Delivery' : order.payment_method}
-                        </p>
+                        </span>
                     </div>
                 </div>
-                <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColors[order.status] || statusColors.Pending}`}>
-                    {order.status === 'Pending' && order.payment_method === 'Razorpay' ? 'Payment Pending' : order.status}
-                </div>
+                <span className={`flex items-center gap-2.5 ${MICRO} text-[#4A0404] md:pt-6`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" aria-hidden="true"></span>
+                    {statusLabel}
+                </span>
             </div>
 
-            {(order.tracking_number || order.delivery_eta) && (
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 px-4 bg-white border border-gold/20 rounded-sm mb-2">
+            {(order.tracking_number || order.delivery_eta || order.tracking_url) && (
+                <div className="flex flex-wrap items-end gap-x-12 gap-y-5 py-6 border-b border-black/10">
                     {order.tracking_number && (
                         <div>
-                            <span className="block text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Tracking No.</span>
-                            <span className="text-xs font-bold text-[#1A1A1A]">{order.tracking_number}</span>
+                            <span className={`block ${MICRO} text-neutral-400 mb-1.5`}>Tracking No.</span>
+                            <span className="font-serif text-lg text-[#1A1A1A]">{order.tracking_number}</span>
                         </div>
                     )}
                     {order.delivery_eta && (
                         <div>
-                            <span className="block text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Expected By</span>
-                            <span className="text-xs font-bold text-[#1A1A1A]">{order.delivery_eta}</span>
+                            <span className={`block ${MICRO} text-neutral-400 mb-1.5`}>Expected By</span>
+                            <span className="font-serif text-lg text-[#1A1A1A]">{order.delivery_eta}</span>
                         </div>
                     )}
                     {order.tracking_url && (
@@ -708,36 +754,39 @@ function OrderCard({ order }: { order: any }) {
                             href={order.tracking_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#4A0404] hover:text-gold transition-colors underline underline-offset-4"
+                            className="btn-thread text-[#4A0404] sm:ml-auto"
                         >
-                            Track Shipment <ExternalLink size={10} aria-hidden="true" />
+                            Track Shipment <ExternalLink size={11} aria-hidden="true" />
                         </a>
                     )}
                 </div>
             )}
 
-            <div className="flex items-center gap-4 py-4 border-t border-dashed border-neutral-200 mt-4">
-                <div className="flex -space-x-3 overflow-hidden">
-                    {(order.items as any[]).slice(0, 3).map((item, i) => (
-                        <div key={i} className="inline-flex h-12 w-12 items-center justify-center rounded-full ring-2 ring-white bg-[#FAF8F5] border border-gold/20 text-[#4A0404] font-serif text-sm overflow-hidden">
-                            {(item.productName || item.name || "S")[0]}
-                        </div>
-                    ))}
-                    {order.items.length > 3 && (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-[10px] font-bold ring-2 ring-white">
-                            +{order.items.length - 3}
-                        </div>
-                    )}
+            <ul className="py-6 space-y-3">
+                {(order.items as any[]).map((item, i) => (
+                    <li key={i} className="flex justify-between items-baseline gap-4">
+                        <span className="font-serif text-lg text-[#1A1A1A]">
+                            {item.productName || item.name || "Masterpiece"}
+                            {item.quantity > 1 && <span className="text-neutral-400 font-sans text-xs"> × {item.quantity}</span>}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+
+            <div className="flex flex-wrap items-baseline justify-between gap-4 pt-6 border-t border-black/10">
+                <span className={`${MICRO} text-neutral-400`}>
+                    {order.items.length} Masterpiece{order.items.length > 1 ? 's' : ''}
+                </span>
+                <div className="flex items-baseline gap-8 ml-auto">
+                    <span className="font-serif text-2xl text-[#4A0404]">
+                        ₹{order.total.toLocaleString('en-IN')}
+                    </span>
+                    <Link href={`/order-tracking?id=${order.id}`} className="btn-thread text-[#4A0404]">
+                        Track Item
+                    </Link>
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm font-medium">{order.items.length} Masterpiece{order.items.length > 1 ? 's' : ''}</p>
-                    <p className="text-sm text-[#4A0404] font-bold">₹{order.total.toLocaleString('en-IN')}</p>
-                </div>
-                <Link href={`/order-tracking?id=${order.id}`} className="text-gold text-xs font-bold uppercase tracking-tighter hover:text-obsidian transition-colors underline">
-                    Track Item
-                </Link>
             </div>
-        </div>
+        </article>
     );
 }
 
@@ -748,38 +797,38 @@ function AddressCard({ address, onEdit, onDelete, isDeleting }: {
     isDeleting: boolean;
 }) {
     return (
-        <div className="border border-neutral-100 rounded-sm p-6 bg-white shadow-sm relative group">
-            {address.isDefault && (
-                <div className="absolute top-0 right-0 bg-gold text-obsidian text-[8px] font-bold uppercase px-3 py-1 tracking-widest">
-                    Primary
-                </div>
-            )}
-            <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400">
-                    <MapPin size={16} aria-hidden="true" />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">{address.type}</span>
+        <div className="relative group border border-black/10 bg-white px-7 py-8 transition-colors duration-500 hover:border-[#D4AF37]/50">
+            <div className="flex items-start justify-between gap-4 mb-6">
+                <span className={`flex items-center gap-2.5 ${MICRO} text-neutral-400`}>
+                    <MapPin size={13} className="text-[#D4AF37]" aria-hidden="true" />
+                    {address.type}
+                </span>
+                {address.isDefault && (
+                    <span className={`${MICRO} text-[#D4AF37]`}>Primary</span>
+                )}
             </div>
-            <h5 className="font-bold text-lg mb-2">{address.firstName} {address.lastName}</h5>
-            <div className="text-sm text-neutral-500 space-y-1 mb-6">
+
+            <h5 className="font-serif text-2xl text-[#1A1A1A] mb-4">{address.firstName} {address.lastName}</h5>
+
+            <div className="text-sm text-[#595959] space-y-1.5 leading-relaxed">
                 <p>{address.addressLine1}</p>
                 {address.addressLine2 && <p>{address.addressLine2}</p>}
-                {address.landmark && <p className="italic text-xs font-light">Landmark: {address.landmark}</p>}
-                <p>{address.city}, {address.state} - {address.pincode}</p>
-                <p className="mt-2 flex items-center gap-2"><Star size={12} className="text-gold" aria-hidden="true" /> {address.phone}</p>
+                {address.landmark && <p className="italic text-xs text-neutral-400">Landmark: {address.landmark}</p>}
+                <p>{address.city}, {address.state} — {address.pincode}</p>
+                <p className="flex items-center gap-2 pt-2">
+                    <Phone size={12} className="text-[#D4AF37]" aria-hidden="true" /> {address.phone}
+                </p>
             </div>
-            <div className="flex gap-4 pt-4 border-t border-neutral-50 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={onEdit}
-                    className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:text-gold transition-colors flex items-center gap-1"
-                >
+
+            <div className="flex items-center gap-8 mt-8 pt-6 border-t border-black/10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-500">
+                <button onClick={onEdit} className="btn-thread text-neutral-400 hover:text-[#4A0404] transition-colors duration-500">
                     <Edit3 size={12} aria-hidden="true" /> Edit
                 </button>
                 {!address.isDefault && (
                     <button
                         onClick={onDelete}
                         disabled={isDeleting}
-                        className="text-[10px] font-bold uppercase tracking-widest text-red-300 hover:text-red-500 transition-colors flex items-center gap-1 ml-auto disabled:opacity-50"
+                        className="btn-thread ml-auto text-neutral-400 hover:text-[#4A0404] transition-colors duration-500 disabled:opacity-50"
                     >
                         <Trash2 size={12} aria-hidden="true" /> {isDeleting ? "Removing..." : "Delete"}
                     </button>
