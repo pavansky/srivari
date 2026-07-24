@@ -43,3 +43,4 @@ build_output.txt
 prisma_output.txt
 debug.json
 models*.json
+.env*

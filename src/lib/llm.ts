@@ -68,20 +68,22 @@ function stripReasoning(text: string): string {
     return text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
-export async function chatComplete(opts: {
+interface CompleteOpts {
     system?: string;
     messages?: ChatMessage[];
     prompt?: string;
     maxTokens?: number;
     temperature?: number;
-}): Promise<string> {
-    const url = baseUrl();
-    if (!url) throw new Error(LLM_NOT_CONFIGURED_MSG);
+}
 
+async function completeAgainst(
+    endpoint: { url: string; apiKey?: string; model?: string },
+    opts: CompleteOpts
+): Promise<string> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (process.env.LLM_API_KEY) headers.Authorization = `Bearer ${process.env.LLM_API_KEY}`;
+    if (endpoint.apiKey) headers.Authorization = `Bearer ${endpoint.apiKey}`;
 
-    const model = await resolveModel(url, headers);
+    const model = endpoint.model?.trim() || await resolveModel(endpoint.url, headers);
 
     const messages: ChatMessage[] = [
         ...(opts.system ? [{ role: "system" as const, content: opts.system }] : []),
@@ -98,7 +100,7 @@ export async function chatComplete(opts: {
     };
     if (process.env.LLM_REASONING_EFFORT) body.reasoning_effort = process.env.LLM_REASONING_EFFORT;
 
-    const res = await fetch(`${url}/chat/completions`, {
+    const res = await fetch(`${endpoint.url}/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
@@ -115,4 +117,29 @@ export async function chatComplete(opts: {
     const text: string = data?.choices?.[0]?.message?.content || "";
     if (!text) throw new Error("LLM returned an empty response");
     return stripReasoning(text);
+}
+
+/**
+ * Completes against the primary endpoint; if it errors (free tiers rate-limit)
+ * and LLM_FALLBACK_BASE_URL is configured, retries once on the fallback.
+ */
+export async function chatComplete(opts: CompleteOpts): Promise<string> {
+    const url = baseUrl();
+    if (!url) throw new Error(LLM_NOT_CONFIGURED_MSG);
+
+    try {
+        return await completeAgainst(
+            { url, apiKey: process.env.LLM_API_KEY, model: process.env.LLM_MODEL },
+            opts
+        );
+    } catch (primaryError) {
+        const fallbackUrl = process.env.LLM_FALLBACK_BASE_URL?.trim()?.replace(/\/$/, "");
+        if (!fallbackUrl) throw primaryError;
+
+        console.warn("Primary LLM failed, trying fallback:", (primaryError as Error)?.message);
+        return await completeAgainst(
+            { url: fallbackUrl, apiKey: process.env.LLM_FALLBACK_API_KEY, model: process.env.LLM_FALLBACK_MODEL },
+            opts
+        );
+    }
 }
