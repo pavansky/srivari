@@ -17,9 +17,11 @@ export async function GET(request: Request) {
     const includeArchived = searchParams.get('archived') === 'true';
 
     try {
-        // Simple Rate Limiting (100 reqs/min)
+        // Simple Rate Limiting (100 reqs/min per IP by default). Locally, every
+        // request shares one "anonymous" bucket, so e2e runs need a higher cap —
+        // override via PRODUCTS_RATE_LIMIT in .env.local only.
         const ip = request.headers.get('x-forwarded-for') || 'anonymous';
-        const limiter = rateLimit(ip, 100);
+        const limiter = rateLimit(ip, Number(process.env.PRODUCTS_RATE_LIMIT) || 100);
 
         if (!limiter.success) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
