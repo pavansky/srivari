@@ -33,8 +33,9 @@ export async function POST(req: Request) {
             // Map Shiprocket Status to Our Status
             let newStatus = 'Pending';
 
-            // This mapping depends on Shiprocket's exact status strings
-            const s = current_status.toUpperCase();
+            // This mapping depends on Shiprocket's exact status strings.
+            // Coerce defensively — a non-string status would throw on .toUpperCase().
+            const s = String(current_status).toUpperCase();
             if (s === 'DELIVERED') newStatus = 'Delivered';
             else if (s === 'SHIPPED' || s === 'IN TRANSIT' || s === 'OUT FOR DELIVERY') newStatus = 'Shipped';
             else if (s === 'CANCELLED') newStatus = 'Cancelled';
@@ -49,7 +50,16 @@ export async function POST(req: Request) {
             // Since we haven't implemented "Push Order to Shiprocket" explicitly, we rely on the manual entry 
             // of our Order ID into Shiprocket panel by the user.
 
-            await updateOrder({ id: order_id, status: newStatus as any });
+            try {
+                await updateOrder({ id: String(order_id), status: newStatus as any });
+            } catch (e: any) {
+                // Unknown order id (Shiprocket's own id, or a stale/typo entry):
+                // ack with 200 so the webhook stops retrying, rather than 500-looping.
+                if (/not found/i.test(String(e?.message))) {
+                    return NextResponse.json({ message: `No local order ${order_id} — ignored` });
+                }
+                throw e;
+            }
             return NextResponse.json({ success: true, message: `Updated order ${order_id} to ${newStatus}` });
         }
 

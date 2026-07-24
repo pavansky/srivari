@@ -44,6 +44,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
                 fetch(`/api/admin/suppliers?t=${t}`),
             ]);
 
+            // A route returns 200 + [] even during a DB outage (resilience), but
+            // flags it with X-Data-Unavailable so we show an error instead of a
+            // healthy-looking empty console.
+            const outage = pRes.headers.get('X-Data-Unavailable') === '1'
+                || oRes.headers.get('X-Data-Unavailable') === '1'
+                || sRes.headers.get('X-Data-Unavailable') === '1';
+
             if (pRes.ok) setProducts(await pRes.json());
             else {
                 const errData = await pRes.json().catch(() => ({}));
@@ -54,6 +61,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             else if (oRes.status === 401) setError("Session expired — please log in again.");
 
             if (sRes.ok) setSuppliers(await sRes.json());
+
+            if (outage) setError("Some data couldn't be loaded — the database may be temporarily unavailable. Figures below may be incomplete.");
         } catch (e) {
             console.error("Admin data load failed", e);
             setError("Network Error: Could not reach API.");

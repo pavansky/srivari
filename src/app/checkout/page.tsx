@@ -190,19 +190,35 @@ export default function CheckoutPage() {
 
             if (!response.ok || !data.success) throw new Error(data.message || "Checkout failed");
 
-            if (paymentMethod === 'COD') {
+            // COD, or a fully-discounted "free" order the server settled offline:
+            // both come back without a Razorpay order to open.
+            if (paymentMethod === 'COD' || data.free || !data.razorpayOrderId) {
                 clearCart();
                 router.push(`/order-tracking?id=${data.orderId}`);
-            } else {
-                // Initialize Razorpay — amount and total are server-derived
-                const options = {
-                    key: data.key,
-                    amount: data.amount,
-                    currency: "INR",
-                    name: "The Srivari",
-                    description: `Luxury Heirloom Purchase — ₹${Number(data.total).toLocaleString('en-IN')}`,
-                    order_id: data.razorpayOrderId,
-                    handler: async function (response: any) {
+                return;
+            }
+
+            // Razorpay must have finished loading (lazyOnload Script) before we
+            // can construct the checkout — otherwise the customer sees a raw
+            // TypeError and each retry orphans another Pending order.
+            if (typeof (window as any).Razorpay !== "function") {
+                setCheckoutError("The secure payment window is still loading — please wait a moment and try again.");
+                setIsProcessing(false);
+                return;
+            }
+
+            // Initialize Razorpay — amount and total are server-derived
+            const options = {
+                key: data.key,
+                amount: data.amount,
+                currency: "INR",
+                name: "The Srivari",
+                description: `Luxury Heirloom Purchase — ₹${Number(data.total).toLocaleString('en-IN')}`,
+                order_id: data.razorpayOrderId,
+                handler: async function (response: any) {
+                    // The payment already succeeded at the gateway; a failure here
+                    // is only our confirmation step, never lost money.
+                    try {
                         const verifyRes = await fetch("/api/payment/verify", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -217,21 +233,36 @@ export default function CheckoutPage() {
                             clearCart();
                             router.push(`/order-tracking?id=${data.orderId}`);
                         } else {
-                            setCheckoutError("Payment verification failed. Please contact support with your order ID: " + data.orderId);
+                            setCheckoutError("Payment received — we're confirming it. If your order isn't visible shortly, contact support with order ID: " + data.orderId);
+                            setIsProcessing(false);
                         }
+                    } catch {
+                        setCheckoutError("Payment received, but confirmation didn't complete. Please contact support with order ID: " + data.orderId + " (do not pay again).");
+                        setIsProcessing(false);
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        // Customer closed the payment popup without paying.
+                        setCheckoutError("Payment was not completed. Your bag is saved — you can try again.");
+                        setIsProcessing(false);
                     },
-                    prefill: {
-                        name: `${formData.firstName} ${formData.lastName}`,
-                        email: formData.email,
-                        contact: formData.phone,
-                    },
-                    theme: { color: "#4A0404" },
-                };
+                },
+                prefill: {
+                    name: `${formData.firstName} ${formData.lastName}`,
+                    email: formData.email,
+                    contact: formData.phone,
+                },
+                theme: { color: "#4A0404" },
+            };
 
-                const rzp = new (window as any).Razorpay(options);
-                rzp.open();
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on("payment.failed", function () {
+                setCheckoutError("The payment could not be processed. No charge was made — please try again.");
                 setIsProcessing(false);
-            }
+            });
+            rzp.open();
+            // Leave isProcessing true while the modal is open; ondismiss/handler reset it.
         } catch (error: any) {
             setCheckoutError(error.message || "Checkout failed. Please try again.");
             setIsProcessing(false);

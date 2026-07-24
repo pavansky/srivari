@@ -5,6 +5,7 @@ vi.mock('@/lib/db', () => ({
     getProducts: vi.fn(),
     saveProduct: vi.fn(),
     deleteProduct: vi.fn(),
+    lastGetProductsError: null,
 }));
 
 // Mock NextResponse

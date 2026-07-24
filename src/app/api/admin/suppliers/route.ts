@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSuppliers, saveSupplier, deleteSupplier } from '@/lib/db';
+import { getSuppliers, saveSupplier, deleteSupplier, lastGetSuppliersError } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 
 export async function GET(request: Request) {
@@ -8,7 +8,8 @@ export async function GET(request: Request) {
 
     try {
         const suppliers = await getSuppliers();
-        return NextResponse.json(suppliers);
+        const init = lastGetSuppliersError ? { headers: { 'X-Data-Unavailable': '1' } } : undefined;
+        return NextResponse.json(suppliers, init);
     } catch (error) {
         console.error('Error fetching suppliers:', error);
         return NextResponse.json({ error: 'Failed to fetch suppliers' }, { status: 500 });

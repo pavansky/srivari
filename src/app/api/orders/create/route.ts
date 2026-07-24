@@ -112,10 +112,17 @@ export async function POST(request: Request) {
             paymentMethod: method,
         };
 
-        if (method !== 'Razorpay') {
-            // Offline order: confirmed now, stock decremented atomically
+        // A fully-discounted order (e.g. 100%-off promo + free shipping) has no
+        // amount to charge — Razorpay rejects amount < ₹1, so settle it offline.
+        const isFreeOrder = total < 1;
+
+        if (method !== 'Razorpay' || isFreeOrder) {
+            // Offline / free order: confirmed now, stock decremented atomically
             try {
-                await saveOrderToDb({ ...baseOrder, status: 'Placed' }, { skipStockDecrement: false });
+                await saveOrderToDb(
+                    { ...baseOrder, paymentMethod: isFreeOrder ? method : method, status: 'Placed' },
+                    { skipStockDecrement: false }
+                );
             } catch (e: any) {
                 if (String(e?.message).startsWith('INSUFFICIENT_STOCK:')) {
                     const name = String(e.message).split(':')[1] || 'an item';
@@ -130,7 +137,7 @@ export async function POST(request: Request) {
                 console.error('Order email failed:', e)
             );
 
-            return NextResponse.json({ success: true, orderId: internalOrderId, total });
+            return NextResponse.json({ success: true, orderId: internalOrderId, total, free: isFreeOrder });
         }
 
         // Razorpay flow: order stays 'Pending' and stock is reserved on payment verify
@@ -140,10 +147,28 @@ export async function POST(request: Request) {
             receipt: internalOrderId,
         });
 
-        await saveOrderToDb(
-            { ...baseOrder, status: 'Pending', razorpayOrderId: razorpayOrder.id },
-            { skipStockDecrement: true }
-        );
+        try {
+            await saveOrderToDb(
+                { ...baseOrder, status: 'Pending', razorpayOrderId: razorpayOrder.id },
+                { skipStockDecrement: true }
+            );
+        } catch (e: any) {
+            // Extremely rare order-id collision (P2002): the Razorpay order is
+            // already created, so retry the local save once with a fresh id
+            // rather than 500 and orphan the payment intent.
+            if (String(e?.code) === 'P2002' || /Unique constraint/i.test(String(e?.message))) {
+                const retryId = `SR-${Date.now().toString(36).slice(-5)}${Math.floor(Math.random() * 1296).toString(36).padStart(2, '0')}X`.toUpperCase();
+                await saveOrderToDb(
+                    { ...baseOrder, id: retryId, status: 'Pending', razorpayOrderId: razorpayOrder.id },
+                    { skipStockDecrement: true }
+                );
+                return NextResponse.json({
+                    success: true, orderId: retryId, razorpayOrderId: razorpayOrder.id,
+                    amount: razorpayOrder.amount, total, key: process.env.RAZORPAY_KEY_ID
+                });
+            }
+            throw e;
+        }
         // NOTE: the coupon is redeemed at payment verification (updateOrderPayment),
         // not here — abandoned checkouts must not consume limited coupon slots.
 

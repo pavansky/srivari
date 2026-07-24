@@ -194,7 +194,13 @@ export async function restoreProduct(id: string) {
 // Razorpay order that was created but never paid — stock is NOT reserved for it.
 const STOCK_HOLDING_STATUSES = ['Placed', 'Paid', 'Shipped', 'Delivered'];
 
+// Set when a read-all getter swallows a DB failure and returns [], so callers
+// can tell a genuine outage apart from a genuinely empty result.
+export let lastGetOrdersError: string | null = null;
+export let lastGetSuppliersError: string | null = null;
+
 export async function getOrders(): Promise<Order[]> {
+    lastGetOrdersError = null;
     try {
         const orders = await prisma.order.findMany({
             orderBy: { createdAt: 'desc' }
@@ -221,8 +227,9 @@ export async function getOrders(): Promise<Order[]> {
                 items: o.items as any[]
             };
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("DB Error (Orders):", error);
+        lastGetOrdersError = error?.message || 'orders query failed';
         return [];
     }
 }
@@ -423,6 +430,7 @@ export async function updateOrder(order: Partial<Order> & { id: string }) {
 // --- Suppliers ---
 
 export async function getSuppliers(): Promise<Supplier[]> {
+    lastGetSuppliersError = null;
     try {
         const suppliers = await prisma.supplier.findMany({
             orderBy: { createdAt: 'desc' },
@@ -440,8 +448,9 @@ export async function getSuppliers(): Promise<Supplier[]> {
             updatedAt: s.updatedAt,
             productCount: s._count?.products || 0,
         }));
-    } catch (error) {
+    } catch (error: any) {
         console.error("DB Error (Suppliers):", error);
+        lastGetSuppliersError = error?.message || 'suppliers query failed';
         return [];
     }
 }

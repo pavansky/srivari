@@ -26,7 +26,9 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         const { messages, prompt } = body;
-        const userQuery = prompt || (messages && messages[messages.length - 1]?.content) || "saree";
+        // Coerce to a string — a non-string prompt (e.g. {} or a number sent by a
+        // malformed client) would otherwise throw on .toLowerCase() below.
+        const userQuery = String(prompt || messages?.[messages.length - 1]?.content || "saree").slice(0, 2000);
 
         // 1. Fetch ALL products for semantic pre-processing
         const allProducts = await getProducts();
@@ -90,44 +92,65 @@ export async function POST(req: Request) {
             ${JSON.stringify(productContext)}
         `;
 
-        // 5. Intelligent Generation via the configured open/free endpoint
-        const raw = await chatComplete({
-            system: systemPrompt,
-            messages: [{ role: 'user', content: userQuery }],
-            temperature: 0.6,
-            maxTokens: 1200,
-        });
+        // A graceful non-AI answer built from the keyword ranking. Used whenever
+        // the LLM is unavailable, empty, or unparseable — the concierge still
+        // surfaces relevant pieces instead of a dead error.
+        const fallbackResponse = () => {
+            const picks = rankedProducts.filter(p => (p as any).relevanceScore > 0).slice(0, 3);
+            const chosen = picks.length ? picks : rankedProducts.slice(0, 3);
+            return {
+                text: chosen.length
+                    ? "Here are a few pieces from our collection that suit what you're looking for. Tell me more about the occasion or colour and I'll refine the selection."
+                    : "I couldn't find a close match just yet — tell me the occasion, colour, or fabric you have in mind and I'll curate something befitting.",
+                recommendations: chosen.map(p => ({
+                    id: p.id,
+                    matchReason: `A ${p.category.toLowerCase()} piece well suited to your request.`,
+                    confidence: 0.6,
+                    stylerTip: "Pair with temple jewellery and fresh jasmine for a timeless finish.",
+                })),
+            };
+        };
+
+        // 5. Intelligent Generation via the configured open/free endpoint.
+        // Any failure (endpoint down, rate-limited, empty/garbled) degrades to
+        // the keyword-ranked fallback rather than a 500.
+        let raw: string;
+        try {
+            raw = await chatComplete({
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userQuery }],
+                temperature: 0.6,
+                maxTokens: 1200,
+            });
+        } catch (llmError) {
+            console.warn("Stylist LLM unavailable, using keyword fallback:", (llmError as Error)?.message);
+            return Response.json(fallbackResponse());
+        }
 
         // 6. Robust Universal JSON Parser
-        let resultData;
         const text = raw.trim();
-        try {
-            // Remove markdown blocks if present
-            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            resultData = JSON.parse(cleanJson);
-        } catch (e) {
-            console.error("Architectural Parser Error:", text);
-            // Fallback: Check if we can extract a JSON block using regex
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                try {
-                    resultData = JSON.parse(jsonMatch[0]);
-                } catch (innerE) {
-                    resultData = { text: text.substring(0, 400), recommendations: [] };
-                }
-            } else {
-                resultData = { text: text.substring(0, 400), recommendations: [] };
-            }
+        const tryParse = (s: string) => { try { return JSON.parse(s); } catch { return null; } };
+        let resultData =
+            tryParse(text.replace(/```json/g, '').replace(/```/g, '').trim()) ||
+            tryParse(text.match(/\{[\s\S]*\}/)?.[0] || '');
+
+        // If the model returned prose (or nothing) instead of JSON, or JSON with
+        // no usable recommendations, fall back to the keyword ranking.
+        if (!resultData || !Array.isArray(resultData.recommendations) || resultData.recommendations.length === 0) {
+            const fb = fallbackResponse();
+            resultData = {
+                text: (resultData && typeof resultData.text === 'string' && resultData.text) || fb.text,
+                recommendations: fb.recommendations,
+            };
         }
 
         return Response.json(resultData);
 
     } catch (error: any) {
         console.error("Pro Stylist API Error:", error);
+        // Don't leak internal error details to the client.
         return Response.json({
-            error: "SERVER_ERROR",
-            message: error.message,
-            code: error.status || 500
+            error: "The stylist is momentarily unavailable. Please try again shortly.",
         }, { status: 500 });
     }
 }

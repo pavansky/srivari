@@ -45,14 +45,27 @@ export async function validateCoupon(code: string, subtotal: number): Promise<Co
     return { valid: true, code: coupon.code, discount, description: coupon.description || undefined };
 }
 
-/** Increments a coupon's redemption count (fire-and-forget safe). */
-export async function redeemCoupon(code: string) {
+/**
+ * Atomically consumes one redemption, respecting usageLimit. The conditional
+ * updateMany (increment only while usedCount < usageLimit, or unlimited) closes
+ * the check-then-act race between validateCoupon and redeem: two concurrent
+ * (or Razorpay-deferred) redemptions of a single-use code can't both succeed.
+ * Returns true if a slot was consumed. Never throws (a missing Coupon table
+ * must not roll back a completed payment).
+ */
+export async function redeemCoupon(code: string): Promise<boolean> {
     try {
-        await prisma.coupon.update({
-            where: { code: code.trim().toUpperCase() },
-            data: { usedCount: { increment: 1 } }
+        const normalized = code.trim().toUpperCase();
+        const res = await prisma.coupon.updateMany({
+            where: {
+                code: normalized,
+                OR: [{ usageLimit: null }, { usedCount: { lt: prisma.coupon.fields.usageLimit } }],
+            },
+            data: { usedCount: { increment: 1 } },
         });
+        return res.count > 0;
     } catch (e) {
         console.warn('Coupon redemption count failed:', e);
+        return false;
     }
 }

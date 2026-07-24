@@ -1,4 +1,4 @@
-import { getProducts } from '@/lib/db';
+import { getProducts, lastGetProductsError } from '@/lib/db';
 import ShopClient from './ShopClient';
 import { Metadata } from 'next';
 import { Product } from '@/types';
@@ -29,12 +29,16 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     const products = ((await getProducts()) as Product[]).map(
         ({ priceCps, shipping, supplierId, supplierName, locationBin, ...rest }) => rest as Product
     );
+    // getProducts() returns [] on a DB failure; distinguish that outage from a
+    // genuinely empty catalogue so the UI doesn't blame the user's filters.
+    const dataUnavailable = products.length === 0 && !!lastGetProductsError;
 
     return (
         <ShopClient
             initialProducts={products}
             initialCategory={typeof category === 'string' ? category : undefined}
             initialQuery={typeof q === 'string' ? q : undefined}
+            dataUnavailable={dataUnavailable}
         />
     );
 }

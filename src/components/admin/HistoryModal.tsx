@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { History, Loader2, X } from "lucide-react";
+import { AlertCircle, History, Loader2, X } from "lucide-react";
 import { GlassCard, EmptyState } from "./ui";
 import { useToast } from "./Toast";
 
@@ -38,6 +38,7 @@ export default function HistoryModal({ productId, productName, onClose }: {
     const { toast } = useToast();
     const [entries, setEntries] = useState<HistoryEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -45,14 +46,20 @@ export default function HistoryModal({ productId, productName, onClose }: {
             try {
                 const res = await fetch(`/api/products/history?id=${encodeURIComponent(productId)}`);
                 if (res.status === 401) {
-                    if (!cancelled) toast("error", "Session expired — please log in again.");
+                    if (!cancelled) {
+                        setLoadError("Your session expired. Please log in again to view stock history.");
+                        toast("error", "Session expired — please log in again.");
+                    }
                     return;
                 }
                 const data = await res.json().catch(() => null);
                 if (!res.ok) throw new Error(data?.error || "Failed to load stock history");
                 if (!cancelled) setEntries(Array.isArray(data) ? data : []);
             } catch (e) {
-                if (!cancelled) toast("error", e instanceof Error ? e.message : "Failed to load stock history");
+                if (!cancelled) {
+                    setLoadError(e instanceof Error ? e.message : "Failed to load stock history");
+                    toast("error", e instanceof Error ? e.message : "Failed to load stock history");
+                }
             } finally {
                 if (!cancelled) setIsLoading(false);
             }
@@ -99,6 +106,11 @@ export default function HistoryModal({ productId, productName, onClose }: {
                         {isLoading ? (
                             <div className="py-16 flex justify-center">
                                 <Loader2 className="animate-spin text-[#D4AF37]" size={28} />
+                            </div>
+                        ) : loadError ? (
+                            <div className="py-16 text-center">
+                                <AlertCircle className="mx-auto mb-4 text-amber-400" size={28} />
+                                <p className="text-white/70 text-sm max-w-xs mx-auto">{loadError}</p>
                             </div>
                         ) : entries.length === 0 ? (
                             <EmptyState

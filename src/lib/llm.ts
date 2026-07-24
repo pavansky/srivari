@@ -63,9 +63,16 @@ async function resolveModel(url: string, headers: Record<string, string>): Promi
     return "llama-3.3-70b-versatile";
 }
 
-/** Strip <think>…</think> blocks that local reasoning models may emit. */
+/**
+ * Strip <think>…</think> blocks that local reasoning models may emit. Also
+ * handles a truncated, still-open <think> (model hit max_tokens mid-thought):
+ * everything from an unclosed <think> to the end is dropped.
+ */
 function stripReasoning(text: string): string {
-    return text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    return text
+        .replace(/<think>[\s\S]*?<\/think>/g, "")
+        .replace(/<think>[\s\S]*$/g, "")
+        .trim();
 }
 
 interface CompleteOpts {

@@ -24,6 +24,11 @@ function httpsRequest(url: string, method: string, data?: any, headers: any = {}
                 hostname: urlObj.hostname,
                 path: urlObj.pathname + urlObj.search,
                 method: method,
+                // Without a timeout, a peer that completes the TCP handshake but
+                // never responds hangs this promise forever — stalling the whole
+                // serverless function and the customer's checkout. Reject after 8s
+                // so getShippingRate's mock-rate fallback can take over.
+                timeout: 8000,
                 headers: {
                     'Content-Type': 'application/json',
                     ...headers
@@ -57,6 +62,10 @@ function httpsRequest(url: string, method: string, data?: any, headers: any = {}
             req.on('error', (e) => {
                 console.error("SR Network Error:", e);
                 reject(e);
+            });
+
+            req.on('timeout', () => {
+                req.destroy(new Error('Shiprocket request timed out'));
             });
 
             if (postData) {

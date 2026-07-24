@@ -73,6 +73,10 @@ function ProductsInner() {
 
     // Misc
     const [stockOverrides, setStockOverrides] = useState<Record<string, number>>({});
+    // Products with a mutation (stock/feature) currently in flight — used to
+    // block re-entrant clicks that would PUT a stale whole-product object and
+    // clobber the other change.
+    const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set());
     const [historyProduct, setHistoryProduct] = useState<{ id: string; name: string } | null>(null);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,11 +133,20 @@ function ProductsInner() {
         body: JSON.stringify(body),
     });
 
+    const markMutating = (id: string, on: boolean) =>
+        setMutatingIds(prev => {
+            const next = new Set(prev);
+            if (on) next.add(id); else next.delete(id);
+            return next;
+        });
+
     const adjustStock = async (p: Product, delta: number) => {
+        if (mutatingIds.has(p.id)) return; // ignore rapid double-clicks
         const current = stockOverrides[p.id] ?? p.stock;
         const newStock = Math.max(0, current + delta);
         if (newStock === current) return;
         setStockOverrides(prev => ({ ...prev, [p.id]: newStock }));
+        markMutating(p.id, true);
         try {
             const res = await putProduct({ ...p, stock: newStock });
             if (!res.ok) throw new Error(res.status === 401 ? SESSION_MSG : "Failed to update stock");
@@ -141,6 +154,7 @@ function ProductsInner() {
         } catch (e) {
             toast("error", e instanceof Error ? e.message : "Failed to update stock");
         } finally {
+            markMutating(p.id, false);
             setStockOverrides(prev => {
                 const next = { ...prev };
                 delete next[p.id];
@@ -150,12 +164,16 @@ function ProductsInner() {
     };
 
     const toggleFeatured = async (p: Product) => {
+        if (mutatingIds.has(p.id)) return; // ignore rapid double-clicks
+        markMutating(p.id, true);
         try {
             const res = await putProduct({ ...p, isFeatured: !p.isFeatured });
             if (!res.ok) throw new Error(res.status === 401 ? SESSION_MSG : "Failed to update product");
             await refresh();
         } catch (e) {
             toast("error", e instanceof Error ? e.message : "Failed to update product");
+        } finally {
+            markMutating(p.id, false);
         }
     };
 
@@ -409,11 +427,12 @@ function ProductsInner() {
 
     const renderStock = (p: Product) => {
         const stock = stockOverrides[p.id] ?? p.stock;
+        const busy = mutatingIds.has(p.id);
         return (
             <div className="flex items-center gap-1.5">
                 <button
                     onClick={() => adjustStock(p, -1)}
-                    disabled={stock <= 0}
+                    disabled={stock <= 0 || busy}
                     aria-label={`Decrease stock for ${p.name}`}
                     className="w-7 h-7 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:border-white/10"
                 >
@@ -422,8 +441,9 @@ function ProductsInner() {
                 <span className="w-9 text-center text-sm font-bold text-white/90 tabular-nums">{stock}</span>
                 <button
                     onClick={() => adjustStock(p, 1)}
+                    disabled={busy}
                     aria-label={`Increase stock for ${p.name}`}
-                    className="w-7 h-7 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/25 flex items-center justify-center transition-all"
+                    className="w-7 h-7 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/25 flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:border-white/10"
                 >
                     <Plus size={12} />
                 </button>
@@ -434,8 +454,9 @@ function ProductsInner() {
     const renderFeaturedToggle = (p: Product) => (
         <button
             onClick={() => toggleFeatured(p)}
+            disabled={mutatingIds.has(p.id)}
             aria-label={p.isFeatured ? `Remove ${p.name} from featured` : `Feature ${p.name}`}
-            className="p-2 rounded-lg hover:bg-white/[0.05] transition-all"
+            className="p-2 rounded-lg hover:bg-white/[0.05] transition-all disabled:opacity-40"
         >
             <Star size={16} className={p.isFeatured ? "text-[#D4AF37] fill-[#D4AF37]" : "text-white/25"} />
         </button>

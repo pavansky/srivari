@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProducts, saveProduct, deleteProduct } from '@/lib/db';
+import { getProducts, saveProduct, deleteProduct, lastGetProductsError } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
 import { requireAdmin } from '@/lib/adminAuth';
 
@@ -34,11 +34,16 @@ export async function GET(request: Request) {
 
         const products = await getProducts(includeArchived && isAdmin);
 
-        if (isAdmin) return NextResponse.json(products);
+        // Signal a swallowed DB outage (getProducts returned [] on error) so
+        // admin surfaces can distinguish it from a genuinely empty catalogue.
+        // Header only — the 200 + [] body keeps lenient public consumers working.
+        const headers = lastGetProductsError ? { 'X-Data-Unavailable': '1' } : undefined;
+
+        if (isAdmin) return NextResponse.json(products, headers ? { headers } : undefined);
 
         // Strip internal cost/supplier fields from the public payload
         const publicProducts = products.map(({ priceCps, shipping, supplierId, supplierName, locationBin, ...rest }) => rest);
-        return NextResponse.json(publicProducts);
+        return NextResponse.json(publicProducts, headers ? { headers } : undefined);
     } catch (e: any) {
         console.error(e);
         return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });

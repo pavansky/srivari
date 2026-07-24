@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server';
 vi.mock('@/lib/db', () => ({
     getProducts: vi.fn(),
     saveProduct: vi.fn(),
-    deleteProduct: vi.fn()
+    deleteProduct: vi.fn(),
+    lastGetProductsError: null
 }));
 
 import { getProducts, saveProduct } from '@/lib/db';

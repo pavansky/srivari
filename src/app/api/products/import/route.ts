@@ -21,6 +21,11 @@ export async function POST(request: Request) {
         if (!products || !Array.isArray(products)) {
             return NextResponse.json({ error: 'Invalid payload. Expected an array of products.' }, { status: 400 });
         }
+        // Cap the payload so a huge CSV can't open thousands of concurrent DB
+        // writes at once (pool exhaustion / function timeout).
+        if (products.length > 1000) {
+            return NextResponse.json({ error: 'Import too large. Please split into files of 1000 rows or fewer.' }, { status: 413 });
+        }
 
         const results = {
             successful: 0,
@@ -30,28 +35,28 @@ export async function POST(request: Request) {
 
         const batchId = `IMPORT-${Date.now()}`;
 
-        // Instead of processing one by one which takes M*N roundtrips and can timeout,
-        // we process in a single Promise.all concurrent block, taking advantage of connection pooling
-        const importPromises = products.map(async (row, index) => {
-             // Minimal validation before trying to save
+        const saveRow = async (row: any, index: number) => {
             if (!row.name || !row.price || !row.category) {
-                 return { success: false, index, error: "Missing required fields (name, price, category)" };
+                return { success: false, index, error: "Missing required fields (name, price, category)" };
             }
             try {
-                // Pass the actor and reference down so it gets logged in the InventoryTransaction
-                await saveProduct({
-                    ...row,
-                    actor: "Admin (CSV Import)",
-                    reference: batchId
-                });
+                await saveProduct({ ...row, actor: "Admin (CSV Import)", reference: batchId });
                 return { success: true, index };
             } catch (err) {
-                 return { success: false, index, error: err instanceof Error ? err.message : String(err) };
+                return { success: false, index, error: err instanceof Error ? err.message : String(err) };
             }
-        });
+        };
 
-        const outcomes = await Promise.all(importPromises);
-        
+        // Bounded concurrency: process in chunks of 25 so we get pool-friendly
+        // parallelism without launching one connection per row.
+        const CHUNK = 25;
+        const outcomes: { success: boolean; index: number; error?: string }[] = [];
+        for (let start = 0; start < products.length; start += CHUNK) {
+            const slice = products.slice(start, start + CHUNK);
+            const chunkResults = await Promise.all(slice.map((row, i) => saveRow(row, start + i)));
+            outcomes.push(...chunkResults);
+        }
+
         for (const out of outcomes) {
             if (out.success) {
                 results.successful++;

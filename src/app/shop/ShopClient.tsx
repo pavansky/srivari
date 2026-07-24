@@ -17,6 +17,7 @@ type ViewMode = 'grid-large' | 'grid-standard' | 'list';
 
 interface ShopClientProps {
     initialProducts: Product[];
+    dataUnavailable?: boolean;
     initialCategory?: string;
     initialQuery?: string;
 }
@@ -35,7 +36,7 @@ const categoryMatches = (a: string, b: string) => {
     return x === y || x.includes(y) || y.includes(x);
 };
 
-export default function ShopClient({ initialProducts, initialCategory, initialQuery }: ShopClientProps) {
+export default function ShopClient({ initialProducts, initialCategory, initialQuery, dataUnavailable = false }: ShopClientProps) {
     // Highest catalogue price, rounded up to the nearest ₹1,000 — the price control's ceiling
     const priceCap = useMemo(() => {
         if (initialProducts.length === 0) return 100000;
@@ -336,16 +337,31 @@ export default function ShopClient({ initialProducts, initialCategory, initialQu
                 </div>
 
                 {filteredAndSortedProducts.length === 0 && (
-                    <div className="text-center py-32 border border-[#E5E5E5] bg-white mt-12">
-                        <Search className="w-10 h-10 text-[#D4AF37]/40 mx-auto mb-8" aria-hidden="true" />
-                        <h3 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] mb-3">
-                            No <em className="italic text-[#4A0404]">masterpieces</em> found
-                        </h3>
-                        <p className="text-sm text-[#595959] font-sans mb-10">Try adjusting your filters or search terms.</p>
-                        <button onClick={clearAllFilters} className="btn-thread font-sans text-[#4A0404]">
-                            Clear Filters
-                        </button>
-                    </div>
+                    dataUnavailable ? (
+                        // DB outage — don't blame the user's (non-existent) filters.
+                        <div className="text-center py-32 border border-[#E5E5E5] bg-white mt-12">
+                            <h3 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] mb-3">
+                                Our collection is <em className="italic text-[#4A0404]">being updated</em>
+                            </h3>
+                            <p className="text-sm text-[#595959] font-sans mb-10 max-w-md mx-auto">
+                                We&apos;re polishing the looms — please check back in a few moments. Our concierge on WhatsApp can help in the meantime.
+                            </p>
+                            <button onClick={() => window.location.reload()} className="btn-thread font-sans text-[#4A0404]">
+                                Refresh
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-32 border border-[#E5E5E5] bg-white mt-12">
+                            <Search className="w-10 h-10 text-[#D4AF37]/40 mx-auto mb-8" aria-hidden="true" />
+                            <h3 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] mb-3">
+                                No <em className="italic text-[#4A0404]">masterpieces</em> found
+                            </h3>
+                            <p className="text-sm text-[#595959] font-sans mb-10">Try adjusting your filters or search terms.</p>
+                            <button onClick={clearAllFilters} className="btn-thread font-sans text-[#4A0404]">
+                                Clear Filters
+                            </button>
+                        </div>
+                    )
                 )}
             </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getOrders, updateOrder } from '@/lib/db';
+import { getOrders, updateOrder, lastGetOrdersError } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,10 @@ export async function GET(request: Request) {
 
     try {
         const orders = await getOrders();
-        return NextResponse.json(orders);
+        // Flag a swallowed DB outage so the admin console shows an error state
+        // instead of a healthy-looking "0 orders".
+        const init = lastGetOrdersError ? { headers: { 'X-Data-Unavailable': '1' } } : undefined;
+        return NextResponse.json(orders, init);
     } catch (e) {
         return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
     }
