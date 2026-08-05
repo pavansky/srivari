@@ -18,7 +18,7 @@ Since your project uses **Next.js**, **Supabase**, and **Google Auth**, there ar
    git push --force origin main
    ```
    (Alternatively use BFG Repo-Cleaner. Anyone who cloned before the purge still has the old secrets — rotation is what actually revokes them.)
-3. **Push the new schema** (adds Review, Coupon, NewsletterSubscriber tables — additive, no data loss):
+3. **Push the new schema** (adds Review, Coupon, NewsletterSubscriber tables plus the payment/shipping/GST columns on Product and Order — all additive, no data loss; the app degrades gracefully until you run it):
    ```bash
    npx prisma db push
    ```
@@ -27,6 +27,14 @@ Since your project uses **Next.js**, **Supabase**, and **Google Auth**, there ar
    - `SHIPROCKET_WEBHOOK_SECRET` — also set the same value as the `x-api-key` header in your Shiprocket webhook settings (delivery updates are rejected until this is configured).
    - `RAZORPAY_WEBHOOK_SECRET` — create a webhook in the Razorpay dashboard pointing to `https://thesrivari.com/api/payment/webhook` for the `payment.captured` event with this secret. This marks orders Paid even when the customer's browser closes before returning from the payment popup.
    - `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` — the store's AI features (Royal Stylist, description writer, image-prompt helper) now use any free OpenAI-compatible endpoint instead of Gemini. Free options: [Groq](https://console.groq.com) (e.g. `https://api.groq.com/openai/v1` + `llama-3.3-70b-versatile`) or [OpenRouter](https://openrouter.ai) `:free` models. Until set, AI features respond with a friendly "not configured" notice — nothing else breaks. Optional `LLM_FALLBACK_BASE_URL` / `LLM_FALLBACK_API_KEY` / `LLM_FALLBACK_MODEL` add automatic failover when the primary free tier rate-limits (e.g. Groq primary + OpenRouter `:free` fallback). The AI Image Studio uses Pollinations (free, keyless) and needs no key. `GEMINI_API_KEY` has been deleted from Vercel.
+   - **Payments, shipping & GST (new):**
+     - `SELLER_GSTIN` — your GST number. Until it is set, invoices print as a receipt with "GSTIN: —"; GST maths still runs. Set `GST_ENABLED=false` to hide tax lines entirely.
+     - `SELLER_LEGAL_NAME`, `SELLER_STATE` (default Karnataka) — the state decides CGST+SGST (intra-state) vs IGST (inter-state) on every invoice.
+     - `PICKUP_ADDRESS_1`, `PICKUP_CITY`, `PICKUP_STATE`, `PICKUP_PINCODE` (default 560061), `PICKUP_PHONE` — the boutique's dispatch address, used for Shiprocket rates and shipment pickup.
+     - `SHIPROCKET_PICKUP_LOCATION` — must match the pickup-location nickname registered in your Shiprocket dashboard (default `Primary`). Shipment creation fails with a clear error if it doesn't match.
+     - `LOCAL_DELIVERY_ENABLED`, `LOCAL_DELIVERY_PINCODES` (comma-separated), `LOCAL_DELIVERY_FEE` (default 99), `LOCAL_DELIVERY_FREE_ABOVE` (default 5000), `LOCAL_DELIVERY_ETA`.
+     - `STORE_PICKUP_ENABLED`, `STORE_PICKUP_ETA`, `STORE_PICKUP_INSTRUCTIONS`.
+     - `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` must be live keys for real payments **and refunds** (refunds call the Razorpay API directly).
    - Do **not** set `ADMIN_DEV_BYPASS` in Vercel — it is a local-development flag only.
 
 ## 1. Push Code to GitHub

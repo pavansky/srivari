@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    BarChart3, Box, Command, Home, LayoutDashboard, LogOut, Menu, Moon,
+    BarChart3, Box, Command, Home, LayoutDashboard, LogOut, Megaphone, Menu, Moon,
     Package, ShoppingCart, Star, Sun, Tag, Users, X
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
     { label: "Analytics", icon: BarChart3, href: "/admin/analytics" },
     { label: "Coupons", icon: Tag, href: "/admin/coupons" },
     { label: "Reviews", icon: Star, href: "/admin/reviews" },
+    { label: "Marketing", icon: Megaphone, href: "/admin/marketing" },
     { label: "Suppliers", icon: Package, href: "/admin/suppliers" },
 ];
 

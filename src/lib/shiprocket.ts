@@ -204,3 +204,202 @@ export async function getShippingRate(pickupPincode: string, deliveryPincode: st
         };
     }
 }
+
+/* ============================================================================
+   Fulfilment pipeline
+   ----------------------------------------------------------------------------
+   Everything below turns a paid order into a real shipment: push the order to
+   Shiprocket, assign a courier (AWB), request pickup, and read tracking back.
+
+   Every function throws a plain Error with a human-readable message so the
+   admin UI can surface exactly what Shiprocket objected to (bad pincode,
+   unregistered pickup location, wallet balance, etc.) instead of a generic 500.
+   ============================================================================ */
+
+export interface ShipmentItem {
+    name: string;
+    sku: string;
+    units: number;
+    /** Unit selling price in rupees (GST-inclusive, as charged). */
+    sellingPrice: number;
+    hsn?: string;
+}
+
+export interface CreateShipmentInput {
+    orderId: string;
+    orderDate: Date;
+    customer: {
+        name: string;
+        email?: string;
+        phone: string;
+        address: string;
+        address2?: string;
+        city: string;
+        state: string;
+        pincode: string;
+    };
+    items: ShipmentItem[];
+    /** Goods total charged to the customer. */
+    subTotal: number;
+    /** COD orders must be flagged so the courier collects cash. */
+    isCod: boolean;
+    weightKg: number;
+    pickupLocation: string;
+}
+
+function srError(context: string, e: any): Error {
+    // Shiprocket returns { message, errors: { field: [msg] } } on 4xx
+    const body = e?.body ? (() => { try { return JSON.parse(e.body); } catch { return null; } })() : null;
+    const detail =
+        body?.message ||
+        (body?.errors && Object.entries(body.errors).map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join("; ")) ||
+        e?.message ||
+        "Unknown Shiprocket error";
+    return new Error(`${context}: ${detail}`);
+}
+
+/** Splits a full name into the first/last pair Shiprocket requires. */
+function splitName(full: string): { first: string; last: string } {
+    const parts = (full || "Customer").trim().split(/\s+/);
+    return { first: parts[0] || "Customer", last: parts.slice(1).join(" ") || "." };
+}
+
+/**
+ * Creates a custom (self-fulfilled) order in Shiprocket.
+ * Returns the shipment + order ids needed for AWB assignment.
+ */
+export async function createShipment(input: CreateShipmentInput): Promise<{ shipmentId: string; srOrderId: string }> {
+    const token = await getShiprocketToken();
+    const { first, last } = splitName(input.customer.name);
+
+    const payload = {
+        order_id: input.orderId,
+        order_date: input.orderDate.toISOString().slice(0, 19).replace("T", " "),
+        pickup_location: input.pickupLocation,
+        billing_customer_name: first,
+        billing_last_name: last,
+        billing_address: input.customer.address,
+        billing_address_2: input.customer.address2 || "",
+        billing_city: input.customer.city,
+        billing_pincode: input.customer.pincode,
+        billing_state: input.customer.state,
+        billing_country: "India",
+        billing_email: input.customer.email || "",
+        billing_phone: String(input.customer.phone).replace(/\D/g, "").slice(-10),
+        shipping_is_billing: true,
+        order_items: input.items.map(i => ({
+            name: i.name.slice(0, 100),
+            sku: i.sku,
+            units: i.units,
+            selling_price: i.sellingPrice,
+            hsn: i.hsn || "",
+        })),
+        payment_method: input.isCod ? "COD" : "Prepaid",
+        sub_total: input.subTotal,
+        // Shiprocket requires parcel dimensions; a folded saree box is ~30x25x8cm.
+        length: 30,
+        breadth: 25,
+        height: 8,
+        weight: Math.max(0.5, input.weightKg),
+    };
+
+    try {
+        const res = await httpsRequest(`${BASE_URL}/orders/create/adhoc`, "POST", payload, {
+            Authorization: `Bearer ${token}`,
+        });
+        if (!res?.shipment_id) throw new Error(res?.message || "Shiprocket did not return a shipment id");
+        return { shipmentId: String(res.shipment_id), srOrderId: String(res.order_id) };
+    } catch (e: any) {
+        throw srError("Could not create the shipment", e);
+    }
+}
+
+/**
+ * Assigns a courier (AWB). Omit courierId to let Shiprocket pick its
+ * recommended courier for the route.
+ */
+export async function assignAWB(shipmentId: string, courierId?: number): Promise<{ awb: string; courier: string }> {
+    const token = await getShiprocketToken();
+    const payload: Record<string, unknown> = { shipment_id: Number(shipmentId) };
+    if (courierId) payload.courier_id = courierId;
+
+    try {
+        const res = await httpsRequest(`${BASE_URL}/courier/assign/awb`, "POST", payload, {
+            Authorization: `Bearer ${token}`,
+        });
+        const data = res?.response?.data || res?.data || {};
+        const awb = data.awb_code || res?.awb_code;
+        if (!awb) throw new Error(res?.message || "No AWB returned — check Shiprocket wallet balance and courier availability");
+        return { awb: String(awb), courier: String(data.courier_name || "Courier") };
+    } catch (e: any) {
+        throw srError("Could not assign a courier", e);
+    }
+}
+
+/** Requests courier pickup for an assigned shipment. Non-fatal by design. */
+export async function requestPickup(shipmentId: string): Promise<{ scheduled: boolean; message: string }> {
+    const token = await getShiprocketToken();
+    try {
+        const res = await httpsRequest(`${BASE_URL}/courier/generate/pickup`, "POST",
+            { shipment_id: [Number(shipmentId)] },
+            { Authorization: `Bearer ${token}` });
+        return { scheduled: true, message: res?.response?.pickup_status || res?.message || "Pickup requested" };
+    } catch (e: any) {
+        // The shipment is already booked; a failed pickup request is recoverable
+        // from the Shiprocket dashboard and must not fail the whole ship action.
+        return { scheduled: false, message: srError("Pickup not scheduled", e).message };
+    }
+}
+
+/** Shipping label PDF for an assigned shipment. Optional. */
+export async function generateLabel(shipmentId: string): Promise<string | null> {
+    const token = await getShiprocketToken();
+    try {
+        const res = await httpsRequest(`${BASE_URL}/courier/generate/label`, "POST",
+            { shipment_id: [Number(shipmentId)] },
+            { Authorization: `Bearer ${token}` });
+        return res?.label_url || null;
+    } catch (e) {
+        console.error("SR label generation failed:", e);
+        return null;
+    }
+}
+
+/** Live tracking for an AWB. Returns null when unavailable rather than throwing. */
+export async function trackByAWB(awb: string): Promise<{ status: string; activities: any[]; etd?: string } | null> {
+    const token = await getShiprocketToken();
+    try {
+        const res = await httpsRequest(`${BASE_URL}/courier/track/awb/${encodeURIComponent(awb)}`, "GET", undefined, {
+            Authorization: `Bearer ${token}`,
+        });
+        const data = res?.tracking_data || res?.[0]?.tracking_data;
+        if (!data) return null;
+        return {
+            status: data.shipment_track?.[0]?.current_status || "In Transit",
+            activities: data.shipment_track_activities || [],
+            etd: data.etd,
+        };
+    } catch (e) {
+        console.error("SR tracking failed:", e);
+        return null;
+    }
+}
+
+/** Cancels a booked shipment (used when an order is cancelled after shipping). */
+export async function cancelShipment(awb: string): Promise<boolean> {
+    const token = await getShiprocketToken();
+    try {
+        await httpsRequest(`${BASE_URL}/orders/cancel/shipment/awbs`, "POST", { awbs: [awb] }, {
+            Authorization: `Bearer ${token}`,
+        });
+        return true;
+    } catch (e) {
+        console.error("SR shipment cancel failed:", e);
+        return false;
+    }
+}
+
+/** Public tracking URL customers can open. */
+export function trackingUrlFor(awb: string): string {
+    return `https://shiprocket.co/tracking/${encodeURIComponent(awb)}`;
+}

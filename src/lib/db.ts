@@ -369,7 +369,9 @@ export async function updateOrderPayment(razorpayOrderId: string, paymentId: str
         // stock — a plain read-then-write check would let both through.
         const claimed = await tx.order.updateMany({
             where: { razorpay_order_id: razorpayOrderId, status: 'Pending' },
-            data: { status: 'Paid' }
+            // The payment id is required to issue a refund later, so it is
+            // persisted as part of the same atomic Pending -> Paid claim.
+            data: { status: 'Paid', razorpay_payment_id: paymentId } as any
         });
         if (claimed.count === 0) {
             return { order: existing, newlyPaid: false, couponCode: undefined as string | undefined };

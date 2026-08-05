@@ -23,14 +23,17 @@ model Product {
   isFeatured        Boolean                @default(false)
   priceCps          Float?
   shipping          Float?
-  locationBin       String?                // e.g., "Aisle 4, Shelf B"
+  locationBin       String? // e.g., "Aisle 4, Shelf B"
+  weightKg          Float? // Shipping weight; falls back to CATEGORY_DEFAULT_WEIGHT
+  hsnCode           String? // GST HSN (silk sarees = 5007)
+  gstRate           Float? // % override; else derived from category
   supplierId        String?
   supplier          Supplier?              @relation(fields: [supplierId], references: [id])
   transactions      InventoryTransaction[]
   reviews           Review[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  deletedAt         DateTime?              // Soft-delete mechanism
+  deletedAt         DateTime? // Soft-delete mechanism
 }
 
 model Review {
@@ -75,10 +78,10 @@ model InventoryTransaction {
   id        String   @id @default(uuid())
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int      // Positive for restock, Negative for orders/deductions
-  type      String   // "MANUAL", "ORDER", "RESTOCK"
-  actor     String?  // The user/system who performed the transaction
-  reference String?  // Order ID, Import Batch ID, etc
+  quantity  Int // Positive for restock, Negative for orders/deductions
+  type      String // "MANUAL", "ORDER", "RESTOCK"
+  actor     String? // The user/system who performed the transaction
+  reference String? // Order ID, Import Batch ID, etc
   notes     String?
   createdAt DateTime @default(now())
 }
@@ -131,20 +134,42 @@ model Address {
 }
 
 model Order {
-  id                String   @id
-  razorpay_order_id String?  @unique
+  id                String  @id
+  razorpay_order_id String? @unique
   userId            String?
-  user              User?    @relation(fields: [userId], references: [id])
+  user              User?   @relation(fields: [userId], references: [id])
   customer          Json // Fallback for guest or historical data
   items             Json
   amount            Float
-  shipping_cost     Float    @default(0)
+  shipping_cost     Float   @default(0)
   total             Float
-  status            String   @default("Pending")
-  payment_method    String   @default("Razorpay")
+  status            String  @default("Pending")
+  payment_method    String  @default("Razorpay")
   tracking_number   String?
   tracking_url      String?
   delivery_eta      String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+
+  // Fulfilment channel: Courier (Shiprocket) | Local (own delivery) | Pickup (boutique)
+  delivery_method String @default("Courier")
+
+  // GST snapshot taken at order time (rates can change; invoices must not)
+  taxable_amount  Float?
+  gst_amount      Float?
+  gst_breakup     Json? // { cgst, sgst, igst, rate }
+  place_of_supply String? // customer state, decides CGST+SGST vs IGST
+  invoice_number  String? @unique
+
+  // Shiprocket shipment
+  shipment_id      String?
+  awb_code         String?
+  courier_name     String?
+  label_url        String?
+  pickup_scheduled DateTime?
+
+  // Razorpay refund (prepaid cancellations)
+  refund_id     String?
+  refund_amount Float?
+  refunded_at   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

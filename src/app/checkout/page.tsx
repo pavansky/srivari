@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import Footer from "@/components/Footer";
-import { Truck, ShieldCheck, ShoppingBag, MapPin, CheckCircle2, WalletCards, TicketPercent, X, AlertCircle } from "lucide-react";
+import { Truck, ShieldCheck, ShoppingBag, MapPin, CheckCircle2, WalletCards, TicketPercent, X, AlertCircle, Store, Bike } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,6 +15,40 @@ interface AppliedCoupon {
     discount: number;
     description?: string;
 }
+
+type DeliveryMethod = "Courier" | "Local" | "Pickup";
+
+interface DeliveryOption {
+    method: DeliveryMethod;
+    label: string;
+    fee: number;
+    eta: string;
+    available: boolean;
+    /** Instructions when available, the reason when it isn't. */
+    note?: string;
+    /** Boutique address — Pickup only. */
+    address?: string;
+}
+
+/** GST is computed server-side; prices are inclusive, so it is only displayed. */
+interface GstView {
+    enabled: boolean;
+    gstAmount: number;
+    rate: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    isIntraState: boolean;
+    placeOfSupply: string;
+}
+
+const METHOD_ICON: Record<DeliveryMethod, typeof Truck> = {
+    Pickup: Store,
+    Local: Bike,
+    Courier: Truck,
+};
+
+const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
@@ -36,7 +70,6 @@ export default function CheckoutPage() {
     });
 
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const shipping = 0; // VIP Free Shipping for Srivari
 
     // Coupon state
     const [couponInput, setCouponInput] = useState("");
@@ -45,6 +78,19 @@ export default function CheckoutPage() {
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     const discount = appliedCoupon?.discount || 0;
+
+    // Delivery channels — quoted server-side from the pincode (courier rate,
+    // local-zone eligibility and boutique collection all come back together).
+    const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
+    const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("Courier");
+    const [methodChosenByUser, setMethodChosenByUser] = useState(false);
+    const [quoteStatus, setQuoteStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [gst, setGst] = useState<GstView | null>(null);
+    const quoteSeq = useRef(0);
+
+    const selectedOption = deliveryOptions.find(o => o.method === deliveryMethod) || null;
+    const isPickup = deliveryMethod === "Pickup";
+    const shipping = selectedOption && selectedOption.available ? selectedOption.fee : 0;
     const total = Math.max(0, subtotal - discount) + shipping;
 
     const [user, setUser] = useState<any>(null);
@@ -89,6 +135,76 @@ export default function CheckoutPage() {
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [subtotal]);
+
+    // Quote every delivery channel once the pincode is complete. Debounced, and
+    // guarded by a sequence number so a slow reply can't overwrite a newer one.
+    useEffect(() => {
+        if (!/^\d{6}$/.test(formData.pincode) || cart.length === 0) {
+            quoteSeq.current += 1;
+            setDeliveryOptions([]);
+            setGst(null);
+            setQuoteStatus("idle");
+            return;
+        }
+
+        const seq = ++quoteSeq.current;
+        setQuoteStatus("loading");
+
+        const timer = setTimeout(async () => {
+            try {
+                const weightKg = cart.reduce((w, item) => w + ((item.weight || 0.6) * item.quantity), 0);
+                const res = await fetch("/api/shipping/quote", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        pincode: formData.pincode,
+                        subtotal,
+                        discount,
+                        weightKg,
+                        state: formData.state,
+                        items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                    }),
+                });
+                const data = await res.json();
+                if (seq !== quoteSeq.current) return;
+                if (!res.ok || !data.success || !Array.isArray(data.options)) {
+                    setDeliveryOptions([]);
+                    setGst(null);
+                    setQuoteStatus("error");
+                    return;
+                }
+                setDeliveryOptions(data.options);
+                setGst(data.gst || null);
+                setQuoteStatus("ready");
+            } catch {
+                if (seq !== quoteSeq.current) return;
+                setDeliveryOptions([]);
+                setGst(null);
+                setQuoteStatus("error");
+            }
+        }, 450);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.pincode, formData.state, subtotal, discount, cart]);
+
+    // Default to the cheapest option that actually delivers to the customer;
+    // boutique collection stays an explicit choice (it is always ₹0, so it would
+    // otherwise silently win). Any selection that becomes unavailable is reset.
+    useEffect(() => {
+        const available = deliveryOptions.filter(o => o.available);
+        if (available.length === 0) return;
+
+        const stillValid = available.some(o => o.method === deliveryMethod);
+        if (stillValid && methodChosenByUser) return;
+
+        const shipped = available.filter(o => o.method !== "Pickup");
+        const pool = shipped.length > 0 ? shipped : available;
+        const cheapest = pool.reduce((best, o) => (o.fee < best.fee ? o : best), pool[0]);
+        if (!stillValid) setMethodChosenByUser(false);
+        if (cheapest.method !== deliveryMethod) setDeliveryMethod(cheapest.method);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deliveryOptions]);
 
     const fetchAddresses = async (token: string) => {
         try {
@@ -165,11 +281,25 @@ export default function CheckoutPage() {
         setCheckoutError("");
 
         try {
+            // Flat address string (kept for backwards compatibility) — for a
+            // boutique collection it records the counter, not a doorstep.
+            const postalAddress = [
+                formData.address,
+                formData.city,
+                [formData.state, formData.pincode].filter(Boolean).join(" - "),
+            ].filter(part => part && String(part).trim()).join(", ");
+            const composedAddress = isPickup
+                ? `Boutique collection — ${selectedOption?.address || "The Srivari Boutique"}`
+                : postalAddress;
+
             const orderPayload = {
                 ...formData,
-                address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+                address: composedAddress,
                 items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                // The server re-derives this for Pickup/Local; it is only
+                // authoritative for a courier (Shiprocket-quoted) shipment.
                 shippingCost: shipping,
+                deliveryMethod,
                 couponCode: appliedCoupon?.code,
                 paymentMethod: paymentMethod
             };
@@ -354,27 +484,48 @@ export default function CheckoutPage() {
                                         />
                                     </div>
                                 </div>
-                                <div className="mt-6 space-y-2">
+                                {/* Street address is irrelevant to a boutique collection — kept
+                                    visible (and still editable) but no longer required. */}
+                                <div className={`mt-6 space-y-2 transition-opacity duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${isPickup ? "opacity-45" : "opacity-100"}`}>
                                     <label htmlFor="co-address" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Address</label>
                                     <input
                                         id="co-address"
-                                        required
+                                        required={!isPickup}
                                         name="address"
                                         value={formData.address}
                                         onChange={handleInputChange}
+                                        aria-describedby={isPickup ? "co-pickup-note" : undefined}
                                         className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
                                     />
+                                    {isPickup && (
+                                        <p id="co-pickup-note" className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans pt-1">
+                                            Not required — you are collecting in person
+                                        </p>
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                                    <div className="space-y-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                    <div className={`space-y-2 transition-opacity duration-700 ${isPickup ? "opacity-45" : "opacity-100"}`}>
                                         <label htmlFor="co-city" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">City</label>
                                         <input
                                             id="co-city"
-                                            required
+                                            required={!isPickup}
                                             name="city"
                                             value={formData.city}
                                             onChange={handleInputChange}
                                             className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        {/* State drives the GST place of supply (CGST+SGST vs IGST). */}
+                                        <label htmlFor="co-state" className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">State</label>
+                                        <input
+                                            id="co-state"
+                                            required
+                                            name="state"
+                                            value={formData.state}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-neutral-200 px-4 py-3 focus:outline-none focus:border-[#D4AF37] transition-all rounded-sm placeholder:text-neutral-300"
+                                            placeholder="E.g. Karnataka"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -383,6 +534,8 @@ export default function CheckoutPage() {
                                             id="co-pincode"
                                             required
                                             pattern="[0-9]{6}"
+                                            inputMode="numeric"
+                                            maxLength={6}
                                             name="pincode"
                                             value={formData.pincode}
                                             onChange={handleInputChange}
@@ -404,6 +557,113 @@ export default function CheckoutPage() {
                                         />
                                     </div>
                                 </div>
+                            </section>
+
+                            {/* --- Delivery channel --------------------------------------- */}
+                            <section aria-labelledby="co-delivery-method">
+                                <h2 id="co-delivery-method" className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">
+                                    Delivery Method
+                                </h2>
+
+                                {quoteStatus === "idle" && (
+                                    <p className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans">
+                                        Enter your pincode to see delivery options
+                                    </p>
+                                )}
+
+                                {quoteStatus === "loading" && (
+                                    <p className="flex items-center gap-3 text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans" role="status">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" aria-hidden="true" />
+                                        Finding the finest way to reach you
+                                    </p>
+                                )}
+
+                                {quoteStatus === "error" && (
+                                    <p className="text-[9px] uppercase tracking-[0.3em] text-[#4A0404] font-sans" role="alert">
+                                        Delivery options are unavailable — courier shipping will be arranged
+                                    </p>
+                                )}
+
+                                {deliveryOptions.length > 0 && (
+                                    <div className="space-y-3" role="radiogroup" aria-label="Delivery method">
+                                        {deliveryOptions.map((option) => {
+                                            const Icon = METHOD_ICON[option.method];
+                                            const isSelected = option.method === deliveryMethod;
+                                            return (
+                                                <label
+                                                    key={option.method}
+                                                    className={`block ${option.available ? "cursor-pointer" : "cursor-not-allowed"}`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="deliveryMethod"
+                                                        value={option.method}
+                                                        checked={isSelected}
+                                                        disabled={!option.available}
+                                                        onChange={() => {
+                                                            setDeliveryMethod(option.method);
+                                                            setMethodChosenByUser(true);
+                                                        }}
+                                                        className="peer sr-only"
+                                                    />
+                                                    <span
+                                                        className={`flex items-start justify-between gap-5 border px-5 py-4 bg-white transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] peer-focus-visible:ring-1 peer-focus-visible:ring-[#D4AF37] ${!option.available
+                                                            ? "border-black/5 opacity-45"
+                                                            : isSelected
+                                                                ? "border-[#4A0404] shadow-[0_10px_40px_rgba(74,4,4,0.06)]"
+                                                                : "border-black/10 hover:border-[#D4AF37]/50"
+                                                            }`}
+                                                    >
+                                                        <span className="flex items-start gap-4">
+                                                            <Icon
+                                                                size={18}
+                                                                strokeWidth={1.25}
+                                                                className={isSelected && option.available ? "text-[#4A0404] mt-0.5" : "text-neutral-400 mt-0.5"}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <span className="block">
+                                                                <span className="flex items-center gap-2">
+                                                                    {isSelected && option.available && (
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" aria-hidden="true" />
+                                                                    )}
+                                                                    <span className="block font-serif text-base text-[#1A1A1A]">{option.label}</span>
+                                                                </span>
+                                                                <span className="block text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-2">
+                                                                    {option.available ? option.eta : "Unavailable"}
+                                                                </span>
+                                                                {option.note && (
+                                                                    <span className="block text-xs text-neutral-500 mt-2 leading-relaxed max-w-sm">
+                                                                        {option.note}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </span>
+                                                        <span className="shrink-0 text-right">
+                                                            <span className="block font-serif text-lg text-[#4A0404]">
+                                                                {option.fee > 0 ? inr(option.fee) : "—"}
+                                                            </span>
+                                                            {option.fee === 0 && (
+                                                                <span className="block text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-1">
+                                                                    Complimentary
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {isPickup && selectedOption?.address && (
+                                    <div className="mt-6 border border-[#D4AF37]/30 bg-[#F9F5F0] px-6 py-5">
+                                        <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-sans mb-3">Collect from</p>
+                                        <p className="font-serif text-lg text-[#1A1A1A] leading-relaxed">{selectedOption.address}</p>
+                                        {selectedOption.note && (
+                                            <p className="text-xs text-neutral-500 mt-3 leading-relaxed">{selectedOption.note}</p>
+                                        )}
+                                    </div>
+                                )}
                             </section>
 
                             <section>
@@ -587,19 +847,43 @@ export default function CheckoutPage() {
                                     </div>
                                 )}
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-neutral-500">Shipping (Royal Complimentary)</span>
-                                    <span className="text-green-600 font-bold tracking-tight">FREE</span>
+                                    <span className="text-neutral-500">
+                                        {isPickup ? "Collection" : "Delivery"}
+                                        {!isPickup && selectedOption?.available && (
+                                            <span className="text-neutral-400"> ({selectedOption.label})</span>
+                                        )}
+                                    </span>
+                                    <span className={shipping > 0 ? "" : "text-[9px] uppercase tracking-[0.3em] text-neutral-500 font-sans"}>
+                                        {isPickup ? "Boutique pickup" : shipping > 0 ? inr(shipping) : "Complimentary"}
+                                    </span>
                                 </div>
-                                <div className="flex justify-between text-lg font-bold border-t pt-4 mt-6">
-                                    <span className="font-serif">Total</span>
-                                    <span className="text-[#4A0404]">₹{total.toLocaleString('en-IN')}</span>
+                                <div className="border-t pt-4 mt-6">
+                                    <div className="flex justify-between text-lg font-bold">
+                                        <span className="font-serif">Total</span>
+                                        <span className="font-serif text-[#4A0404]">₹{total.toLocaleString('en-IN')}</span>
+                                    </div>
+                                    {/* Prices are GST-inclusive, so tax is disclosed beneath the
+                                        total rather than added to it. */}
+                                    {gst?.enabled && gst.gstAmount > 0 && (
+                                        <p className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-2 text-right leading-relaxed">
+                                            {gst.isIntraState
+                                                ? `Inclusive of CGST ${inr(gst.cgst)} + SGST ${inr(gst.sgst)} (${gst.rate}%)`
+                                                : `Inclusive of ${inr(gst.gstAmount)} GST (${gst.rate}%)`}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="mt-10 space-y-4">
                                 <div className="flex items-center gap-3 text-[10px] text-neutral-400 p-4 bg-neutral-50/50 rounded-sm italic">
-                                    <Truck size={14} className="shrink-0" aria-hidden="true" />
-                                    <span>Estimated delivery: 3-5 business days across India.</span>
+                                    {isPickup
+                                        ? <Store size={14} className="shrink-0" aria-hidden="true" />
+                                        : <Truck size={14} className="shrink-0" aria-hidden="true" />}
+                                    <span>
+                                        {selectedOption?.available
+                                            ? `${isPickup ? "Ready for collection" : "Estimated delivery"}: ${selectedOption.eta}.`
+                                            : "Estimated delivery: 3-5 business days across India."}
+                                    </span>
                                 </div>
                             </div>
                         </div>

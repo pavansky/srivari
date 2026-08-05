@@ -15,6 +15,13 @@ interface CartToast {
     tone: 'success' | 'error';
 }
 
+/**
+ * The serviceability lookup falls back to placeholders ("Unknown", "Regional")
+ * when Shiprocket can't resolve the pincode — those must never be stored as a
+ * real city/state, since the state decides the GST place of supply.
+ */
+const isRealPlace = (value?: string) => !!value && !/^(unknown|local|regional)$/i.test(value.trim());
+
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
     const { playBell } = useAudio();
@@ -143,6 +150,11 @@ export default function CartPage() {
                     phone: userDetails.phone,
                     email: userDetails.email,
                     address: userDetails.address,
+                    // Structured destination (when the pincode was verified above)
+                    // so the order can be shipped and taxed without a follow-up.
+                    ...(pincode.length === 6 ? { pincode } : {}),
+                    ...(isRealPlace(shippingDetails.city) ? { city: shippingDetails.city } : {}),
+                    ...(isRealPlace(shippingDetails.state) ? { state: shippingDetails.state } : {}),
                     items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
                     shippingCost: shippingCost,
                     paymentMethod: 'WhatsApp'

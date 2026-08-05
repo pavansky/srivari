@@ -4,8 +4,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    Check, ChevronDown, Download, ExternalLink, Mail, MapPin, MessageCircle,
-    Phone, Plus, Search, ShoppingBag, Truck, X
+    Check, ChevronDown, Download, ExternalLink, FileText, Loader2, Mail, MapPin,
+    MessageCircle, Package, Phone, Plus, Search, ShoppingBag, Truck, X
 } from "lucide-react";
 import { Order } from "@/types";
 import { useAdminData, formatINR, exportCSV } from "@/components/admin/AdminContext";
@@ -13,7 +13,7 @@ import { useToast } from "@/components/admin/Toast";
 import { useConfirm } from "@/components/admin/ConfirmDialog";
 import {
     GlassCard, GlassInput, GlassSelect, FieldLabel, SectionHeading,
-    GoldButton, GhostButton, EmptyState
+    GoldButton, GhostButton, EmptyState, StatusBadge
 } from "@/components/admin/ui";
 
 const ORDER_STATUSES: Order["status"][] = ["Pending", "Placed", "Paid", "Shipped", "Delivered", "Cancelled"];
@@ -98,6 +98,86 @@ function Timeline({ status }: { status: Order["status"] }) {
     );
 }
 
+/* --- Courier tracking modal (live Shiprocket scan history) --- */
+
+type TrackingState = { loading: boolean; error?: string; status?: string; etd?: string; activities: any[] };
+
+function TrackingModal({ orderId, awb, state, onClose }: { orderId: string; awb: string; state: TrackingState | null; onClose: () => void }) {
+    return (
+        <AnimatePresence>
+            {state && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, y: 12 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, y: 12 }}
+                        onClick={e => e.stopPropagation()}
+                        className="max-w-lg w-full max-h-[85vh] overflow-y-auto"
+                    >
+                        <GlassCard className="p-7">
+                            <div className="relative">
+                                <div className="flex items-start justify-between gap-4 mb-5">
+                                    <div className="min-w-0">
+                                        <h3 className="text-xl font-serif bg-gradient-to-r from-[#D4AF37] to-[#F2D06B] bg-clip-text text-transparent">
+                                            Courier Tracking
+                                        </h3>
+                                        <p className="text-[11px] text-white/40 mt-1 font-mono truncate">
+                                            {orderId} · AWB {awb}
+                                        </p>
+                                    </div>
+                                    <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-1" aria-label="Close tracking">
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                {state.loading ? (
+                                    <div className="flex items-center gap-3 text-sm text-white/40 py-8 justify-center">
+                                        <Loader2 size={16} className="animate-spin text-[#D4AF37]" /> Asking the courier…
+                                    </div>
+                                ) : state.error ? (
+                                    <p className="text-sm text-white/50 leading-relaxed py-4">{state.error}</p>
+                                ) : (
+                                    <>
+                                        <div className="flex flex-wrap items-center gap-3 mb-5">
+                                            <StatusBadge status={state.status || "In Transit"} />
+                                            {state.etd && <span className="text-[11px] text-white/40">ETA · {state.etd}</span>}
+                                        </div>
+                                        {state.activities.length === 0 ? (
+                                            <p className="text-sm text-white/40 py-4">
+                                                No scans recorded yet — the courier usually updates within a few hours of pickup.
+                                            </p>
+                                        ) : (
+                                            <ol className="space-y-4">
+                                                {state.activities.slice(0, 12).map((a: any, i: number) => (
+                                                    <li key={i} className="flex gap-3">
+                                                        <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${i === 0 ? "bg-[#D4AF37]" : "bg-white/20"}`} />
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm text-white/75 leading-snug">{a?.activity || a?.status || "Update"}</p>
+                                                            <p className="text-[11px] text-white/30 mt-0.5">
+                                                                {[a?.location, a?.date].filter(Boolean).join(" · ")}
+                                                            </p>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </GlassCard>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
+
 /* --- Single order card --- */
 
 function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; total: number } }) {
@@ -108,6 +188,9 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
     const [status, setStatus] = useState<Order["status"]>(order.status);
     const [showFulfilment, setShowFulfilment] = useState(false);
     const [savingTracking, setSavingTracking] = useState(false);
+    const [booking, setBooking] = useState(false);
+    const [booked, setBooked] = useState<{ awb?: string; courier?: string; labelUrl?: string } | null>(null);
+    const [tracking, setTracking] = useState<TrackingState | null>(null);
     const [fulfilment, setFulfilment] = useState({
         trackingNumber: order.trackingNumber || "",
         trackingUrl: order.trackingUrl || "",
@@ -128,8 +211,105 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
     const phoneDigits = (order.customerPhone || "").replace(/\D/g, "");
     const waHref = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(`Namaste ${firstName}, regarding your order ${order.id} at The Srivari — `)}`;
 
+    /* Shipment fields only reach the ledger once the fulfilment migration is
+       applied, so every read here is optional; a shipment booked in this
+       session fills the gap locally until the ledger carries it. */
+    const raw = order as any;
+    const awb: string | undefined = booked?.awb || raw.awb_code || raw.awbCode || undefined;
+    const courierName: string | undefined = booked?.courier || raw.courier_name || raw.courierName || undefined;
+    const labelUrl: string | undefined = booked?.labelUrl || raw.label_url || raw.labelUrl || undefined;
+    const deliveryMethod: string = raw.delivery_method || raw.deliveryMethod || "Courier";
+    const deliveryLabel = deliveryMethod === "Pickup" ? "Boutique Pickup" : deliveryMethod === "Local" ? "Local Delivery" : "Courier";
+    // A shipped order carrying a tracking number was already dispatched — by
+    // Shiprocket before the migration, or by hand — so it is never re-booked.
+    const alreadyDispatched = !!awb || (!!order.trackingNumber && status === "Shipped");
+    const canShip = !alreadyDispatched && deliveryMethod === "Courier" && status !== "Cancelled" && status !== "Delivered";
+
+    const issueRefund = async () => {
+        try {
+            const res = await fetch("/api/admin/orders/refund", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.id }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (data?.refunded) {
+                toast("success", `Refunded ${formatINR(data.amount ?? order.totalAmount)} · ${data.refundId || "Razorpay"}`);
+            } else {
+                toast("error", data?.reason || (res.status === 401 ? "Session expired — please log in again." : "Refund could not be issued."));
+            }
+        } catch {
+            toast("error", "Network error — the refund was not issued.");
+        }
+    };
+
+    const handleShip = async () => {
+        const ok = await confirm({
+            title: "Book this shipment?",
+            message: `Shiprocket will create the parcel for ${order.customerName}, auto-select its recommended courier for the delivery pincode, assign an AWB, request a pickup and mark #${order.id} as Shipped.`,
+            confirmText: "Book Shipment",
+            cancelText: "Not Yet",
+            type: "info",
+        });
+        if (!ok) return;
+
+        setBooking(true);
+        try {
+            const res = await fetch("/api/admin/orders/ship", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.id }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data?.success) {
+                // Shiprocket's own wording is the most actionable thing to show.
+                toast("error", data?.message || (res.status === 401 ? "Session expired — please log in again." : "Could not book the shipment."));
+                return;
+            }
+            setBooked({ awb: data.awb, courier: data.courier, labelUrl: data.labelUrl || undefined });
+            setStatus("Shipped");
+            toast("success", `${data.courier || "Courier"} booked · AWB ${data.awb}${data.pickup?.scheduled ? " · pickup requested" : ""}`);
+            if (data.pickup && !data.pickup.scheduled) toast("info", data.pickup.message);
+            if (data.warning) toast("info", data.warning);
+            await refresh();
+        } catch {
+            toast("error", "Network error — the shipment was not booked.");
+        } finally {
+            setBooking(false);
+        }
+    };
+
+    const handleTrack = async () => {
+        if (!awb) return;
+        setTracking({ loading: true, activities: [] });
+        try {
+            const res = await fetch(`/api/admin/orders/track?awb=${encodeURIComponent(awb)}`);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setTracking({
+                    loading: false,
+                    activities: [],
+                    error: data?.error || (res.status === 401 ? "Session expired — please log in again." : "Tracking is unavailable right now."),
+                });
+                return;
+            }
+            setTracking({
+                loading: false,
+                status: data?.status,
+                etd: data?.etd,
+                activities: Array.isArray(data?.activities) ? data.activities : [],
+            });
+        } catch {
+            setTracking({ loading: false, activities: [], error: "Network error — could not reach the courier." });
+        }
+    };
+
     const handleStatusChange = async (next: Order["status"]) => {
         if (next === status) return;
+        // A prepaid order can only be refunded while it is still in a paid
+        // state — refundOrder() rejects a Cancelled one — so the refund is
+        // decided here and issued before the cancellation is written.
+        let refundAfterConfirm = false;
         if (next === "Cancelled") {
             const ok = await confirm({
                 title: "Cancel this order?",
@@ -139,7 +319,18 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
                 type: "danger",
             });
             if (!ok) return;
+
+            if (order.paymentMethod === "Razorpay" && ["Paid", "Shipped", "Delivered"].includes(status)) {
+                refundAfterConfirm = await confirm({
+                    title: "Refund the payment?",
+                    message: `${formatINR(order.totalAmount)} was paid online for #${order.id}. Refund it to the original payment method now? Razorpay usually settles a refund in 5–7 working days.`,
+                    confirmText: "Issue Refund",
+                    cancelText: "Skip for Now",
+                    type: "warning",
+                });
+            }
         }
+        if (refundAfterConfirm) await issueRefund();
         const prev = status;
         setStatus(next);
         try {
@@ -280,6 +471,58 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
                     </p>
                 )}
 
+                {/* Shipment row: delivery channel, courier/AWB, one-click booking */}
+                <div className="border-t border-white/[0.06] pt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                        {deliveryLabel}
+                    </span>
+                    {awb && (
+                        <>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">
+                                Courier · <span className="text-white/70 normal-case tracking-normal">{courierName || "Assigned"}</span>
+                            </span>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 whitespace-nowrap">
+                                AWB · <span className="text-[#D4AF37] font-mono tracking-normal">{awb}</span>
+                            </span>
+                        </>
+                    )}
+                    <div className="flex-1" />
+                    <div className="flex flex-wrap items-center gap-2">
+                        {canShip && (
+                            <GoldButton onClick={handleShip} disabled={booking} className="!px-4 !py-2 text-xs">
+                                {booking ? <Loader2 size={13} className="animate-spin" /> : <Package size={13} />}
+                                {booking ? "Booking…" : "Ship Order"}
+                            </GoldButton>
+                        )}
+                        {awb && (
+                            <GhostButton onClick={handleTrack}>
+                                <Truck size={13} className="text-[#D4AF37]" /> Track
+                            </GhostButton>
+                        )}
+                        {labelUrl && (
+                            <a
+                                href={labelUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={GHOST_ANCHOR}
+                                aria-label={`Open shipping label for order ${order.id}`}
+                            >
+                                <FileText size={13} /> Label
+                            </a>
+                        )}
+                        <a
+                            href={`/invoice/${encodeURIComponent(order.id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={GHOST_ANCHOR}
+                            aria-label={`Open invoice for order ${order.id}`}
+                        >
+                            <FileText size={13} className="text-[#D4AF37]" /> Invoice
+                        </a>
+                    </div>
+                </div>
+
                 {/* Fulfilment toggle + contact */}
                 <div className="flex flex-wrap items-center gap-2">
                     <GhostButton onClick={() => setShowFulfilment(v => !v)} aria-expanded={showFulfilment}>
@@ -322,6 +565,9 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden !mt-2"
                         >
+                            <p className="text-[11px] text-white/30 pt-3">
+                                Manual override — for parcels booked outside Shiprocket. A booked shipment fills these in automatically.
+                            </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
                                 <div>
                                     <FieldLabel>Tracking Number</FieldLabel>
@@ -359,6 +605,8 @@ function OrderCard({ order, buyer }: { order: Order; buyer?: { count: number; to
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                <TrackingModal orderId={order.id} awb={awb || ""} state={tracking} onClose={() => setTracking(null)} />
             </div>
         </GlassCard>
     );
