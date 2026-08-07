@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/adminAuth';
 import { updateOrder } from '@/lib/db';
 import { classify } from '@/lib/gst';
+import { notifyOrderShipped } from '@/lib/notify';
 import { DEFAULT_WEIGHT_KG, SELLER } from '@/config/commerce';
 import {
     assignAWB,
@@ -305,6 +306,13 @@ export async function POST(request: Request) {
             { awb_code: awb, courier_name: courier },
             { tracking_number: awb, tracking_url: trackingUrl }
         );
+
+        // "Your saree has left the boutique" — sent the moment the AWB exists,
+        // because that is the first point at which the customer has something
+        // to track. The courier/AWB/URL are passed explicitly since the row we
+        // hold in memory predates this write (and `persist` may have degraded
+        // to the legacy columns). notify* never throws; the .catch is a net.
+        await notifyOrderShipped(order, { courier, awb, trackingUrl }).catch(() => undefined);
 
         // --- 3. Request pickup (never fatal — the parcel is already booked) --
         let pickup = { scheduled: false, message: 'Pickup was not requested' };

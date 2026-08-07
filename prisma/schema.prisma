@@ -31,6 +31,7 @@ model Product {
   supplier          Supplier?              @relation(fields: [supplierId], references: [id])
   transactions      InventoryTransaction[]
   reviews           Review[]
+  channelListings   ChannelListing[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   deletedAt         DateTime? // Soft-delete mechanism
@@ -152,6 +153,10 @@ model Order {
   // Fulfilment channel: Courier (Shiprocket) | Local (own delivery) | Pickup (boutique)
   delivery_method String @default("Courier")
 
+  // Sales channel the order originated from: Web | Amazon | ONDC | Instagram | WhatsApp | Manual
+  channel          String  @default("Web")
+  channel_order_id String? @unique
+
   // GST snapshot taken at order time (rates can change; invoices must not)
   taxable_amount  Float?
   gst_amount      Float?
@@ -172,4 +177,23 @@ model Order {
   refunded_at   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+/// One product's presence on one sales channel (Amazon, ONDC, ...).
+/// Keeps external ids and sync state so listing is config, not code.
+model ChannelListing {
+  id           String    @id @default(uuid())
+  channel      String
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  externalId   String? // ASIN / channel SKU / ONDC item id
+  status       String    @default("draft") // draft | listed | paused | error
+  lastSyncedAt DateTime?
+  lastError    String?
+  payload      Json? // last submitted channel payload, for debugging
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([channel, productId])
+  @@index([channel, status])
 }

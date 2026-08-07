@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { updateOrderPayment } from '@/lib/db';
+import { notifyOrderConfirmed } from '@/lib/notify';
 
 export async function POST(req: Request) {
     try {
@@ -16,7 +17,15 @@ export async function POST(req: Request) {
         const isAuthentic = expectedSignature === razorpay_signature;
 
         if (isAuthentic) {
-            await updateOrderPayment(razorpay_order_id, razorpay_payment_id);
+            const order = await updateOrderPayment(razorpay_order_id, razorpay_payment_id);
+
+            // WhatsApp order confirmation. Deliberately after the payment is
+            // recorded and deliberately incapable of failing it: notify* never
+            // throws, and the .catch is a second net. Replays (the client
+            // callback firing twice) are suppressed inside notify.ts by the
+            // once-per-order guard plus the row's own updatedAt freshness.
+            await notifyOrderConfirmed(order, { rowWrittenByThisEvent: true }).catch(() => undefined);
+
             return NextResponse.json({ success: true, message: "Payment verified successfully" });
         } else {
             return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 400 });

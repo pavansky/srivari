@@ -16,6 +16,7 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductActions from "@/components/product/ProductActions";
 import RecentlyViewed from "@/components/product/RecentlyViewed";
 import ReviewsSection from "@/components/reviews/ReviewsSection";
+import { DISPATCH_CUTOFF_HOUR, getAddOns } from "@/config/customization";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,13 @@ function splitDescription(description: string): { narrative: string; care: strin
         return { narrative: narrative.trim(), care: (care || "").trim() || null };
     }
     return { narrative: description || "", care: null };
+}
+
+/** "3 PM" / "12 noon" — the dispatch cutoff, in words a customer reads. */
+function cutoffLabel(hour: number): string {
+    if (hour === 0) return "midnight";
+    if (hour === 12) return "12 noon";
+    return `${hour % 12 || 12} ${hour < 12 ? "AM" : "PM"}`;
 }
 
 function categoryDetails(category: string): { material: string; weave: string } {
@@ -121,6 +129,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     const publicProduct = toPublicProduct(product);
     const { narrative, care } = splitDescription(product.description);
     const details = categoryDetails(product.category);
+    const addOns = getAddOns();
 
     const relatedProducts = catalogue
         .filter(
@@ -278,12 +287,45 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                                                 </p>
                                             ),
                                         },
+                                        ...(addOns.length
+                                            ? [
+                                                  {
+                                                      title: "Finishing & Fit",
+                                                      content: (
+                                                          <div className="text-xs font-sans text-neutral-600 leading-relaxed space-y-3 pt-2">
+                                                              <p>
+                                                                  A saree arrives unstitched. Choose any of these above and we finish it
+                                                                  in our own atelier before it ships — nothing is sent out to a third party.
+                                                              </p>
+                                                              <ul className="space-y-2">
+                                                                  {addOns.map((addOn) => (
+                                                                      <li key={addOn.code} className="flex justify-between gap-4">
+                                                                          <span>{addOn.label}</span>
+                                                                          <span className="shrink-0 text-[#4A0404]">
+                                                                              ₹{addOn.price.toLocaleString("en-IN")}
+                                                                              {addOn.addsDays > 0
+                                                                                  ? ` · +${addOn.addsDays} day${addOn.addsDays > 1 ? "s" : ""}`
+                                                                                  : ""}
+                                                                          </span>
+                                                                      </li>
+                                                                  ))}
+                                                              </ul>
+                                                          </div>
+                                                      ),
+                                                  },
+                                              ]
+                                            : []),
                                         {
                                             title: "Authenticity & Shipping",
                                             content: (
                                                 <div className="text-xs font-sans text-neutral-600 leading-relaxed space-y-3 pt-2">
                                                     <p>Includes Silk Mark Certificate of Authenticity.</p>
-                                                    <p>Ships within 24 hours. Complimentary express delivery globally on orders above ₹20,000.</p>
+                                                    <p>
+                                                        Confirmed before {cutoffLabel(DISPATCH_CUTOFF_HOUR)} IST, an unfinished drape leaves
+                                                        us the same working day; anything with stitching leaves once the atelier is done.
+                                                        We do not dispatch on Sundays.
+                                                    </p>
+                                                    <p>Complimentary express delivery globally on orders above ₹20,000.</p>
                                                 </div>
                                             ),
                                         },

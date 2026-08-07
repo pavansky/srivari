@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useCart } from "@/context/CartContext";
+import { useCart, lineTotal } from "@/context/CartContext";
 import Footer from "@/components/Footer";
-import { Truck, ShieldCheck, ShoppingBag, MapPin, CheckCircle2, WalletCards, TicketPercent, X, AlertCircle, Store, Bike } from "lucide-react";
+import { Truck, ShieldCheck, ShoppingBag, MapPin, WalletCards, TicketPercent, X, AlertCircle, Store, Bike, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Script from "next/script";
 import SrivariImage from "@/components/SrivariImage";
+import {
+    addOnsExtraDays,
+    deliveryPromise,
+    findAddOn,
+    formatMeasurements,
+} from "@/config/customization";
 
 interface AppliedCoupon {
     code: string;
@@ -50,11 +56,26 @@ const METHOD_ICON: Record<DeliveryMethod, typeof Truck> = {
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
+/**
+ * How the customer chooses to pay. UPI and Cards both settle through the same
+ * Razorpay order — the only difference is which instrument Razorpay opens on.
+ * UPI leads because it is how most of India actually pays.
+ */
+type PayChoice = 'UPI' | 'Card' | 'COD';
+
+const PAY_CHOICES: { choice: PayChoice; title: string; blurb: string; icon: typeof Truck }[] = [
+    { choice: 'UPI', title: 'UPI', blurb: 'Google Pay, PhonePe, Paytm, BHIM', icon: Smartphone },
+    { choice: 'Card', title: 'Cards & NetBanking', blurb: 'Credit, debit, all major banks', icon: WalletCards },
+    { choice: 'COD', title: 'Cash on Delivery', blurb: 'Pay at your doorstep', icon: Truck },
+];
+
 export default function CheckoutPage() {
     const { cart, clearCart } = useCart();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'COD'>('Razorpay');
+    const [payChoice, setPayChoice] = useState<PayChoice>('UPI');
+    // UPI and Cards are the same Razorpay order — only the opening screen differs.
+    const paymentMethod: 'Razorpay' | 'COD' = payChoice === 'COD' ? 'COD' : 'Razorpay';
     const [checkoutError, setCheckoutError] = useState("");
 
     // Form State
@@ -69,7 +90,21 @@ export default function CheckoutPage() {
         phone: ""
     });
 
-    const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    // Finishing add-ons are part of the goods total — /api/orders/create derives
+    // the identical figure from config, so the two can never drift apart.
+    const subtotal = cart.reduce((acc, item) => acc + lineTotal(item), 0);
+
+    // The whole order ships together, so the atelier time is the slowest line's.
+    const stitchingDays = cart.reduce(
+        (most, item) => Math.max(most, addOnsExtraDays(item.options || [])),
+        0
+    );
+    const hasAddOns = cart.some(item => (item.options || []).length > 0);
+
+    // A delivery date needs a real clock; take it after mount so the server-
+    // rendered markup and the browser can never disagree across a cutoff.
+    const [now, setNow] = useState<Date | null>(null);
+    useEffect(() => setNow(new Date()), []);
 
     // Coupon state
     const [couponInput, setCouponInput] = useState("");
@@ -92,6 +127,21 @@ export default function CheckoutPage() {
     const isPickup = deliveryMethod === "Pickup";
     const shipping = selectedOption && selectedOption.available ? selectedOption.fee : 0;
     const total = Math.max(0, subtotal - discount) + shipping;
+
+    /**
+     * Turns a channel's ETA into a date — "Delivered by Tue, 12 Aug". Stays
+     * honest: when the courier's ETA can't be read the helper falls back to a
+     * range AND says "Estimated" rather than inventing a confident promise.
+     */
+    const promiseFor = (option: DeliveryOption | null) => {
+        if (!now || !option || !option.available) return null;
+        const base = deliveryPromise({ eta: option.eta, extraDays: stitchingDays, now });
+        if (option.method !== "Pickup") return base;
+        const lead = base.estimated ? "Ready around" : "Ready by";
+        return { ...base, lead, text: `${lead} ${base.label}` };
+    };
+
+    const selectedPromise = promiseFor(selectedOption);
 
     const [user, setUser] = useState<any>(null);
     const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -162,7 +212,8 @@ export default function CheckoutPage() {
                         discount,
                         weightKg,
                         state: formData.state,
-                        items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                        // options included so the GST preview covers finishing services too
+                        items: cart.map(item => ({ id: item.id, quantity: item.quantity, options: item.options })),
                     }),
                 });
                 const data = await res.json();
@@ -295,7 +346,15 @@ export default function CheckoutPage() {
             const orderPayload = {
                 ...formData,
                 address: composedAddress,
-                items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                // Only the add-on CODES travel — the server prices them from
+                // config, exactly as this page did, and never trusts a number
+                // sent from here.
+                items: cart.map(item => ({
+                    id: item.id,
+                    quantity: item.quantity,
+                    options: item.options,
+                    measurements: item.measurements,
+                })),
                 // The server re-derives this for Pickup/Local; it is only
                 // authoritative for a courier (Shiprocket-quoted) shipment.
                 shippingCost: shipping,
@@ -382,6 +441,10 @@ export default function CheckoutPage() {
                     name: `${formData.firstName} ${formData.lastName}`,
                     email: formData.email,
                     contact: formData.phone,
+                    // Presentation hint only — Razorpay opens on UPI instead of
+                    // cards. Every instrument stays available either way, so an
+                    // unrecognised value can never block the payment.
+                    ...(payChoice === 'UPI' ? { method: 'upi' } : {}),
                 },
                 theme: { color: "#4A0404" },
             };
@@ -589,6 +652,7 @@ export default function CheckoutPage() {
                                         {deliveryOptions.map((option) => {
                                             const Icon = METHOD_ICON[option.method];
                                             const isSelected = option.method === deliveryMethod;
+                                            const optionPromise = promiseFor(option);
                                             return (
                                                 <label
                                                     key={option.method}
@@ -628,9 +692,17 @@ export default function CheckoutPage() {
                                                                     )}
                                                                     <span className="block font-serif text-base text-[#1A1A1A]">{option.label}</span>
                                                                 </span>
+                                                                {/* A date beats "3-5 business days" — and it
+                                                                    already carries any atelier time. */}
                                                                 <span className="block text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-2">
-                                                                    {option.available ? option.eta : "Unavailable"}
+                                                                    {optionPromise ? optionPromise.text : option.available ? option.eta : "Unavailable"}
                                                                 </span>
+                                                                {optionPromise && (
+                                                                    <span className="block text-[9px] uppercase tracking-[0.3em] text-neutral-300 font-sans mt-1">
+                                                                        {option.eta}
+                                                                        {stitchingDays > 0 ? ` · incl. ${stitchingDays} day${stitchingDays > 1 ? "s" : ""} in the atelier` : ""}
+                                                                    </span>
+                                                                )}
                                                                 {option.note && (
                                                                     <span className="block text-xs text-neutral-500 mt-2 leading-relaxed max-w-sm">
                                                                         {option.note}
@@ -666,45 +738,65 @@ export default function CheckoutPage() {
                                 )}
                             </section>
 
-                            <section>
-                                <h2 className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">Payment Method</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPaymentMethod('Razorpay')}
-                                        className={`flex items-center justify-between p-5 border rounded-sm transition-all group ${paymentMethod === 'Razorpay'
-                                            ? "border-gold bg-gold/5 shadow-inner"
-                                            : "border-neutral-100 hover:border-gold/30"
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <WalletCards className={paymentMethod === 'Razorpay' ? "text-gold" : "text-neutral-400"} aria-hidden="true" />
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold uppercase tracking-wider">Online Payment</p>
-                                                <p className="text-[10px] text-neutral-500">UPI, Cards, NetBanking</p>
-                                            </div>
-                                        </div>
-                                        {paymentMethod === 'Razorpay' && <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setPaymentMethod('COD')}
-                                        className={`flex items-center justify-between p-5 border rounded-sm transition-all group ${paymentMethod === 'COD'
-                                            ? "border-gold bg-gold/5 shadow-inner"
-                                            : "border-neutral-100 hover:border-gold/30"
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Truck className={paymentMethod === 'COD' ? "text-gold" : "text-neutral-400"} aria-hidden="true" />
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold uppercase tracking-wider">Cash on Delivery</p>
-                                                <p className="text-[10px] text-neutral-500">Pay at your doorstep</p>
-                                            </div>
-                                        </div>
-                                        {paymentMethod === 'COD' && <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />}
-                                    </button>
+                            {/* --- Payment: UPI first, the way India pays ------------------ */}
+                            <section aria-labelledby="co-payment-method">
+                                <h2 id="co-payment-method" className="text-2xl font-serif text-[#4A0404] mb-6 border-l-2 border-[#D4AF37] pl-4">
+                                    Payment Method
+                                </h2>
+                                <div className="space-y-3" role="radiogroup" aria-label="Payment method">
+                                    {PAY_CHOICES.map(({ choice, title, blurb, icon: Icon }) => {
+                                        const isSelected = payChoice === choice;
+                                        return (
+                                            <label key={choice} className="block cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="payChoice"
+                                                    value={choice}
+                                                    checked={isSelected}
+                                                    onChange={() => setPayChoice(choice)}
+                                                    className="peer sr-only"
+                                                />
+                                                <span
+                                                    className={`flex items-start justify-between gap-5 border px-5 py-4 bg-white transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] peer-focus-visible:ring-1 peer-focus-visible:ring-[#D4AF37] ${isSelected
+                                                        ? "border-[#4A0404] shadow-[0_10px_40px_rgba(74,4,4,0.06)]"
+                                                        : "border-black/10 hover:border-[#D4AF37]/50"
+                                                        }`}
+                                                >
+                                                    <span className="flex items-start gap-4">
+                                                        <Icon
+                                                            size={18}
+                                                            strokeWidth={1.25}
+                                                            className={isSelected ? "text-[#4A0404] mt-0.5" : "text-neutral-400 mt-0.5"}
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span className="block">
+                                                            <span className="flex items-center gap-2">
+                                                                {isSelected && (
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" aria-hidden="true" />
+                                                                )}
+                                                                <span className="block font-serif text-base text-[#1A1A1A]">{title}</span>
+                                                            </span>
+                                                            <span className="block text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-2">
+                                                                {blurb}
+                                                            </span>
+                                                        </span>
+                                                    </span>
+                                                    {choice === 'UPI' && (
+                                                        <span className="shrink-0 text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-sans pt-1">
+                                                            Fastest
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
+                                {payChoice !== 'COD' && (
+                                    <p className="mt-4 flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans">
+                                        <ShieldCheck size={12} aria-hidden="true" />
+                                        Settled securely by Razorpay — every method stays available
+                                    </p>
+                                )}
                             </section>
 
                             <section>
@@ -741,7 +833,11 @@ export default function CheckoutPage() {
                                             <span className="w-4 h-4 border-2 border-[#D4AF37]/20 border-t-[#D4AF37] rounded-full animate-spin"></span>
                                             Processing...
                                         </span>
-                                    ) : paymentMethod === 'COD' ? "Place COD Order" : "Proceed to Secure Payment"}
+                                    ) : payChoice === 'COD'
+                                        ? "Place COD Order"
+                                        : payChoice === 'UPI'
+                                            ? "Pay by UPI"
+                                            : "Proceed to Secure Payment"}
                                 </button>
                                 <div className="mt-6 flex items-center justify-center gap-6 opacity-30">
                                     <ShieldCheck size={20} aria-hidden="true" />
@@ -758,7 +854,7 @@ export default function CheckoutPage() {
 
                             <div className="space-y-6 max-h-[300px] overflow-y-auto pr-4 mb-8 custom-scrollbar">
                                 {cart.map((item) => (
-                                    <div key={item.id} className="flex gap-4">
+                                    <div key={item.uniqueId} className="flex gap-4">
                                         <div className="relative w-16 h-20 bg-neutral-100 shrink-0">
                                             <SrivariImage
                                                 src={item.images[0]}
@@ -771,12 +867,37 @@ export default function CheckoutPage() {
                                                 {item.quantity}
                                             </span>
                                         </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-medium line-clamp-1">{item.name}</h4>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between gap-3">
+                                                <h4 className="text-sm font-medium line-clamp-1">{item.name}</h4>
+                                                <span className="text-sm font-medium shrink-0">
+                                                    ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                                                </span>
+                                            </div>
                                             <p className="text-[10px] uppercase text-neutral-400 mt-1">{item.category}</p>
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+
+                                            {/* Finishing add-ons, priced under the saree they belong to */}
+                                            {(item.options || []).length > 0 && (
+                                                <ul className="mt-3 space-y-1.5 border-l border-[#D4AF37]/40 pl-3">
+                                                    {(item.options || []).map((code) => {
+                                                        const addOn = findAddOn(code);
+                                                        if (!addOn) return null;
+                                                        return (
+                                                            <li key={code} className="flex justify-between gap-3 text-[11px]">
+                                                                <span className="text-neutral-500 line-clamp-1">{addOn.label}</span>
+                                                                <span className="shrink-0 text-neutral-600">
+                                                                    ₹{(addOn.price * item.quantity).toLocaleString('en-IN')}
+                                                                </span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                    {item.measurements && Object.keys(item.measurements).length > 0 && (
+                                                        <li className="text-[10px] leading-relaxed text-neutral-400">
+                                                            {formatMeasurements(item.measurements)}
+                                                        </li>
+                                                    )}
+                                                </ul>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -869,22 +990,46 @@ export default function CheckoutPage() {
                                             {gst.isIntraState
                                                 ? `Inclusive of CGST ${inr(gst.cgst)} + SGST ${inr(gst.sgst)} (${gst.rate}%)`
                                                 : `Inclusive of ${inr(gst.gstAmount)} GST (${gst.rate}%)`}
+                                            {hasAddOns && " · on the sarees"}
+                                        </p>
+                                    )}
+                                    {/* Stitching is a service under its own HSN, so it is taxed as its
+                                        own line — the invoice shows the full, authoritative breakup. */}
+                                    {gst?.enabled && hasAddOns && (
+                                        <p className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-1 text-right leading-relaxed">
+                                            Finishing services taxed separately on your invoice
                                         </p>
                                     )}
                                 </div>
                             </div>
 
+                            {/* The promise, restated where the money is confirmed. */}
                             <div className="mt-10 space-y-4">
-                                <div className="flex items-center gap-3 text-[10px] text-neutral-400 p-4 bg-neutral-50/50 rounded-sm italic">
-                                    {isPickup
-                                        ? <Store size={14} className="shrink-0" aria-hidden="true" />
-                                        : <Truck size={14} className="shrink-0" aria-hidden="true" />}
-                                    <span>
-                                        {selectedOption?.available
-                                            ? `${isPickup ? "Ready for collection" : "Estimated delivery"}: ${selectedOption.eta}.`
-                                            : "Estimated delivery: 3-5 business days across India."}
-                                    </span>
-                                </div>
+                                {selectedPromise ? (
+                                    <div className="border border-[#D4AF37]/30 bg-[#F9F5F0] px-5 py-4">
+                                        <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-sans">
+                                            {selectedPromise.lead}
+                                        </p>
+                                        <p className="font-serif text-lg text-[#1A1A1A] mt-2">{selectedPromise.label}</p>
+                                        <p className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-sans mt-2 leading-relaxed">
+                                            {selectedOption?.eta}
+                                            {stitchingDays > 0
+                                                ? ` · ${stitchingDays} day${stitchingDays > 1 ? "s" : ""} in the atelier`
+                                                : ""}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3 text-[10px] text-neutral-400 p-4 bg-neutral-50/50 rounded-sm italic">
+                                        {isPickup
+                                            ? <Store size={14} className="shrink-0" aria-hidden="true" />
+                                            : <Truck size={14} className="shrink-0" aria-hidden="true" />}
+                                        <span>
+                                            {selectedOption?.available
+                                                ? `${isPickup ? "Ready for collection" : "Estimated delivery"}: ${selectedOption.eta}.`
+                                                : "Estimated delivery: 3-5 business days across India."}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -14,6 +14,14 @@ import {
     localDeliveryFee,
 } from '@/config/commerce';
 import { GstSummary, computeGst, invoiceNumber } from '@/lib/gst';
+import { notifyOrderConfirmed } from '@/lib/notify';
+import {
+    BLOUSE_CODE,
+    findAddOn,
+    formatMeasurements,
+    normalizeAddOnCodes,
+    sanitizeMeasurements,
+} from '@/config/customization';
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID || 'dummy_key',
@@ -27,7 +35,41 @@ const OFFLINE_METHODS = ['COD', 'WhatsApp', 'Manual'];
 
 const MAX_SHIPPING = 5000;
 
+/** No real saree order has this many lines; anything beyond it is abuse. */
+const MAX_ITEM_LINES = 100;
+
 const DELIVERY_METHODS: DeliveryMethod[] = ['Courier', 'Local', 'Pickup'];
+
+/**
+ * One line of the order as it is stored in the `items` JSON column.
+ *
+ * A saree line carries `productId` (and therefore holds stock). A finishing
+ * add-on line deliberately does NOT: lib/db's stock adjuster walks these items
+ * looking for a `productId`, so a service line must be invisible to it while
+ * still reaching the invoice and the GST computation with its own HSN.
+ */
+interface OrderLine {
+    productId?: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    /** Add-on codes chosen for this saree — set on the saree line. */
+    options?: string[];
+    /** The add-on code — set on a service line. */
+    addOn?: string;
+    /** Blouse measurements in inches. */
+    measurements?: Record<string, string>;
+    hsnCode?: string;
+    gstRate?: number;
+}
+
+/** A cart line as it arrives, once the client's claims have been discarded. */
+interface RequestedLine {
+    productId: string;
+    quantity: number;
+    options: string[];
+    measurements?: Record<string, string>;
+}
 
 /** Products, selected explicitly so a not-yet-migrated column can't 500 checkout. */
 const PRODUCT_BASE_SELECT = {
@@ -199,14 +241,35 @@ export async function POST(request: Request) {
             }
         }
 
+        if (items.length > MAX_ITEM_LINES) {
+            return NextResponse.json({ success: false, message: 'Too many items in this order' }, { status: 400 });
+        }
+
         // --- Server-side price derivation: never trust client prices/totals ---
-        // Aggregate duplicate lines first so the same product repeated in the
-        // payload can't sneak past a per-line stock comparison.
+        // The same saree finished two different ways is two lines, so lines are
+        // keyed on the product AND its add-ons — while the stock comparison
+        // still aggregates per product, so repeats can't slip past it.
+        const requestedLines = new Map<string, RequestedLine>();
         const requestedQty = new Map<string, number>();
         for (const i of items) {
-            const pid = i.id || i.productId;
+            if (!i || typeof i !== 'object') continue;
+            const pid = String(i.id || i.productId || '').trim();
             if (!pid) continue;
             const quantity = Math.max(1, Math.min(Number(i.quantity) || 1, 100));
+            // Only the CODES are honoured — prices come from config below.
+            const options = normalizeAddOnCodes(i.options);
+            const measurements = options.includes(BLOUSE_CODE)
+                ? sanitizeMeasurements(i.measurements)
+                : undefined;
+
+            const key = `${pid}::${[...options].sort().join(',')}`;
+            const existing = requestedLines.get(key);
+            if (existing) {
+                existing.quantity += quantity;
+                if (measurements && Object.keys(measurements).length) existing.measurements = measurements;
+            } else {
+                requestedLines.set(key, { productId: pid, quantity, options, measurements });
+            }
             requestedQty.set(pid, (requestedQty.get(pid) || 0) + quantity);
         }
 
@@ -214,9 +277,8 @@ export async function POST(request: Request) {
         const dbProducts = await loadOrderProducts(productIds);
         const productMap = new Map(dbProducts.map(p => [p.id, p]));
 
-        const verifiedItems: { productId: string; productName: string; quantity: number; price: number }[] = [];
-        // Same lines, carrying the DB's tax classification — used for GST only.
-        const taxItems: { price: number; quantity: number; category?: string | null; name?: string | null; hsnCode?: string | null; gstRate?: number | null }[] = [];
+        // Availability and stock are checked against the total across every
+        // line of a saree — two finishes still draw on the same single piece.
         for (const [pid, quantity] of requestedQty) {
             const product = productMap.get(pid);
             if (!product || product.deletedAt) {
@@ -225,20 +287,66 @@ export async function POST(request: Request) {
             if (product.stock < quantity) {
                 return NextResponse.json({ success: false, message: `Insufficient stock for ${product.name}` }, { status: 409 });
             }
-            verifiedItems.push({ productId: product.id, productName: product.name, quantity, price: product.price });
+        }
+
+        const verifiedItems: OrderLine[] = [];
+        // Same lines, carrying the tax classification — used for GST only.
+        const taxItems: { price: number; quantity: number; category?: string | null; name?: string | null; hsnCode?: string | null; gstRate?: number | null }[] = [];
+        for (const line of requestedLines.values()) {
+            const product = productMap.get(line.productId);
+            if (!product) continue; // already rejected above; belt and braces
+
+            verifiedItems.push({
+                productId: product.id,
+                productName: product.name,
+                quantity: line.quantity,
+                price: product.price,
+                ...(line.options.length ? { options: line.options } : {}),
+                ...(line.measurements && Object.keys(line.measurements).length
+                    ? { measurements: line.measurements }
+                    : {}),
+            });
             taxItems.push({
                 price: product.price,
-                quantity,
+                quantity: line.quantity,
                 category: product.category,
                 name: product.name,
                 hsnCode: product.hsnCode ?? null,
                 gstRate: product.gstRate ?? null,
             });
+
+            // Finishing add-ons: priced from config, never from the payload, and
+            // appended as their own lines so each carries its service HSN onto
+            // the tax invoice instead of hiding inside the saree's price.
+            for (const code of line.options) {
+                const addOn = findAddOn(code);
+                if (!addOn || addOn.price <= 0) continue;
+                verifiedItems.push({
+                    productName: `${addOn.label} — ${product.name}`,
+                    quantity: line.quantity,
+                    price: addOn.price,
+                    addOn: addOn.code,
+                    ...(addOn.hsn ? { hsnCode: addOn.hsn } : {}),
+                    ...(addOn.gstRate != null ? { gstRate: addOn.gstRate } : {}),
+                    ...(code === BLOUSE_CODE && line.measurements && Object.keys(line.measurements).length
+                        ? { measurements: line.measurements }
+                        : {}),
+                });
+                taxItems.push({
+                    price: addOn.price,
+                    quantity: line.quantity,
+                    category: null,
+                    name: addOn.label,
+                    hsnCode: addOn.hsn ?? null,
+                    gstRate: addOn.gstRate ?? null,
+                });
+            }
         }
         if (verifiedItems.length === 0) {
             return NextResponse.json({ success: false, message: 'Cart is empty' }, { status: 400 });
         }
 
+        // Sarees + finishing services, all at server-derived prices.
         const subtotal = verifiedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
         // Shipping is derived from the delivery channel, not from the client:
@@ -328,6 +436,12 @@ export async function POST(request: Request) {
             await persistOrderExtras(internalOrderId, created);
             if (coupon) await redeemCoupon(coupon.code);
 
+            // WhatsApp/SMS confirmation for offline orders (Razorpay orders are
+            // notified at payment verification instead, once money has moved).
+            // Never allowed to affect the customer's response.
+            await notifyOrderConfirmed(created ?? { ...baseOrder, id: internalOrderId, status: 'Placed' })
+                .catch(() => undefined);
+
             const subject = `Order Confirmation (${method}): ${internalOrderId} - The Srivari`;
             await sendEmail(email, subject, generateEmailHtml(fullName, internalOrderId, verifiedItems, total, shippingCost, coupon, gst, deliveryMethod)).catch(e =>
                 console.error('Order email failed:', e)
@@ -389,10 +503,23 @@ export async function POST(request: Request) {
     }
 }
 
+/**
+ * Measurements and tailor notes are free text the customer typed, and this
+ * email is HTML — escape before interpolating.
+ */
+function escapeHtml(value: string): string {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function generateEmailHtml(
     name: string,
     orderId: string,
-    items: { productName: string; price: number; quantity: number }[],
+    items: { productName: string; price: number; quantity: number; addOn?: string; measurements?: Record<string, string> }[],
     total: number,
     shipping: number,
     coupon?: { code: string; discount: number },
@@ -422,7 +549,15 @@ function generateEmailHtml(
             <div style="background: #FAF8F5; padding: 15px; margin: 20px 0;">
                 <h3 style="margin-top: 0;">Order Summary</h3>
                 <ul style="padding-left: 20px;">
-                    ${items.map(item => `<li>${item.productName} × ${item.quantity} — ₹${(item.price * item.quantity).toLocaleString('en-IN')}</li>`).join('')}
+                    ${items.map(item => {
+        // Finishing services are indented under the saree they belong to, and
+        // the measurements we will cut to are confirmed back to the customer.
+        const fit = item.measurements ? escapeHtml(formatMeasurements(item.measurements)) : '';
+        return `<li${item.addOn ? ' style="list-style: none; margin-left: 12px; color: #666; font-size: 13px;"' : ''}>`
+            + `${item.addOn ? '+ ' : ''}${escapeHtml(item.productName)} × ${item.quantity} — ₹${(item.price * item.quantity).toLocaleString('en-IN')}`
+            + (fit ? `<br><span style="font-size: 12px; color: #888;">${fit}</span>` : '')
+            + `</li>`;
+    }).join('')}
                 </ul>
                 ${coupon ? `<p style="text-align: right; color: #1a7a3a;">Coupon ${coupon.code}: −₹${coupon.discount.toLocaleString('en-IN')}</p>` : ''}
                 ${shipping > 0 ? `<p style="text-align: right;">Shipping: ₹${shipping.toLocaleString('en-IN')}</p>` : ''}

@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { updateOrder } from '@/lib/db';
+import { notifyOrderDelivered } from '@/lib/notify';
 
 export async function POST(req: Request) {
     try {
@@ -51,7 +52,16 @@ export async function POST(req: Request) {
             // of our Order ID into Shiprocket panel by the user.
 
             try {
-                await updateOrder({ id: String(order_id), status: newStatus as any });
+                const updated = await updateOrder({ id: String(order_id), status: newStatus as any });
+
+                // Delivered → thank-you + review request on WhatsApp. Shiprocket
+                // re-fires this webhook liberally, so the once-per-order guard
+                // inside notify.ts is what keeps it to a single message. It can
+                // never fail the webhook: notify* does not throw, and the .catch
+                // is a second net.
+                if (newStatus === 'Delivered') {
+                    await notifyOrderDelivered(updated, { rowWrittenByThisEvent: true }).catch(() => undefined);
+                }
             } catch (e: any) {
                 // Unknown order id (Shiprocket's own id, or a stale/typo entry):
                 // ack with 200 so the webhook stops retrying, rather than 500-looping.

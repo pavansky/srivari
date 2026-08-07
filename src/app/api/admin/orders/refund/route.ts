@@ -26,6 +26,18 @@ export async function POST(request: Request) {
         }
 
         const result = await refundOrder(orderId);
+
+        // Tell the customer their money is on its way — never let a messaging
+        // failure change the refund's outcome.
+        if (result.refunded) {
+            const { notifyRefundIssued } = await import('@/lib/notify');
+            const prisma = (await import('@/lib/prisma')).default;
+            const order = await prisma.order.findUnique({ where: { id: orderId } }).catch(() => null);
+            if (order) {
+                await notifyRefundIssued(order, { refundAmount: result.amount }).catch(() => undefined);
+            }
+        }
+
         return NextResponse.json(result);
     } catch (e: any) {
         // A missing refund_* column (migration pending) lands here too — report

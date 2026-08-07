@@ -3,24 +3,66 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Product } from "@/types";
 import { useAudio } from "@/context/AudioContext";
+import {
+    BLOUSE_CODE,
+    addOnsTotal,
+    normalizeAddOnCodes,
+    sanitizeMeasurements,
+} from "@/config/customization";
 
-// We only store the ID and quantity in localStorage to save space
+// We only store the ID, quantity and the chosen finishing add-ons in
+// localStorage to save space. `options`/`measurements` were added later — carts
+// saved before that have neither, so both are optional and read defensively.
 interface StoredCartItem {
     productId: string;
     quantity: number;
+    /** Add-on codes from config/customization (fall_pico, blouse_stitch, …). */
+    options?: string[];
+    /** Blouse measurements in inches, only meaningful with blouse_stitch. */
+    measurements?: Record<string, string>;
 }
 
 // The app uses the full product details
 export interface CartItem extends Product {
-    uniqueId: string; // Kept for backwards compatibility / keys
+    /** Stable line key — the same saree with different finishing is a separate line. */
+    uniqueId: string;
     quantity: number;
+    options: string[];
+    measurements?: Record<string, string>;
+}
+
+/**
+ * Identity of a cart line. Two lines of the same saree with different add-ons
+ * must stay apart (one plain, one with a stitched blouse), so the key is the
+ * product id plus its add-ons in a canonical order.
+ */
+export function lineKey(productId: string, options: readonly string[] = []): string {
+    return `${productId}::${[...options].sort().join(",")}`;
+}
+
+/** Saree + add-ons for a single piece, in integer rupees. */
+export function lineUnitPrice(item: Pick<CartItem, "price" | "options">): number {
+    return item.price + addOnsTotal(item.options || []);
+}
+
+/** What this line contributes to the subtotal. */
+export function lineTotal(item: Pick<CartItem, "price" | "options" | "quantity">): number {
+    return lineUnitPrice(item) * item.quantity;
 }
 
 interface CartContextType {
     cart: CartItem[];
-    addToCart: (product: Product, quantity?: number) => void;
-    removeFromCart: (productId: string) => void;
-    updateQuantity: (productId: string, quantity: number) => void;
+    /** `options` are add-on codes; unknown codes are dropped server-side too. */
+    addToCart: (
+        product: Product,
+        quantity?: number,
+        options?: string[],
+        measurements?: Record<string, string>
+    ) => void;
+    /** Omit `options` to remove every line of that product. */
+    removeFromCart: (productId: string, options?: string[]) => void;
+    /** Omit `options` to target that product's first line. */
+    updateQuantity: (productId: string, quantity: number, options?: string[]) => void;
     clearCart: () => void;
 }
 
@@ -60,21 +102,54 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             if (storedCartJSON && fetchOk) {
                 try {
                     const storedItems: StoredCartItem[] = JSON.parse(storedCartJSON);
-                    const hydratedCart: CartItem[] = [];
 
-                    for (const item of storedItems) {
-                        const pid = item.productId || (item as any).id;
-                        const product = getProductById(pid, allProducts);
-
-                        // Deleted or sold-out products drop out; quantities are
-                        // clamped to the stock available right now.
-                        if (product && (product.stock || 0) > 0) {
-                            hydratedCart.push({
-                                ...product,
-                                uniqueId: Math.random().toString(36).substr(2, 9),
-                                quantity: Math.min(item.quantity || 1, product.stock)
+                    // 1. Fold any duplicate lines together first, keyed on the
+                    //    product AND its add-ons.
+                    const merged = new Map<string, { productId: string; quantity: number; options: string[]; measurements?: Record<string, string> }>();
+                    for (const item of Array.isArray(storedItems) ? storedItems : []) {
+                        const pid = item?.productId || (item as any)?.id;
+                        if (!pid) continue;
+                        // A cart saved before add-ons existed simply has none.
+                        const options = normalizeAddOnCodes(item?.options);
+                        const key = lineKey(pid, options);
+                        const quantity = Math.max(1, Number(item?.quantity) || 1);
+                        const existing = merged.get(key);
+                        if (existing) {
+                            existing.quantity += quantity;
+                        } else {
+                            merged.set(key, {
+                                productId: pid,
+                                quantity,
+                                options,
+                                measurements: options.includes(BLOUSE_CODE)
+                                    ? sanitizeMeasurements(item?.measurements)
+                                    : undefined,
                             });
                         }
+                    }
+
+                    // 2. Deleted or sold-out products drop out; quantities are
+                    //    clamped to the stock available right now, counted
+                    //    across every line of the same saree.
+                    const hydratedCart: CartItem[] = [];
+                    const claimed = new Map<string, number>();
+                    for (const [key, line] of merged) {
+                        const product = getProductById(line.productId, allProducts);
+                        const stock = product?.stock || 0;
+                        if (!product || stock <= 0) continue;
+
+                        const room = stock - (claimed.get(line.productId) || 0);
+                        if (room <= 0) continue;
+
+                        const quantity = Math.min(line.quantity, room);
+                        claimed.set(line.productId, (claimed.get(line.productId) || 0) + quantity);
+                        hydratedCart.push({
+                            ...product,
+                            uniqueId: key,
+                            quantity,
+                            options: line.options,
+                            measurements: line.measurements,
+                        });
                     }
 
                     setCart(hydratedCart);
@@ -99,7 +174,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (isLoaded && canPersist) {
             const itemsToStore: StoredCartItem[] = cart.map(item => ({
                 productId: item.id,
-                quantity: item.quantity
+                quantity: item.quantity,
+                // Omitted entirely when empty, so a plain cart stays exactly as
+                // small as it was before add-ons existed.
+                ...(item.options?.length ? { options: item.options } : {}),
+                ...(item.measurements && Object.keys(item.measurements).length
+                    ? { measurements: item.measurements }
+                    : {}),
             }));
             try {
                 localStorage.setItem('srivari_cart', JSON.stringify(itemsToStore));
@@ -109,66 +190,95 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [cart, isLoaded, canPersist]);
 
-    const addToCart = (product: Product, quantity: number = 1) => {
+    const addToCart = (
+        product: Product,
+        quantity: number = 1,
+        options: string[] = [],
+        measurements?: Record<string, string>
+    ) => {
         playBell();
         setCanPersist(true);
+
+        const codes = normalizeAddOnCodes(options);
+        const cleanMeasurements = codes.includes(BLOUSE_CODE)
+            ? sanitizeMeasurements(measurements)
+            : {};
+        const key = lineKey(product.id, codes);
+
         setCart((prev) => {
-            const existingItem = prev.find(item => item.id === product.id);
-            const currentQty = existingItem ? existingItem.quantity : 0;
-            const newTotalQty = currentQty + quantity;
-
-            // Strict Inventory Check
-            if (newTotalQty > (product.stock || 0)) {
+            // Strict inventory check across every line of this saree — two
+            // differently-finished lines still draw on the same single stock.
+            const held = prev.reduce((sum, item) => sum + (item.id === product.id ? item.quantity : 0), 0);
+            const room = Math.max(0, (product.stock || 0) - held);
+            if (room <= 0) {
                 console.warn(`Cannot add more than available stock (${product.stock})`);
-                const maxAddable = Math.max(0, product.stock - currentQty);
-                if (maxAddable <= 0) return prev; // Already at max
-
-                if (existingItem) {
-                    return prev.map(item =>
-                        item.id === product.id ? { ...item, quantity: product.stock } : item
-                    );
-                }
-                return [...prev, {
-                    ...product,
-                    uniqueId: Math.random().toString(36).substr(2, 9),
-                    quantity: product.stock
-                }];
+                return prev;
             }
+            const toAdd = Math.min(Math.max(1, quantity), room);
 
-            if (existingItem) {
+            const existing = prev.find(item => item.uniqueId === key);
+            if (existing) {
                 return prev.map(item =>
-                    item.id === product.id
-                        ? { ...item, quantity: item.quantity + quantity }
+                    item.uniqueId === key
+                        ? {
+                            ...item,
+                            quantity: item.quantity + toAdd,
+                            // A fresh set of measurements replaces the old one;
+                            // an empty one leaves what is already recorded.
+                            measurements: Object.keys(cleanMeasurements).length
+                                ? cleanMeasurements
+                                : item.measurements,
+                        }
                         : item
                 );
             }
+
             return [...prev, {
                 ...product,
-                uniqueId: Math.random().toString(36).substr(2, 9),
-                quantity: quantity
+                uniqueId: key,
+                quantity: toAdd,
+                options: codes,
+                measurements: Object.keys(cleanMeasurements).length ? cleanMeasurements : undefined,
             }];
         });
     };
 
-    const updateQuantity = (productId: string, quantity: number) => {
+    const updateQuantity = (productId: string, quantity: number, options?: string[]) => {
         if (quantity < 1) {
-            removeFromCart(productId);
+            removeFromCart(productId, options);
             return;
         }
+        setCanPersist(true);
 
-        setCart(prev => prev.map(item => {
-            if (item.id === productId) {
-                // Ensure we don't exceed stock
-                const cappedQty = Math.min(quantity, item.stock || 0);
-                return { ...item, quantity: cappedQty };
-            }
-            return item;
-        }));
+        const key = options ? lineKey(productId, normalizeAddOnCodes(options)) : null;
+
+        setCart(prev => {
+            const target = key
+                ? prev.find(item => item.uniqueId === key)
+                : prev.find(item => item.id === productId);
+            if (!target) return prev;
+
+            // Other lines of the same saree already hold part of the stock.
+            const heldElsewhere = prev.reduce(
+                (sum, item) =>
+                    sum + (item.id === productId && item.uniqueId !== target.uniqueId ? item.quantity : 0),
+                0
+            );
+            const capped = Math.min(quantity, Math.max(0, (target.stock || 0) - heldElsewhere));
+            if (capped < 1) return prev.filter(item => item.uniqueId !== target.uniqueId);
+
+            return prev.map(item =>
+                item.uniqueId === target.uniqueId ? { ...item, quantity: capped } : item
+            );
+        });
     };
 
-    const removeFromCart = (productId: string) => {
+    const removeFromCart = (productId: string, options?: string[]) => {
         setCanPersist(true);
-        setCart((prev) => prev.filter((item) => item.id !== productId));
+        const key = options ? lineKey(productId, normalizeAddOnCodes(options)) : null;
+        setCart((prev) =>
+            prev.filter((item) => (key ? item.uniqueId !== key : item.id !== productId))
+        );
     };
 
     const clearCart = () => {

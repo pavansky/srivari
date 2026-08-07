@@ -208,8 +208,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             quantity: Math.max(1, Math.round(Number(item?.quantity) || 1)),
             category: product?.category,
             name: String(item?.productName || product?.name || "Saree"),
-            hsnCode: product?.hsnCode,
-            gstRate: product?.gstRate,
+            // A finishing service line (fall & pico, blouse stitching) has no
+            // product row — its HSN was snapshotted onto the line at order time.
+            hsnCode: (item as any)?.hsnCode ?? product?.hsnCode,
+            gstRate: (item as any)?.gstRate ?? product?.gstRate,
         };
     });
 

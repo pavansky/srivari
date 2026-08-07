@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { rateLimit } from '@/lib/rate-limit';
+import { findAddOn, normalizeAddOnCodes } from '@/config/customization';
 import { getShippingRate } from '@/lib/shiprocket';
 import {
     DEFAULT_WEIGHT_KG,
@@ -86,6 +87,10 @@ async function loadTaxProducts(ids: string[]) {
  */
 async function resolveTaxLines(rawItems: unknown, subtotal: number): Promise<TaxLine[]> {
     const wanted = new Map<string, number>();
+    // Finishing services (fall & pico, blouse stitching, petticoat) are taxed at
+    // their own HSN, so the preview must include them or the quoted GST would
+    // cover only the sarees. Prices come from config, never from the client.
+    const addOnLines: TaxLine[] = [];
     if (Array.isArray(rawItems)) {
         for (const raw of rawItems.slice(0, MAX_ITEM_LINES)) {
             const item = raw as any;
@@ -93,6 +98,19 @@ async function resolveTaxLines(rawItems: unknown, subtotal: number): Promise<Tax
             if (!id || typeof id !== 'string') continue;
             const quantity = Math.max(1, Math.min(Number(item?.quantity) || 1, 100));
             wanted.set(id, (wanted.get(id) || 0) + quantity);
+
+            for (const code of normalizeAddOnCodes(item?.options)) {
+                const addOn = findAddOn(code);
+                if (!addOn) continue;
+                addOnLines.push({
+                    price: addOn.price,
+                    quantity,
+                    category: null,
+                    name: addOn.label,
+                    hsnCode: addOn.hsn ?? null,
+                    gstRate: addOn.gstRate ?? null,
+                });
+            }
         }
     }
 
@@ -107,13 +125,15 @@ async function resolveTaxLines(rawItems: unknown, subtotal: number): Promise<Tax
                 hsnCode: p.hsnCode ?? null,
                 gstRate: p.gstRate ?? null,
             }));
-            if (lines.length > 0) return lines;
+            if (lines.length > 0) return [...lines, ...addOnLines];
         } catch (e) {
             console.warn('Shipping quote: product lookup for GST failed:', e);
         }
     }
 
     return [{ price: subtotal, quantity: 1, category: null, name: null, hsnCode: null, gstRate: null }];
+    // (addOnLines are intentionally not appended to the flat fallback: without a
+    // product lookup the subtotal already includes them.)
 }
 
 export async function POST(request: Request) {

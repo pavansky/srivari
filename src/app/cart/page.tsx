@@ -4,11 +4,12 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShoppingBag, Trash2, ArrowRight, X, Phone, User, MapPin, Mail, ShieldCheck, MessageCircle } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { useCart, lineTotal, type CartItem } from '@/context/CartContext';
 import { useAudio } from '@/context/AudioContext';
 import { useState, useEffect, useRef } from 'react';
 import SrivariImage from '@/components/SrivariImage';
 import { SITE_CONFIG } from '@/config/site';
+import { findAddOn, formatMeasurements } from '@/config/customization';
 
 interface CartToast {
     message: string;
@@ -26,9 +27,17 @@ export default function CartPage() {
     const { cart, removeFromCart, updateQuantity } = useCart();
     const { playBell } = useAudio();
 
+    // Finishing add-ons are part of what the customer pays, so they belong in
+    // the subtotal — the order route re-derives the same figure server-side.
     const calculateTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        return cart.reduce((total, item) => total + lineTotal(item), 0);
     };
+
+    /** The add-on sub-lines for a bag item, priced per piece × quantity. */
+    const addOnLines = (item: CartItem) =>
+        (item.options || [])
+            .map((code) => ({ code, addOn: findAddOn(code) }))
+            .filter((entry): entry is { code: string; addOn: NonNullable<ReturnType<typeof findAddOn>> } => !!entry.addOn);
 
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
     const [userDetails, setUserDetails] = useState({
@@ -155,7 +164,12 @@ export default function CartPage() {
                     ...(pincode.length === 6 ? { pincode } : {}),
                     ...(isRealPlace(shippingDetails.city) ? { city: shippingDetails.city } : {}),
                     ...(isRealPlace(shippingDetails.state) ? { state: shippingDetails.state } : {}),
-                    items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+                    items: cart.map(i => ({
+                        id: i.id,
+                        quantity: i.quantity,
+                        options: i.options,
+                        measurements: i.measurements,
+                    })),
                     shippingCost: shippingCost,
                     paymentMethod: 'WhatsApp'
                 })
@@ -189,6 +203,12 @@ export default function CartPage() {
             message += "\n*Order Selection:*\n";
             cart.forEach(item => {
                 message += `- ${item.name} (Qty: ${item.quantity})\n`;
+                (item.options || []).forEach(code => {
+                    const addOn = findAddOn(code);
+                    if (addOn) message += `   + ${addOn.label} (₹${addOn.price.toLocaleString('en-IN')})\n`;
+                });
+                const fit = formatMeasurements(item.measurements);
+                if (fit) message += `   Fit: ${fit}\n`;
             });
 
             message += `\n*\uD83D\uDCB0 Total Amount: \u20B9${calculateTotal().toLocaleString('en-IN')}*`;
@@ -438,7 +458,7 @@ export default function CartPage() {
                                                 </h3>
                                             </div>
                                             <button
-                                                onClick={() => removeFromCart(item.id)}
+                                                onClick={() => removeFromCart(item.id, item.options)}
                                                 className="text-neutral-300 hover:text-red-500 transition-colors p-2 -mr-2"
                                                 title="Remove item"
                                                 aria-label="Remove item"
@@ -447,13 +467,32 @@ export default function CartPage() {
                                             </button>
                                         </div>
 
+                                        {/* Finishing add-ons, as sub-lines under the saree */}
+                                        {addOnLines(item).length > 0 && (
+                                            <ul className="mt-4 space-y-2 border-l border-[#D4AF37]/40 pl-4">
+                                                {addOnLines(item).map(({ code, addOn }) => (
+                                                    <li key={code} className="flex items-baseline justify-between gap-4 text-xs">
+                                                        <span className="text-neutral-500">{addOn.label}</span>
+                                                        <span className="shrink-0 text-[#4A0404]">
+                                                            ₹{(addOn.price * item.quantity).toLocaleString('en-IN')}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                                {item.measurements && Object.keys(item.measurements).length > 0 && (
+                                                    <li className="text-[10px] leading-relaxed text-neutral-400">
+                                                        {formatMeasurements(item.measurements)}
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )}
+
                                         <div className="flex flex-wrap items-end justify-between mt-4 sm:mt-0 gap-4">
                                             {/* Quantity Control */}
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xs text-neutral-400 font-sans uppercase tracking-wider font-bold">Qty</span>
                                                 <div className="flex items-center border border-neutral-200 bg-[#FDFBF7] rounded-full overflow-hidden shadow-sm">
                                                     <button
-                                                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                        onClick={() => updateQuantity(item.id, item.quantity - 1, item.options)}
                                                         className="w-10 h-10 flex items-center justify-center text-neutral-600 hover:bg-white hover:text-[#4A0404] transition-colors"
                                                         aria-label="Decrease quantity"
                                                     >-</button>
@@ -461,7 +500,7 @@ export default function CartPage() {
                                                         {item.quantity}
                                                     </span>
                                                     <button
-                                                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.options)}
                                                         disabled={item.quantity >= item.stock}
                                                         className={`w-10 h-10 flex items-center justify-center text-neutral-600 transition-colors ${item.quantity >= item.stock ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white hover:text-[#4A0404]'}`}
                                                         aria-label="Increase quantity"
@@ -474,7 +513,7 @@ export default function CartPage() {
                                                     Silk Mark Certified
                                                 </div>
                                                 <div className="text-lg font-sans font-medium text-[#4A0404]">
-                                                    ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                                                    ₹{lineTotal(item).toLocaleString('en-IN')}
                                                 </div>
                                             </div>
                                         </div>
